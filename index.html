@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Java Interview Guide Reader</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{--bg:#f7f8fa;--panel:#fff;--ink:#1c2430;--muted:#5f6b7a;--line:#dde2e9;--accent:#1f5fbf;--code:#0f1722;--codeink:#e6edf6;--note:#eef4ff}
+@media(prefers-color-scheme:dark){:root{--bg:#10151c;--panel:#171e28;--ink:#e4e9f0;--muted:#97a3b3;--line:#273140;--accent:#6aa5f5;--code:#0a0e14;--codeink:#dbe5f1;--note:#18253a}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 Georgia,"Times New Roman",serif}
+header{position:sticky;top:0;z-index:5;display:flex;gap:10px;align-items:center;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);font-family:system-ui,sans-serif}
+header h1{font-size:15px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button,input{font:14px system-ui,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+button{cursor:pointer}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.layout{display:grid;grid-template-columns:290px minmax(0,1fr);max-width:1280px;margin:0 auto}
+nav{position:sticky;top:53px;height:calc(100vh - 53px);overflow:auto;padding:14px;border-right:1px solid var(--line);font:13px/1.4 system-ui,sans-serif}
+nav a{display:block;padding:4px 8px;color:var(--muted);text-decoration:none;border-radius:4px}
+nav a:hover,nav a.active{background:var(--note);color:var(--accent)}
+nav a.h2{font-weight:700;color:var(--ink);margin-top:10px}
+nav a.h3{padding-left:20px;font-size:12.5px}
+main{padding:28px clamp(16px,4vw,48px) 80px;max-width:860px}
+main h1,main h2,main h3{font-family:system-ui,sans-serif;line-height:1.25}
+main h2{margin-top:2.2em;border-bottom:1px solid var(--line);padding-bottom:6px}
+main h3{margin-top:1.8em;color:var(--accent)}
+pre{background:var(--code);color:var(--codeink);padding:14px 16px;border-radius:8px;overflow-x:auto;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:14px 0}
+table{border-collapse:collapse;display:block;overflow-x:auto;margin:14px 0;font:14px/1.5 system-ui,sans-serif}
+td,th{border:1px solid var(--line);padding:7px 10px;vertical-align:top}
+th{background:var(--note)}
+td.note-cell{background:var(--note);border-left:4px solid var(--accent)}
+mark{background:#ffe27a;color:#000;border-radius:2px}
+img{max-width:100%}
+.panel{display:none;position:absolute;right:12px;top:52px;width:min(420px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.2);font-family:system-ui,sans-serif}
+.panel.open{display:grid;gap:8px}.panel label{font-size:12px;color:var(--muted)}
+#status{padding:40px 0;color:var(--muted);font-family:system-ui,sans-serif}
+#status.error{color:#c0392b}
+@media(max-width:820px){.layout{grid-template-columns:1fr}nav{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="docTitle">Java Interview Guide Reader</h1>
+  <input id="searchBox" type="search" placeholder="Search text…" aria-label="Search text" style="width:170px">
+  <button id="settingsToggle" aria-expanded="false">GitHub source</button>
+  <div class="panel" id="settingsPanel">
+    <label>Owner <input id="repoOwner" placeholder="your-username"></label>
+    <label>Repository <input id="repoName" placeholder="java-notes"></label>
+    <label>Branch <input id="repoBranch" value="main"></label>
+    <label>File path in repo <input id="filePath" value="Java_Interview_Guide_MERGED_Part5_SpringBoot_Microservices_Cloud.docx"></label>
+    <label>Access token (private repos only, optional) <input id="accessToken" type="password" placeholder="ghp_… (read-only)"></label>
+    <button class="primary" id="loadButton">Load from GitHub</button>
+    <label>Or open a local file <input id="localFile" type="file" accept=".docx"></label>
+  </div>
+</header>
+
+<div class="layout">
+  <nav id="tocPanel" aria-label="Table of contents"></nav>
+  <main id="content"><div id="status">Open “GitHub source”, enter your repository details, then choose Load.</div></main>
+</div>
+
+<script>
+const elements = id => document.getElementById(id);
+const storageKey = 'docxReaderSettings';
+const settingsFields = ['repoOwner','repoName','repoBranch','filePath'];
+
+function readSettings(){
+  try{ return JSON.parse(localStorage.getItem(storageKey)) || {}; }catch(error){ return {}; }
+}
+function saveSettings(){
+  const settings = {};
+  settingsFields.forEach(field => settings[field] = elements(field).value.trim());
+  try{ localStorage.setItem(storageKey, JSON.stringify(settings)); }catch(error){}
+}
+function applySettings(){
+  // Priority: URL query (?owner=&repo=&branch=&path=), then saved settings
+  const query = new URLSearchParams(location.search);
+  const saved = readSettings();
+  const map = {repoOwner:'owner', repoName:'repo', repoBranch:'branch', filePath:'path'};
+  settingsFields.forEach(field => {
+    const value = query.get(map[field]) || saved[field];
+    if(value) elements(field).value = value;
+  });
+  return query.has('owner') && query.has('repo');
+}
+
+function setStatus(message, isError){
+  const box = elements('status');
+  if(!box){ elements('content').innerHTML = '<div id="status"></div>'; return setStatus(message,isError); }
+  box.textContent = message; box.className = isError ? 'error' : '';
+}
+
+async function fetchFromGitHub(){
+  const owner = elements('repoOwner').value.trim();
+  const repo = elements('repoName').value.trim();
+  const branch = elements('repoBranch').value.trim() || 'main';
+  const path = elements('filePath').value.trim().split('/').map(encodeURIComponent).join('/');
+  const token = elements('accessToken').value.trim();
+  if(!owner || !repo || !path) throw new Error('Owner, repository and file path are required.');
+
+  // Public repo: raw endpoint (CORS enabled). Private repo: contents API with token.
+  const url = token
+    ? `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`
+    : `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${path}`;
+  const headers = token ? {Authorization:`Bearer ${token}`, Accept:'application/vnd.github.raw+json'} : {};
+  const response = await fetch(url, {headers});
+  if(!response.ok){
+    const hint = response.status === 404 ? ' (check owner/repo/branch/path, or add a token if the repo is private)' : '';
+    throw new Error(`GitHub returned ${response.status}${hint}`);
+  }
+  return response.arrayBuffer();
+}
+
+// Mammoth renders code boxes as 1-cell tables → turn them into <pre> blocks.
+function enhanceCodeBlocks(container){
+  container.querySelectorAll('table').forEach(table => {
+    const cells = table.querySelectorAll('td,th');
+    if(table.rows.length >= 1 && cells.length === table.rows.length && table.rows[0].cells.length === 1){
+      const lines = [...table.querySelectorAll('p')].map(paragraph => paragraph.textContent);
+      const text = lines.join('\n').trim();
+      const looksLikeCode = /[{};<>=()]|^\s*(import|public|class|@|\/\/|<)/m.test(text);
+      const replacement = document.createElement(looksLikeCode ? 'pre' : 'div');
+      if(looksLikeCode){ replacement.textContent = lines.join('\n'); }
+      else { replacement.innerHTML = table.rows[0].cells[0].innerHTML; replacement.style.cssText = 'background:var(--note);border-left:4px solid var(--accent);padding:4px 14px;margin:14px 0;border-radius:6px'; }
+      table.replaceWith(replacement);
+    }
+  });
+}
+
+function buildToc(container){
+  const tocPanel = elements('tocPanel');
+  tocPanel.innerHTML = '';
+  container.querySelectorAll('h1,h2,h3').forEach((heading, index) => {
+    if(heading.tagName === 'H1') return;
+    heading.id = 'heading-' + index;
+    const link = document.createElement('a');
+    link.href = '#' + heading.id;
+    link.textContent = heading.textContent;
+    link.className = heading.tagName.toLowerCase();
+    tocPanel.appendChild(link);
+  });
+}
+
+async function renderDocument(arrayBuffer, fileName){
+  setStatus('Converting document…');
+  const result = await mammoth.convertToHtml({arrayBuffer});
+  const content = elements('content');
+  content.innerHTML = result.value;
+  enhanceCodeBlocks(content);
+  buildToc(content);
+  const firstHeading = content.querySelector('h1');
+  elements('docTitle').textContent = firstHeading ? firstHeading.textContent : fileName;
+  document.title = elements('docTitle').textContent;
+  elements('settingsPanel').classList.remove('open');
+}
+
+async function loadFromGitHub(){
+  try{
+    saveSettings(); setStatus('Fetching from GitHub…');
+    await renderDocument(await fetchFromGitHub(), 'Document');
+  }catch(error){ setStatus(error.message, true); }
+}
+
+// Search with highlighting
+let searchTimer;
+elements('searchBox').addEventListener('input', event => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => highlight(event.target.value.trim()), 250);
+});
+function highlight(term){
+  const content = elements('content');
+  content.querySelectorAll('mark').forEach(mark => mark.replaceWith(document.createTextNode(mark.textContent)));
+  content.normalize();
+  if(term.length < 2) return;
+  const pattern = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi');
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+  const targets = []; let node;
+  while(node = walker.nextNode()) if(pattern.test(node.nodeValue)){ targets.push(node); pattern.lastIndex = 0; }
+  targets.forEach(textNode => {
+    const fragment = document.createDocumentFragment(); let cursor = 0; const value = textNode.nodeValue;
+    value.replace(pattern, (match, offset) => {
+      fragment.append(value.slice(cursor, offset));
+      const mark = document.createElement('mark'); mark.textContent = match; fragment.append(mark);
+      cursor = offset + match.length; return match;
+    });
+    fragment.append(value.slice(cursor)); textNode.replaceWith(fragment);
+  });
+  const firstMatch = content.querySelector('mark');
+  if(firstMatch) firstMatch.scrollIntoView({block:'center'});
+}
+
+elements('settingsToggle').addEventListener('click', () => {
+  const panel = elements('settingsPanel'); const open = panel.classList.toggle('open');
+  elements('settingsToggle').setAttribute('aria-expanded', open);
+});
+elements('loadButton').addEventListener('click', loadFromGitHub);
+elements('localFile').addEventListener('change', async event => {
+  const file = event.target.files[0]; if(!file) return;
+  try{ await renderDocument(await file.arrayBuffer(), file.name); }catch(error){ setStatus(error.message, true); }
+});
+
+if(applySettings()) loadFromGitHub();
+</script>
+</body>
+</html>
