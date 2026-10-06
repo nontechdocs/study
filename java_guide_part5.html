@@ -184,7 +184,21 @@ public class OrderProcessingService {
 <li>httpOnly cookies mitigate XSS but introduce CSRF risk, requiring CSRF tokens or SameSite cookie attributes.</li>
 <li>JWTs are stateless and can't be revoked before expiry; for logout or a compromised account, keep a blacklist (often in Redis with a TTL matching the token's expiry), which reintroduces a little of the statefulness JWTs were meant to avoid.</li>
 </ul>
-<p>JWT structure and XSS/CSRF basics are in Part 6, Section 5.</p>
+<p>JWT structure and XSS/CSRF basics are in Part 6, Section 5.</p><h4 class="q">Q9. What are Spring components, and how have you used Spring in your applications?</h4><ul><li><strong>Stereotype annotations</strong> register beans via component scanning: <code>@Component</code> (generic), <code>@Service</code> (business logic), <code>@Repository</code> (data access, exception translation), <code>@Controller</code>/<code>@RestController</code> (web layer). <code>@Configuration</code> + <code>@Bean</code> define beans explicitly.</li><li><strong>Typical usage:</strong> constructor injection of services into controllers, Spring Data JPA repositories, <code>@Transactional</code> on service methods, Spring Security for authentication, Actuator for health and metrics, <code>@Scheduled</code> jobs, and profile-based configuration in <code>application.yml</code>.</li></ul><h4 class="q">Q10. How does Spring MVC work, and what is a view resolver?</h4><ul><li>Request flow: client → <strong>DispatcherServlet</strong> (front controller) → <strong>HandlerMapping</strong> finds the controller method → <strong>HandlerAdapter</strong> invokes it → controller returns a model plus a logical view name → <strong>ViewResolver</strong> turns the name into a concrete view (Thymeleaf/JSP/FreeMarker) → view renders the response.</li><li><strong>ViewResolver</strong> maps a logical name such as <code>"orders/list"</code> to a template (for example prefix <code>/templates/</code> + name + suffix <code>.html</code>), keeping controllers independent of the view technology.</li><li>With <code>@RestController</code> / <code>@ResponseBody</code> the view step is skipped; an <code>HttpMessageConverter</code> writes JSON directly.</li></ul><p><strong>Problem statement:</strong> Return an order-details page from a controller by logical view name.</p><pre><button class="copy">Copy</button><code>@Controller
+public class OrderPageController {
+
+    private final OrderService orderService;
+
+    public OrderPageController(OrderService orderService) {   // constructor injection
+        this.orderService = orderService;
+    }
+
+    @GetMapping("/orders/{orderId}")
+    public String showOrderDetails(@PathVariable Long orderId, Model viewModel) {
+        viewModel.addAttribute("order", orderService.findOrder(orderId));  // data for the view
+        return "orders/details";   // logical name resolved by the ViewResolver
+    }
+}</code></pre>
 <h2 id="s3">Section 3: Testing, Code Quality &amp; Production Readiness</h2>
 <h4 class="q">Q1. What is the difference between @Mock and @InjectMocks in Mockito?</h4>
 <p>@Mock creates a fake implementation of a dependency with stubbed behavior, isolating the class under test from real collaborators. @InjectMocks creates a real instance of the class under test and injects the @Mock fields into it (via constructor, setter, or field), enabling isolated unit tests with no Spring context.</p>
@@ -268,6 +282,17 @@ public class EmployeeControllerTest {
         mockMvc.perform(get("/api/employees/42"))
                .andExpect(status().isOk())
                .andExpect(jsonPath("$.employeeName").value("Alice"));
+    }
+}</code></pre><h4 class="q">Q7. What are the common HTTP status codes?</h4><div class="tw"><table><tr><th>Range</th><th>Meaning</th><th>Examples</th></tr><tr><td>1xx</td><td>Informational</td><td>100 Continue</td></tr><tr><td>2xx</td><td>Success</td><td>200 OK, 201 Created, 202 Accepted, 204 No Content</td></tr><tr><td>3xx</td><td>Redirection</td><td>301 Moved Permanently, 302 Found, 304 Not Modified</td></tr><tr><td>4xx</td><td>Client error</td><td>400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 429 Too Many Requests</td></tr><tr><td>5xx</td><td>Server error</td><td>500 Internal Server Error, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout</td></tr></table></div><p>401 means not authenticated; 403 means authenticated but not allowed.</p><h4 class="q">Q8. How do you send and receive XML in a REST service?</h4><ul><li>Add an XML converter (<code>jackson-dataformat-xml</code> in Spring Boot) and declare media types with <code>consumes</code> / <code>produces</code>; the <code>Accept</code> and <code>Content-Type</code> headers select the format (content negotiation).</li><li>A single endpoint can serve both JSON and XML.</li></ul><p><strong>Problem statement:</strong> Accept a customer as XML and respond with XML.</p><pre><button class="copy">Copy</button><code>@RestController
+@RequestMapping("/customers")
+public class CustomerController {
+
+    @PostMapping(
+        consumes = MediaType.APPLICATION_XML_VALUE,    // request body is XML
+        produces = MediaType.APPLICATION_XML_VALUE)    // response body is XML
+    public CustomerDto createCustomer(@RequestBody CustomerDto customerRequest) {
+        customerRequest.setCustomerId(UUID.randomUUID().toString());
+        return customerRequest;   // converter serializes it back to XML
     }
 }</code></pre>
 <h2 id="s5">Section 5: Microservices Architecture &amp; Distributed Systems</h2>

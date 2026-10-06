@@ -62,7 +62,26 @@ INNER JOIN department d ON e.dept_id = d.dept_id;
 -- LEFT JOIN: also keeps employees with a null/unknown dept_id
 SELECT e.emp_name, e.dept_id, d.dept_name
 FROM employee e
-LEFT JOIN department d ON e.dept_id = d.dept_id;</code></pre>
+LEFT JOIN department d ON e.dept_id = d.dept_id;</code></pre><h4 class="q">Q3. How do you implement inheritance mapping in Hibernate/JPA?</h4><p>Annotate the parent with <code>@Inheritance(strategy = ...)</code>:</p><div class="tw"><table><tr><th>Strategy</th><th>Tables</th><th>Trade-off</th></tr><tr><td>SINGLE_TABLE (default)</td><td>One table + discriminator column</td><td>Fast, no joins; nullable subclass columns</td></tr><tr><td>JOINED</td><td>Parent table + one per subclass</td><td>Normalised; joins on every query</td></tr><tr><td>TABLE_PER_CLASS</td><td>One full table per concrete class</td><td>No joins for one type; polymorphic queries use UNION</td></tr><tr><td>@MappedSuperclass</td><td>None for parent (fields copied)</td><td>Shares fields only; parent is not an entity</td></tr></table></div><p><strong>Problem statement:</strong> Map Payment as a parent entity with CardPayment and UpiPayment subclasses in a single table.</p><pre><button class="copy">Copy</button><code>@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "payment_type")      // column that tells subclasses apart
+public abstract class Payment {
+    @Id @GeneratedValue
+    private Long paymentId;
+    private BigDecimal paymentAmount;
+}
+
+@Entity
+@DiscriminatorValue("CARD")
+public class CardPayment extends Payment {
+    private String cardNumberMasked;
+}
+
+@Entity
+@DiscriminatorValue("UPI")
+public class UpiPayment extends Payment {
+    private String upiHandle;
+}</code></pre><h4 class="q">Q4. What is the difference between load() and get() in Hibernate?</h4><div class="tw"><table><tr><th></th><th>session.get()</th><th>session.load()</th></tr><tr><td>Hits database</td><td>Immediately</td><td>Lazily, returns a proxy; query runs on first property access</td></tr><tr><td>Row not found</td><td>Returns null</td><td>Throws ObjectNotFoundException when accessed</td></tr><tr><td>Use when</td><td>You are not sure the row exists</td><td>You are sure it exists, or only need a reference (e.g., to set a foreign key)</td></tr><tr><td>Outside open session</td><td>Safe, already loaded</td><td>Proxy access throws LazyInitializationException</td></tr></table></div><p>In JPA the equivalents are <code>EntityManager.find()</code> and <code>getReference()</code>.</p>
 <h2 id="s2">Section 2: SQL Joins, Views &amp; Database Design</h2>
 <h4 class="q">Q1. What are INNER, LEFT, RIGHT, and CROSS joins?</h4>
 <ul>

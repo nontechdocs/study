@@ -257,7 +257,35 @@ ArrayList&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
  
 // Prefer -- program to the interface; the implementation can change freely later
 List&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
-List&lt;String&gt; orderHistory = new LinkedList&lt;&gt;();</code></pre>
+List&lt;String&gt; orderHistory = new LinkedList&lt;&gt;();</code></pre><h4 class="q">Q11. What is IdentityHashMap, and where would you use it? What happens when two equal objects are put into a normal Map with the same key?</h4><ul><li><strong>HashMap</strong> compares keys with <code>equals()</code>/<code>hashCode()</code>; putting an equal key again <em>replaces the old value</em> and returns the previous one — no duplicate keys.</li><li><strong>IdentityHashMap</strong> compares keys by reference (<code>==</code>) and uses <code>System.identityHashCode()</code>, so two equal but distinct objects are two separate entries.</li><li>Use cases: serialization/deep-copy graphs (track visited objects), object-proxy caches, topology-preserving transformations.</li></ul><p><strong>Problem statement:</strong> Show that HashMap overwrites an equal key while IdentityHashMap keeps both.</p><pre><button class="copy">Copy</button><code>String firstKey  = new String("order-1001");
+String secondKey = new String("order-1001");   // equal content, different object
+
+Map&lt;String, String&gt; regularMap = new HashMap&lt;&gt;();
+regularMap.put(firstKey, "first");
+regularMap.put(secondKey, "second");           // overwrites the value
+System.out.println(regularMap.size());          // 1
+
+Map&lt;String, String&gt; identityMap = new IdentityHashMap&lt;&gt;();
+identityMap.put(firstKey, "first");
+identityMap.put(secondKey, "second");          // different reference, new entry
+System.out.println(identityMap.size());         // 2</code></pre><h4 class="q">Q12. Why is Map not part of the Collection hierarchy?</h4><ul><li>Collection models a group of <em>single elements</em> (add(E), iterator over elements). Map models <em>key→value associations</em>; its operations (put(K,V), get(K)) don't fit Collection's contract.</li><li>Map exposes collection <em>views</em> instead: <code>keySet()</code>, <code>values()</code>, <code>entrySet()</code>.</li></ul><h4 class="q">Q13. How do you implement an N-to-N (many-to-many) mapping in Java?</h4><p>Use a <code>Map&lt;Key, Set&lt;Value&gt;&gt;</code>: each key maps to many values; keep a second map for the reverse direction if you need lookups both ways. (Interpreted from the question as a many-to-many association; in a database use a join table.)</p><p><strong>Problem statement:</strong> Maintain which students are enrolled in which courses, and query in both directions.</p><pre><button class="copy">Copy</button><code>public class EnrollmentRegistry {
+    private final Map&lt;String, Set&lt;String&gt;&gt; coursesByStudent = new HashMap&lt;&gt;();
+    private final Map&lt;String, Set&lt;String&gt;&gt; studentsByCourse = new HashMap&lt;&gt;();
+
+    public void enroll(String studentName, String courseName) {
+        // computeIfAbsent creates the Set the first time a key is seen
+        coursesByStudent.computeIfAbsent(studentName, key -&gt; new HashSet&lt;&gt;()).add(courseName);
+        studentsByCourse.computeIfAbsent(courseName, key -&gt; new HashSet&lt;&gt;()).add(studentName);
+    }
+
+    public Set&lt;String&gt; coursesOf(String studentName) {
+        return coursesByStudent.getOrDefault(studentName, Set.of());
+    }
+
+    public Set&lt;String&gt; studentsIn(String courseName) {
+        return studentsByCourse.getOrDefault(courseName, Set.of());
+    }
+}</code></pre><h4 class="q">Q14. What is the most efficient data structure in Java? Compare the performance of common collections.</h4><p>There is no single best one; pick by access pattern.</p><div class="tw"><table><tr><th>Structure</th><th>Get / search</th><th>Insert / remove</th><th>Notes</th></tr><tr><td>ArrayList</td><td>O(1) by index</td><td>O(1) at end, O(n) middle</td><td>Best general-purpose list; cache-friendly</td></tr><tr><td>LinkedList</td><td>O(n)</td><td>O(1) at known node/ends</td><td>Rarely better in practice</td></tr><tr><td>HashMap / HashSet</td><td>O(1) average</td><td>O(1) average</td><td>No ordering; needs good hashCode</td></tr><tr><td>LinkedHashMap</td><td>O(1)</td><td>O(1)</td><td>Keeps insertion/access order (LRU)</td></tr><tr><td>TreeMap / TreeSet</td><td>O(log n)</td><td>O(log n)</td><td>Sorted; range queries</td></tr><tr><td>ArrayDeque</td><td>O(1) ends</td><td>O(1) ends</td><td>Fastest stack/queue</td></tr><tr><td>PriorityQueue</td><td>O(1) peek</td><td>O(log n)</td><td>Min/max retrieval</td></tr></table></div>
 <h2 id="s4">Section 4: Stack / Deque Deep Dive</h2>
 <p>The Java Collection library's LIFO mechanism has many practical real-world uses: evaluating expressions and parsing syntax, validating/parsing XML, implementing undo in a text editor, and tracking page-visit history in a web browser.</p>
 <h4 class="q">Q1. What LIFO implementation would you use in modern Java?</h4>

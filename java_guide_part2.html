@@ -327,7 +327,37 @@ public String formatOrderDate(Date orderDate) {
                 return CustomerSummary.defaultFor(customerId);
             });
 }</code></pre>
-<p><em>Figure: CompletableFuture async pipeline</em></p><h2 id="s5">Section 2: Additional Concurrency Topics</h2>
+<p><em>Figure: CompletableFuture async pipeline</em></p><h4 class="q">Q14. How do you create a thread in Java?</h4><ul><li>Extend <code>Thread</code> and override <code>run()</code> (uses up your single inheritance).</li><li>Implement <code>Runnable</code> (or <code>Callable</code> for a result) — preferred; separates task from thread.</li><li>Submit to an <code>ExecutorService</code> — preferred in production (pooled threads).</li><li>Java 21: virtual threads via <code>Thread.ofVirtual().start(task)</code>.</li></ul><p><strong>Problem statement:</strong> Run a report-generation task on a separate thread using Runnable and on a pool.</p><pre><button class="copy">Copy</button><code>Runnable reportTask = () -&gt;
+        System.out.println("Generating report on " + Thread.currentThread().getName());
+
+Thread reportThread = new Thread(reportTask, "report-thread");
+reportThread.start();            // start() creates the thread; run() would execute on the caller
+
+ExecutorService workerPool = Executors.newFixedThreadPool(4);
+workerPool.submit(reportTask);   // reuses pooled threads
+workerPool.shutdown();           // always shut the pool down</code></pre><h4 class="q">Q15. Why use a thread pool (execution pool)? What is its importance?</h4><ul><li><strong>Reuses threads</strong> — avoids the cost of creating/destroying a thread per task.</li><li><strong>Bounds concurrency</strong> — prevents unbounded thread creation and OutOfMemoryError / CPU thrashing.</li><li><strong>Queues work</strong> and applies a rejection policy when saturated.</li><li><strong>Separates submission from execution</strong> — Future, scheduling, graceful shutdown, metrics.</li></ul><h4 class="q">Q16. How does a thread use the CPU in Java?</h4><ul><li>Java threads map to OS threads (platform threads). The OS scheduler gives each runnable thread a <strong>time slice</strong> on a core; with more threads than cores it <strong>context-switches</strong> between them.</li><li>States: NEW → RUNNABLE → (BLOCKED / WAITING / TIMED_WAITING) → TERMINATED. A thread only consumes CPU while RUNNABLE and scheduled; blocked or waiting threads use none.</li><li>Each thread has its own stack and registers; heap is shared. Too many threads means more context switching and memory (about 1 MB stack each by default).</li></ul><h4 class="q">Q17. How does logging (Log4j/Logback) work in a multi-threaded environment?</h4><ul><li>Logger instances are thread-safe; many threads can log concurrently.</li><li>Appenders synchronize or use a lock/buffer, so lines are not interleaved mid-line.</li><li>For throughput use <strong>asynchronous logging</strong> (Log4j2 async loggers with the LMAX Disruptor, or Logback AsyncAppender): threads enqueue events and a background thread writes them.</li><li>Use <strong>MDC</strong> (a ThreadLocal map) to tag log lines with request or user id; clear it in pooled threads.</li></ul><h4 class="q">Q18. How do you detect a deadlock in a running JVM, and how do you recover from it?</h4><ul><li><strong>Detect:</strong> take a thread dump (<code>jstack &lt;pid&gt;</code>, <code>jcmd &lt;pid&gt; Thread.print</code>, or <code>kill -3</code>) — it prints "Found one Java-level deadlock" with the threads and locks involved. Also VisualVM/JConsole, or programmatically with <code>ThreadMXBean</code>.</li><li><strong>Recover:</strong> a JVM cannot safely force-release locks, so the practical fix is to restart or isolate the affected service, then fix the code.</li><li><strong>Prevent:</strong> consistent lock ordering, <code>tryLock(timeout)</code>, smaller critical sections, avoid nested locks.</li></ul><p><strong>Problem statement:</strong> Detect and print deadlocked threads from inside the application.</p><pre><button class="copy">Copy</button><code>ThreadMXBean threadMonitor = ManagementFactory.getThreadMXBean();
+long[] deadlockedThreadIds = threadMonitor.findDeadlockedThreads();   // null if none
+
+if (deadlockedThreadIds != null) {
+    for (ThreadInfo threadInfo : threadMonitor.getThreadInfo(deadlockedThreadIds)) {
+        System.out.println(threadInfo.getThreadName()
+                + " is waiting for lock " + threadInfo.getLockName()
+                + " held by " + threadInfo.getLockOwnerName());
+    }
+}</code></pre><h4 class="q">Q19. In what scenarios does a thread become heavyweight?</h4><ul><li>Each platform thread reserves a stack (about 1 MB) and is a kernel object, so thousands of threads cost memory and context-switch time.</li><li>Heavy when threads are created per request, block on I/O, hold large ThreadLocal data, or when there are far more runnable threads than CPU cores.</li><li>Mitigations: thread pools, async/non-blocking I/O, and <strong>virtual threads</strong> (Java 21), which are cheap and suit blocking workloads.</li></ul><h4 class="q">Q20. How would you implement a multi-threaded scheduler?</h4><p>Use <code>ScheduledExecutorService</code> rather than hand-rolling timers: it runs delayed or periodic tasks on a pool of threads.</p><ul><li><code>schedule(task, delay, unit)</code> — run once after a delay.</li><li><code>scheduleAtFixedRate</code> — fixed period between starts; <code>scheduleWithFixedDelay</code> — fixed gap after each finish.</li><li>Catch exceptions inside the task — an uncaught exception cancels later runs.</li></ul><p><strong>Problem statement:</strong> Run a cache-refresh job every 30 seconds on a pool of two threads, and stop it cleanly.</p><pre><button class="copy">Copy</button><code>ScheduledExecutorService jobScheduler = Executors.newScheduledThreadPool(2);
+
+Runnable cacheRefreshJob = () -&gt; {
+    try {
+        System.out.println("Refreshing cache at " + Instant.now());
+    } catch (Exception failure) {          // never let exceptions escape a scheduled task
+        failure.printStackTrace();
+    }
+};
+
+jobScheduler.scheduleAtFixedRate(cacheRefreshJob, 0, 30, TimeUnit.SECONDS);
+
+// On application shutdown
+jobScheduler.shutdown();</code></pre><h2 id="s5">Section 2: Additional Concurrency Topics</h2>
 <p>The following concurrency questions were not covered in Section 1 and add further depth on thread creation, producer-consumer coordination, lock-free algorithms, and modern virtual threads.</p>
 <h4 class="q">Q1. What is the difference between a Process and a Thread, and what are the ways to create a thread in Java?</h4>
 <p>A process is an independent, isolated program with its own memory space; a thread is a lightweight sub-unit of a process, sharing the process's memory (heap, static fields) but with its own private stack and program counter. Threads are far cheaper to create than processes and enable concurrent execution within a single program.</p>
@@ -658,7 +688,7 @@ try (BufferedReader fileReader = new BufferedReader(new FileReader(inputFile))) 
 <li>4. When code calls close() on the handle, the pool intercepts the event (PooledConnection supports event listeners) and performs a “pseudo-close”: the physical connection returns to the pool for reuse after housekeeping such as resetting state.</li>
 <li>5. The real connection is only closed when the pool retires it — at orderly shutdown or when it is found broken.</li>
 </ul>
-<p>This is transparent to application code. Many pools also pool PreparedStatement objects through an analogous StatementEventListener mechanism, avoiding repeated re-preparation of the same SQL.</p>
+<p>This is transparent to application code. Many pools also pool PreparedStatement objects through an analogous StatementEventListener mechanism, avoiding repeated re-preparation of the same SQL.</p><h4 class="q">Q18. Which Java version are you using, and how do you check it?</h4><ul><li>Answer with the project's actual version (for example Java 17 LTS or Java 21 LTS) and why: LTS support, records, sealed classes, virtual threads.</li><li>Check with <code>java -version</code> or <code>System.getProperty("java.version")</code>; in Maven or Gradle see the configured release.</li></ul><h4 class="q">Q19. How does garbage collection work, and how do you see GC data in the logs?</h4><ul><li>The GC finds objects unreachable from <strong>GC roots</strong> and reclaims them. Heap is generational: young (Eden + survivors) collected often and cheaply, old collected rarely.</li><li>Common collectors: Serial, Parallel, <strong>G1</strong> (default since Java 9), ZGC and Shenandoah (low pause).</li><li><strong>GC logs:</strong> Java 9+ <code>-Xlog:gc*:file=gc.log</code>; Java 8 <code>-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:gc.log</code>.</li><li>Analyse with GCViewer, GCeasy, or <code>jstat -gc &lt;pid&gt;</code>; watch pause times, frequency, and heap after full GC.</li></ul>
 </main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');

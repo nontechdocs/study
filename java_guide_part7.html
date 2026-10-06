@@ -321,7 +321,30 @@ public void updateProduct(Product updatedProduct) {
 <li>Production ownership under regulatory rigor: change control, audit trails, and rollback planning beyond a typical startup's process.</li>
 <li>Leading compliance-driven change: translating a regulatory requirement into an engineering backlog and getting risk/compliance sign-off alongside engineering.</li>
 </ul>
-<p>Preparation advice: go deep on two or three LLD problems (Parking Lot, Rate Limiter, Splitwise) rather than skimming many, and pair every design with “how would I explain this trade-off to my team,” since communication is scored too.</p>
+<p>Preparation advice: go deep on two or three LLD problems (Parking Lot, Rate Limiter, Splitwise) rather than skimming many, and pair every design with “how would I explain this trade-off to my team,” since communication is scored too.</p><h4 class="q">Q12. Design a real-time dashboard that shows the top 10 players in a game.</h4><ul><li><strong>Ingest:</strong> game servers publish score events to Kafka (partitioned by player id).</li><li><strong>Store:</strong> a Redis <strong>sorted set</strong> (<code>ZADD</code>/<code>ZINCRBY</code>) keeps players ordered by score; <code>ZREVRANGE leaderboard 0 9</code> returns the top 10 in O(log n + 10).</li><li><strong>Deliver:</strong> push updates over WebSocket/SSE, throttled (for example once per second), with a short cache for polling clients.</li><li><strong>Scale:</strong> shard leaderboards by game or region, keep durable scores in a database, and rebuild Redis from it on failure.</li></ul><p><strong>Problem statement:</strong> Maintain a top-N leaderboard in memory using a bounded min-heap.</p><pre><button class="copy">Copy</button><code>public class LeaderboardTracker {
+    private final int leaderboardSize;
+    private final PriorityQueue&lt;PlayerScore&gt; minimumHeap =
+            new PriorityQueue&lt;&gt;(Comparator.comparingInt(PlayerScore::scoreValue));
+
+    public record PlayerScore(String playerName, int scoreValue) { }
+
+    public LeaderboardTracker(int leaderboardSize) {
+        this.leaderboardSize = leaderboardSize;
+    }
+
+    public void recordScore(PlayerScore newScore) {
+        minimumHeap.offer(newScore);
+        if (minimumHeap.size() &gt; leaderboardSize) {
+            minimumHeap.poll();            // drop the lowest score, keep top N
+        }
+    }
+
+    public List&lt;PlayerScore&gt; currentTopPlayers() {
+        List&lt;PlayerScore&gt; rankedPlayers = new ArrayList&lt;&gt;(minimumHeap);
+        rankedPlayers.sort(Comparator.comparingInt(PlayerScore::scoreValue).reversed());
+        return rankedPlayers;
+    }
+}</code></pre><h4 class="q">Q13. What are the alternatives to a database, and how would you compute over 1 billion records?</h4><ul><li><strong>Alternatives:</strong> in-memory cache (Redis), search engine (Elasticsearch), key-value or document store, flat files / object storage (S3) with Parquet, data warehouse.</li><li><strong>1 billion records:</strong> do not load them into one JVM. Use <em>divide and conquer</em>: partition the data, compute partial results in parallel, then merge (MapReduce idea).</li><li>Tools: Spark/Flink/Hadoop for batch, Kafka Streams for streaming, columnar formats for scans, pre-aggregation (rollups), and approximate algorithms (HyperLogLog, Count-Min Sketch) when exactness is not needed.</li><li>On a single machine: stream the file line by line (never hold everything in memory), use external sort, and chunk with a parallel stream per partition.</li></ul>
 <h2 id="s2">Section 2: DSA / Coding Problems with Java Solutions</h2>
 <p><em>Each problem lists the problem statement, approach, a commented Java solution with descriptive names, and complexity. Always state time and space complexity aloud, and be ready to trace your code line by line. Patterns covered: hash maps, two pointers, sliding window, stacks, binary search, DP, backtracking, trees, graphs, heaps, and greedy.</em></p>
 <h3 id="s3">Arrays, Strings &amp; Hashing</h3>
@@ -1009,7 +1032,89 @@ private void sinkConnectedLand(char[][] landGrid, int row, int column) {
 <li>Practice writing code in a plain editor without IDE auto-complete, and always state time/space complexity.</li>
 <li>Know at least one real project example for each concept (where you used multithreading, Streams, and so on).</li>
 <li>For banks, rehearse writing correct Java Streams code live; for roles mentioning newer Java, review records, sealed classes, pattern matching, and virtual threads.</li>
-</ul>
+</ul><h4 class="q">Q35. Find the longest common prefix among an array of strings.</h4><p><strong>Problem statement:</strong> Given {"flower", "flow", "flight"}, return "fl". Return an empty string if there is no common prefix.</p><pre><button class="copy">Copy</button><code>public static String longestCommonPrefix(String[] wordArray) {
+    if (wordArray == null || wordArray.length == 0) {
+        return "";
+    }
+    String commonPrefix = wordArray[0];            // start with the first word
+    for (int index = 1; index &lt; wordArray.length; index++) {
+        // shrink the prefix until the current word starts with it
+        while (!wordArray[index].startsWith(commonPrefix)) {
+            commonPrefix = commonPrefix.substring(0, commonPrefix.length() - 1);
+            if (commonPrefix.isEmpty()) {
+                return "";
+            }
+        }
+    }
+    return commonPrefix;       // O(total characters) time, O(1) extra space
+}</code></pre><h4 class="q">Q36. Merge two sorted arrays into one sorted array.</h4><p><strong>Problem statement:</strong> Given {1, 3, 5} and {2, 4, 6, 8}, return {1, 2, 3, 4, 5, 6, 8} in O(n + m) time.</p><pre><button class="copy">Copy</button><code>public static int[] mergeSortedArrays(int[] firstArray, int[] secondArray) {
+    int[] mergedArray = new int[firstArray.length + secondArray.length];
+    int firstIndex = 0, secondIndex = 0, mergedIndex = 0;
+
+    // take the smaller head element from either array
+    while (firstIndex &lt; firstArray.length &amp;&amp; secondIndex &lt; secondArray.length) {
+        if (firstArray[firstIndex] &lt;= secondArray[secondIndex]) {
+            mergedArray[mergedIndex++] = firstArray[firstIndex++];
+        } else {
+            mergedArray[mergedIndex++] = secondArray[secondIndex++];
+        }
+    }
+    // copy whatever remains in the array that is not yet exhausted
+    while (firstIndex &lt; firstArray.length) mergedArray[mergedIndex++] = firstArray[firstIndex++];
+    while (secondIndex &lt; secondArray.length) mergedArray[mergedIndex++] = secondArray[secondIndex++];
+    return mergedArray;
+}</code></pre><h4 class="q">Q37. Rearrange an array so all even numbers come before all odd numbers.</h4><p><strong>Problem statement:</strong> Given {3, 1, 2, 4, 7, 6}, produce an array such as {6, 2, 4, 1, 7, 3} (evens first) in O(n) time and O(1) space. If each group must also be sorted, sort the two halves afterwards.</p><pre><button class="copy">Copy</button><code>public static void moveEvenNumbersFirst(int[] numberArray) {
+    int leftPointer = 0;
+    int rightPointer = numberArray.length - 1;
+
+    while (leftPointer &lt; rightPointer) {
+        if (numberArray[leftPointer] % 2 == 0) {
+            leftPointer++;                       // already in the even zone
+        } else if (numberArray[rightPointer] % 2 != 0) {
+            rightPointer--;                      // already in the odd zone
+        } else {
+            int temporaryValue = numberArray[leftPointer];   // odd on left, even on right: swap
+            numberArray[leftPointer] = numberArray[rightPointer];
+            numberArray[rightPointer] = temporaryValue;
+            leftPointer++;
+            rightPointer--;
+        }
+    }
+}</code></pre><h4 class="q">Q38. Find the length of the longest valid (well-formed) parentheses substring.</h4><p><strong>Problem statement:</strong> For "(()" the answer is 2; for ")()())" it is 4; for "((()))(())" it is 10.</p><pre><button class="copy">Copy</button><code>public static int longestValidParentheses(String inputText) {
+    Deque&lt;Integer&gt; indexStack = new ArrayDeque&lt;&gt;();
+    indexStack.push(-1);                       // base marker just before the string
+    int longestLength = 0;
+
+    for (int index = 0; index &lt; inputText.length(); index++) {
+        if (inputText.charAt(index) == '(') {
+            indexStack.push(index);            // remember where '(' was seen
+        } else {
+            indexStack.pop();                  // match a '(' or remove the base marker
+            if (indexStack.isEmpty()) {
+                indexStack.push(index);        // unmatched ')' becomes the new base marker
+            } else {
+                longestLength = Math.max(longestLength, index - indexStack.peek());
+            }
+        }
+    }
+    return longestLength;                      // O(n) time, O(n) space
+}</code></pre><h4 class="q">Q39. Schedule a round-robin match tournament among N teams. How do you handle an odd N, and who sits out?</h4><ul><li>Use the <strong>circle method</strong>: fix one team, rotate the others each round; every team plays every other team once in N-1 rounds (N even).</li><li><strong>Odd N:</strong> add a dummy "BYE" team to make N even; whoever is paired with BYE sits out that round. Rotation guarantees each team sits out exactly once.</li><li>To choose who sits out on another basis (fairness, rest days, fewest games played), replace the rotation by a priority rule, for example the team with the most games played or the longest wait.</li></ul><p><strong>Problem statement:</strong> Print each round's pairings for a tournament among the given team names; a team paired with BYE rests.</p><pre><button class="copy">Copy</button><code>public static void printRoundRobinSchedule(List&lt;String&gt; teamNames) {
+    List&lt;String&gt; rotationList = new ArrayList&lt;&gt;(teamNames);
+    if (rotationList.size() % 2 != 0) {
+        rotationList.add("BYE");               // odd number of teams: one rests each round
+    }
+    int totalTeams = rotationList.size();
+    for (int roundNumber = 1; roundNumber &lt; totalTeams; roundNumber++) {
+        System.out.println("Round " + roundNumber);
+        for (int pairIndex = 0; pairIndex &lt; totalTeams / 2; pairIndex++) {
+            String homeTeam = rotationList.get(pairIndex);
+            String awayTeam = rotationList.get(totalTeams - 1 - pairIndex);
+            System.out.println("  " + homeTeam + " vs " + awayTeam);
+        }
+        // keep the first team fixed and rotate the rest by one position
+        rotationList.add(1, rotationList.remove(totalTeams - 1));
+    }
+}</code></pre><h4 class="q">Q40. What is the difference between Depth-First Search (DFS) and Breadth-First Search (BFS)?</h4><div class="tw"><table><tr><th></th><th>DFS</th><th>BFS</th></tr><tr><td>Order</td><td>Goes deep along one path, then backtracks</td><td>Visits level by level</td></tr><tr><td>Data structure</td><td>Stack (or recursion)</td><td>Queue</td></tr><tr><td>Time / space</td><td>O(V + E) / O(depth)</td><td>O(V + E) / O(width)</td></tr><tr><td>Best for</td><td>Path existence, cycle detection, topological sort, backtracking</td><td>Shortest path in unweighted graphs, nearest neighbour, level-order traversal</td></tr></table></div>
 <h2 id="s8">Section 3: Leadership, Team Management &amp; Behavioral</h2>
 <p><em>Use STAR (Situation, Task, Action, Result). For Amazon, map stories explicitly to a Leadership Principle, since interviewers score against them. The answers below are frameworks to adapt to your real experience, not scripted stories.</em></p>
 <h4 class="q">Q1. Tell me about a time you disagreed with a decision made by your manager or a senior architect.</h4>
