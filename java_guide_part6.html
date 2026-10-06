@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en"><head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Java Interview Guide – Part 6</title>
@@ -31,1134 +32,614 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 .hide{display:none!important}
 @media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
 </style></head><body>
-<header><button id="menu">☰</button><h1>Java Interview Guide — Part 6: System Design, Coding Problems, Leadership &amp; Domain</h1><button id="theme">◐</button></header>
-<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s2">Section 1: System Design &amp; Architecture</a><a class="l2" href="#s3">Section 2: DSA / Coding Problems with Java Solutions</a><a class="l3" href="#s4">Arrays, Strings &amp; Hashing</a><a class="l3" href="#s5">Linked Lists, Stacks &amp; Searching</a><a class="l3" href="#s6">Backtracking &amp; Dynamic Programming</a><a class="l3" href="#s7">Trees, Graphs &amp; Design</a><a class="l3" href="#s8">Coding-Round Concepts and Lead-Level Themes</a><a class="l2" href="#s9">Section 3: Leadership, Team Management &amp; Behavioral</a><a class="l2" href="#s10">Section 4: Domain Knowledge &amp; Application-Server Clustering</a><a class="l2" href="#s11">Section 5: Agile Project Planning</a></nav>
-<main id="main"><h2 id="s2">Section 1: System Design &amp; Architecture</h2>
-<p><em>Interview framing for every design question: (1) clarify functional and non-functional requirements first, (2) state scale numbers, (3) sketch the core components, (4) narrate the trade-offs out loud. For lead-level roles, the trade-off reasoning matters more than landing on one “correct” architecture.</em></p>
-<h4 class="q">Q1. Design a URL shortener (e.g. bit.ly) handling 100M writes/day and 1B reads/day.</h4>
-<p><strong>Requirements and scale</strong></p>
-<p>The read:write ratio is about 10:1, so optimize heavily for read latency and cache hit rate. Codes should be unique and short (6–8 characters), with eventual click analytics. 100M writes/day is roughly 1,150 writes/sec on average (plan for 5–10x peak); 1B reads/day is roughly 11,500 reads/sec on average. A well-cached key-value architecture across a handful of nodes handles this comfortably.</p>
-<p><strong>Core design</strong></p>
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 6: Messaging, Cloud, Frontend, Security &amp; Operations</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s1">Section 1: Messaging Systems — JMS, IBM MQ, RabbitMQ</a><a class="l2" href="#s2">Section 2: Apache Kafka &amp; Event-Driven Architecture</a><a class="l2" href="#s3">Section 3: AWS, Cloud &amp; Kubernetes</a><a class="l2" href="#s4">Section 4: Frontend Integration — Angular &amp; React</a><a class="l3" href="#s5">AngularJS &amp; Angular</a><a class="l3" href="#s6">React</a><a class="l2" href="#s7">Section 5: Security — Application-Level &amp; Secure Coding</a><a class="l3" href="#s8">Application-Level Security Questions</a><a class="l3" href="#s9">Secure Coding Guidelines (Condensed)</a><a class="l2" href="#s10">Section 6: Security, Networking &amp; API Performance</a><a class="l2" href="#s11">Section 7: Unix / Linux Command Line</a></nav>
+<main id="main"><h2 id="s1">Section 1: Messaging Systems — JMS, IBM MQ, RabbitMQ</h2>
+<h4 class="q">Q1. What is JMS, and when would you use it?</h4>
+<p>JMS (Java Message Service, part of Java/Jakarta EE) is a standard, vendor-neutral Java API for creating, sending, receiving, and reading messages asynchronously, decoupling sender and receiver in time and space. The sender places a message on a queue or topic and the broker (IBM MQ, ActiveMQ, or another JMS provider) reliably delivers it whenever the receiver is ready.</p>
 <ul>
-<li>ID generation — avoid a single auto-increment counter (a bottleneck, and predictable). Use a distributed generator (Snowflake-style: timestamp + machine ID + sequence) or pre-allocate ID ranges per app server to avoid per-request coordination. Base62-encode the numeric ID for a compact short code.</li>
-<li>Storage — a key-value store (DynamoDB/Cassandra) mapping shortCode to longUrl; the access pattern needs no joins, so a KV store beats a relational database.</li>
-<li>Caching — Redis/Memcached in front of the KV store for hot URLs; with a 10:1 ratio and power-law traffic, a cache easily absorbs 90%+ of reads.</li>
-<li>Redirect service — a stateless HTTP service issuing 301/302 redirects, scaled horizontally behind a load balancer. 302 preserves per-request click analytics; 301 is cacheable by browsers and CDNs, reducing backend load but losing per-click visibility.</li>
-<li>Analytics — never write click events synchronously on the read path; publish to Kafka asynchronously and aggregate downstream (data warehouse or a counts table).</li>
-<li>Custom aliases — check existence in the KV store; on collision, regenerate or reject.</li>
+<li>Point-to-Point (queues) — each message goes to exactly one consumer, even with several listening; it is removed once consumed. Suits work distribution across a pool of workers.</li>
+<li>Publish/Subscribe (topics) — each message goes to every current subscriber (one-to-many broadcast). Suits event notification where several independent parts of a system react to the same event.</li>
 </ul>
-<p><em>Problem statement: Convert a numeric ID into a compact Base62 short code.</em></p>
-<pre><button class="copy">Copy</button><code>public class ShortCodeGenerator {
-    private static final String BASE62_ALPHABET =
-            "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
- 
-    // Converts a unique numeric ID into a short string, e.g. 125 -&gt; "21"
-    public String encodeToBase62(long uniqueIdentifier) {
-        if (uniqueIdentifier == 0) {
-            return String.valueOf(BASE62_ALPHABET.charAt(0));
-        }
-        StringBuilder encodedResult = new StringBuilder();
-        while (uniqueIdentifier &gt; 0) {
-            int remainderIndex = (int) (uniqueIdentifier % 62);
-            encodedResult.append(BASE62_ALPHABET.charAt(remainderIndex));
-            uniqueIdentifier /= 62;
-        }
-        return encodedResult.reverse().toString(); // digits were produced least-significant first
-    }
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>Narrate trade-offs aloud (301 vs. 302, synchronous vs. asynchronous analytics). That is what separates a lead from an individual-contributor candidate: showing you would make and defend architecture decisions, not just produce a design.</p></aside>
-<h4 class="q">Q2. Design a rate limiter for an API gateway. Compare Token Bucket, Leaky Bucket, Fixed Window, and Sliding Window.</h4>
-<ul>
-<li>Fixed Window Counter — a counter reset each window. Simple, but bursts at window boundaries (0:59 and 1:01) can let through nearly 2x the intended rate.</li>
-<li>Sliding Window Log — stores a timestamp per request and counts those in the trailing window. Accurate but memory-heavy at scale.</li>
-<li>Sliding Window Counter — approximates the log with a weighted average of the current and previous fixed windows; a good accuracy/memory trade-off widely used in production.</li>
-<li>Token Bucket — tokens refill at a fixed rate up to a capacity and each request consumes one. It allows short bursts up to capacity while enforcing a long-term average; the usual default for API gateways because it models real client burst behavior.</li>
-<li>Leaky Bucket — requests queue and drain at a constant rate; smooths bursts completely but adds queuing latency, so it suits traffic shaping better than rejecting excess client requests.</li>
-</ul>
-<p>At scale, back the limiter with Redis so limits hold across gateway instances, using atomic INCR+EXPIRE or a Lua script executed via EVAL to avoid race conditions between replicas. Apply it at the gateway, return HTTP 429 with a Retry-After header, and consider tiered limits (per-user, per-IP, global). In a single JVM, an AtomicLong token count with scheduled refill, or Guava's RateLimiter / Resilience4j, works.</p>
-<p><em>Problem statement: Implement a distributed token-bucket check that is atomic across gateway instances.</em></p>
-<pre><button class="copy">Copy</button><code>public boolean allowRequest(String clientIdentifier, int bucketCapacity, int refillRatePerSecond) {
-    String tokenBucketScript = """
-        local tokens_key = KEYS[1]
-        local timestamp_key = KEYS[2]
-        local capacity = tonumber(ARGV[1])
-        local refill_rate = tonumber(ARGV[2])
-        local now = tonumber(ARGV[3])
-        local last_tokens = tonumber(redis.call('get', tokens_key) or capacity)
-        local last_refreshed = tonumber(redis.call('get', timestamp_key) or now)
-        local elapsed = math.max(0, now - last_refreshed)
-        local refilled = math.min(capacity, last_tokens + (elapsed * refill_rate))
-        local allowed = refilled &gt;= 1
-        local remaining = refilled
-        if allowed then remaining = refilled - 1 end
-        redis.call('set', tokens_key, remaining)
-        redis.call('set', timestamp_key, now)
-        return allowed and 1 or 0
-        """;
-    // executed atomically via EVAL, so concurrent gateway replicas cannot race
-    return redisTemplate.execute(
-            RedisScript.of(tokenBucketScript, Boolean.class),
-            List.of("tokens:" + clientIdentifier, "ts:" + clientIdentifier),
-            String.valueOf(bucketCapacity),
-            String.valueOf(refillRatePerSecond),
-            String.valueOf(System.currentTimeMillis() / 1000));
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>Clarify per-client vs. global limiting up front; a wrong assumption early is a classic cause of expensive rework. Bring it up proactively.</p></aside>
-<h4 class="q">Q3. Design a scalable, reliable notification system (push, email, SMS) with retries.</h4>
-<ul>
-<li>Ingestion API — validates a request and writes it to a durable queue (Kafka). Never process synchronously: providers (APNs, FCM, Twilio, SES) have variable latency and failure rates.</li>
-<li>Channel-specific consumers — push, email, and SMS consumers subscribe to their own topics and scale independently (SMS volume rarely matches email).</li>
-<li>Provider abstraction layer — an interface with ordered providers so you can fail over (SES to SendGrid) without touching business logic.</li>
-<li>Retries — exponential backoff with jitter, a capped retry count, then a dead-letter queue for manual or automated reprocessing; idempotency keys prevent duplicate sends on retry.</li>
-<li>Delivery tracking — provider webhook callbacks update a status table, exposed for support and debugging.</li>
-<li>Provider rate limiting — respect third-party quotas (e.g. Twilio's per-second cap) using the token-bucket design above.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>public interface NotificationProvider {
-    NotificationResult send(NotificationRequest notificationRequest);
+<p>Common uses: decoupling microservices (Service A publishes OrderPlaced without knowing who reacts), absorbing traffic spikes by buffering work, and distributing long-running background jobs.</p>
+<pre><button class="copy">Copy</button><code>// Simplified JMS producer
+ConnectionFactory connectionFactory = /* provided by the JMS provider, e.g. IBM MQ */;
+try (JMSContext jmsContext = connectionFactory.createContext()) {
+    Queue orderQueue = jmsContext.createQueue("ORDER_PROCESSING_QUEUE");
+    jmsContext.createProducer().send(orderQueue, "New order: #12345");
 }
  
-@Service
-public class EmailNotificationService {
-    private final List&lt;NotificationProvider&gt; orderedProviders; // highest priority first
- 
-    public NotificationResult sendWithFailover(NotificationRequest notificationRequest) {
-        for (NotificationProvider currentProvider : orderedProviders) {
-            try {
-                return currentProvider.send(notificationRequest);
-            } catch (ProviderUnavailableException providerFailure) {
-                log.warn("Provider {} failed, trying next",
-                        currentProvider.getClass().getSimpleName());
-            }
-        }
-        throw new AllProvidersFailedException(notificationRequest.getId());
-    }
+// Simplified JMS consumer
+try (JMSContext jmsContext = connectionFactory.createContext()) {
+    Queue orderQueue = jmsContext.createQueue("ORDER_PROCESSING_QUEUE");
+    String receivedMessage = jmsContext.createConsumer(orderQueue).receiveBody(String.class);
+    System.out.println("Received: " + receivedMessage);
 }</code></pre>
-<p>Delivery guarantee: at-least-once is realistic and acceptable when consumers are idempotent; exactly-once is prohibitively complex for external channels (you can't guarantee a user's phone dedupes an SMS). Lead-level extras: write on-call runbooks for DLQ replay, and make provider failover configuration-driven rather than a code deploy so an on-call engineer can react to an outage immediately.</p>
-<h4 class="q">Q4. What is the CAP theorem, and how does it guide choosing a relational vs. NoSQL store for an order-management service?</h4>
-<p>During a network partition a distributed system must choose between Consistency (every read sees the latest write) and Availability (every request gets a non-error response, possibly stale). Since partitions are inevitable, the real trade-off is CP vs. AP: CP systems (traditional RDBMS with synchronous replication, ZooKeeper) sacrifice availability to guarantee consistency, suiting financial data; AP systems (Cassandra, DynamoDB) favor availability with eventual consistency, suiting session stores and similar workloads. In practice PACELC is more accurate, since it also covers the latency-vs-consistency trade-off when there is no partition.</p>
-<p>For order management: order creation, payment status, and inventory decrement need strong consistency (two customers must not both “successfully” buy the last unit). Choose a relational database (PostgreSQL/MySQL, or distributed SQL such as CockroachDB/YugabyteDB if write scale demands it) with proper isolation and explicit row locking. Adjacent concerns like order history/search or recommendations tolerate eventual consistency, so a NoSQL store (DynamoDB, Cassandra, Elasticsearch) populated via CDC or domain events fits there.</p>
-<pre><button class="copy">Copy</button><code>@Transactional(isolation = Isolation.SERIALIZABLE)
-public OrderResult placeOrder(OrderRequest orderRequest) {
-    // SELECT ... FOR UPDATE: locks the inventory row so two buyers cannot both take the last unit
-    Inventory productInventory =
-            inventoryRepository.findByIdForUpdate(orderRequest.getProductId());
-    if (productInventory.getQuantity() &lt; orderRequest.getQuantity()) {
-        throw new InsufficientStockException(orderRequest.getProductId());
-    }
-    productInventory.decrement(orderRequest.getQuantity());
-    inventoryRepository.save(productInventory);
-    return orderRepository.save(Order.from(orderRequest));
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>The right answer is rarely “one database for everything.” Identify which sub-domains truly need strong consistency versus which tolerate eventual consistency, and architect polyglot persistence accordingly, while being honest about the added operational complexity.</p></aside>
-<h4 class="q">Q5. Design an idempotent payment API that prevents double-charging on client retries.</h4>
-<p>The client generates a unique idempotency key (a UUID) per logical payment attempt and sends it in a header. Before attempting the charge, the server persists a mapping of key to result, using a database unique constraint so concurrent duplicate requests are rejected atomically instead of relying on an application-level check-then-act (which has a race condition). If the key already exists: return the stored response when complete, or a 409 Conflict while the first attempt is still in progress.</p>
-<pre><button class="copy">Copy</button><code>@PostMapping("/payments")
-public ResponseEntity&lt;PaymentResponse&gt; processPayment(
-        @RequestHeader("Idempotency-Key") String idempotencyKey,
-        @RequestBody PaymentRequest paymentRequest) {
+<h4 class="q">Q2. Have you used IBM MQ? What is it used for?</h4>
+<p>IBM MQ (formerly WebSphere MQ) is a mature, enterprise-grade message-oriented middleware: a commercial implementation of exactly the broker infrastructure the JMS API targets. It is common in large, established, especially financial, environments for its long track record and strong reliability guarantees (messages persisted to disk survive a broker restart) and mature support for guaranteed delivery across complex, cross-platform landscapes. Java apps typically use it through the standard JMS API with IBM's provider driver, so the code looks like the generic JMS code above, and the same application could be pointed at another JMS-compliant broker with minimal change.</p>
+<h4 class="q">Q3. How do you handle transactions and reliability in RabbitMQ?</h4>
+<p>RabbitMQ is an open-source broker implementing AMQP (distinct from, though similar in spirit to, JMS). It offers two producer-side mechanisms:</p>
+<ul>
+<li>AMQP transactions (tx.select / tx.commit / tx.rollback) — group several publishes and commit or roll them back together like a database transaction, but with a significant throughput cost because each commit requires a synchronous broker round trip.</li>
+<li>Publisher confirms — the lightweight, higher-throughput, generally recommended approach: the broker asynchronously acknowledges each published message once received (and, depending on configuration, persisted), and the producer tracks unconfirmed messages and retries as needed.</li>
+</ul>
+<p>On the consumer side, RabbitMQ uses message acknowledgments: a consumer acks only after successfully finishing processing. If it disconnects or crashes before acking, RabbitMQ requeues the message for redelivery, which is what prevents silent message loss.</p>
+<pre><button class="copy">Copy</button><code>// Publisher confirms (RabbitMQ Java client)
+channel.confirmSelect(); // enable publisher confirms on this channel
+channel.basicPublish("", "orderQueue", null, messageBytes);
+boolean isConfirmed = channel.waitForConfirms(5000); // broker's acknowledgment
+if (!isConfirmed) {
+    // handle the failure: retry, log, alert
+}
  
-    Optional&lt;IdempotencyRecord&gt; existingRecord = idempotencyRepository.findByKey(idempotencyKey);
-    if (existingRecord.isPresent()) {
-        IdempotencyRecord previousAttempt = existingRecord.get();
-        if (previousAttempt.getStatus() == Status.IN_PROGRESS) {
-            // first attempt still running: avoid double execution mid-flight
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(PaymentResponse.processing());
-        }
-        return ResponseEntity.ok(previousAttempt.getCachedResponse()); // safe to replay
-    }
- 
+// Consumer-side manual acknowledgment
+channel.basicConsume("orderQueue", false, (consumerTag, delivery) -&gt; {
     try {
-        // DB unique constraint makes this insert atomic under concurrent duplicates
-        idempotencyRepository.insertInProgress(idempotencyKey);
-    } catch (DuplicateKeyException concurrentDuplicate) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(PaymentResponse.processing());
+        processMessage(delivery.getBody());
+        channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);        // ack ONLY after success
+    } catch (Exception processingException) {
+        channel.basicNack(delivery.getEnvelope().getDeliveryTag(), false, true);  // requeue on failure
     }
- 
-    PaymentResult paymentResult = paymentGateway.charge(paymentRequest);
-    idempotencyRepository.completeWithResult(idempotencyKey, paymentResult);
-    return ResponseEntity.ok(PaymentResponse.from(paymentResult));
+}, consumerTag -&gt; { });</code></pre>
+<h2 id="s2">Section 2: Apache Kafka &amp; Event-Driven Architecture</h2>
+<h4 class="q">Q1. What is Apache Kafka, and what problem does it solve?</h4>
+<p>Kafka is a distributed event-streaming platform for high-throughput, fault-tolerant, real-time data feeds. It replaces tightly coupled point-to-point integrations with a central, durable log: producers publish records to topics and consumers read them independently. Unlike a traditional queue, messages persist on disk for a configurable retention period and aren't removed when consumed, so many consumers can read the same data at different times without affecting each other. Common uses: log aggregation, event sourcing, real-time analytics pipelines, and decoupling microservices.</p>
+<h4 class="q">Q2. Explain partitions, consumer groups, and offsets.</h4>
+<ul>
+<li>Partitions — the unit of parallelism and scalability. A topic is split into partitions, each an ordered, immutable, append-only sequence spread across brokers. Ordering is guaranteed only within a partition, not across a topic. A producer key is hashed so the same key always lands in the same partition.</li>
+<li>Consumer group — consumers sharing a topic's work; each partition is assigned to exactly one consumer in a group at a time, and multiple groups each receive a full copy of all messages (publish-subscribe across groups). Joining or leaving triggers a rebalance. Scaling consumers beyond the partition count adds no throughput (extras sit idle). If a consumer crashes, its partitions are reassigned.</li>
+<li>Offset — a sequential, ever-increasing integer identifying a message's position within a partition. It is the consumer, not the broker, that tracks how far it has read, which lets a consumer resume where it left off, lets independent groups progress separately, and enables replay by seeking back to an earlier offset, something a consume-and-remove queue cannot do.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>KafkaConsumer&lt;String, String&gt; consumer = new KafkaConsumer&lt;&gt;(consumerProperties);
+consumer.subscribe(List.of("order-events"));
+while (true) {
+    ConsumerRecords&lt;String, String&gt; polledRecords = consumer.poll(Duration.ofMillis(100));
+    for (ConsumerRecord&lt;String, String&gt; currentRecord : polledRecords) {
+        System.out.println("Offset " + currentRecord.offset() + ": " + currentRecord.value());
+        processRecord(currentRecord);
+    }
+    consumer.commitSync(); // persist how far this consumer has read
 }</code></pre>
-<p><strong>Production hardening</strong></p>
-<ul>
-<li>Expire keys (e.g. after 24 hours) to bound storage growth.</li>
-<li>Scope the unique constraint to (idempotencyKey, merchantId).</li>
-<li>Forward the same key to the downstream payment gateway (Stripe, Razorpay, core banking) so that call is itself idempotent, since your service can also crash mid-call and retry.</li>
-</ul>
-<aside class="note"><p><strong>Note: </strong>Expect this banking follow-up: “what if your service crashes after charging the gateway but before writing the result?” The answer is a reconciliation job that periodically queries the gateway for the true status of any IN_PROGRESS record past a timeout. Always mention this safety net; it shows you design for failure modes, not just the happy path.</p></aside>
-<h4 class="q">Q6. Explain the Saga pattern. Choreography vs. orchestration?</h4>
-<p>Two-phase commit doesn't scale across independently owned, independently deployed services (blocking, tight coupling, poor availability during a partition). A Saga breaks a distributed transaction into local transactions, each with a compensating transaction to undo it if a later step fails. It trades immediate consistency for eventual consistency and requires idempotent, compensable operations at every step; the Outbox pattern (Part 5, Section 4) keeps state changes and event publication atomic.</p>
-<ul>
-<li>Choreography — each service publishes domain events and the next reacts (OrderCreated, then StockReserved, PaymentCompleted, OrderCompleted). Fully decoupled with no single point of failure, but hard to trace the overall flow (“what state is order #123 in?” means stitching events across services) and cyclic dependencies can creep in as steps grow.</li>
-<li>Orchestration — a central orchestrator calls each service and tracks state: a clear, centralized, observable state machine, preferable beyond 2–3 steps or when the business needs auditability. Costs: the orchestrator must itself be highly available and risks becoming a “god service” if not scoped carefully.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>public class OrderSagaOrchestrator {
-    public void execute(OrderSagaContext sagaContext) {
-        try {
-            inventoryClient.reserve(sagaContext.getOrderId(), sagaContext.getItems());
-            paymentClient.charge(sagaContext.getOrderId(), sagaContext.getAmount());
-            shippingClient.schedule(sagaContext.getOrderId());
-            sagaContext.markCompleted();
-        } catch (PaymentFailedException paymentFailure) {
-            inventoryClient.release(sagaContext.getOrderId()); // compensating transaction
-            sagaContext.markFailed("Payment failed: " + paymentFailure.getMessage());
-        } catch (ShippingUnavailableException shippingFailure) {
-            paymentClient.refund(sagaContext.getOrderId());    // compensate in reverse order
-            inventoryClient.release(sagaContext.getOrderId());
-            sagaContext.markFailed("Shipping unavailable: " + shippingFailure.getMessage());
-        }
+<h4 class="q">Q3. How do you guarantee message ordering in Kafka while still scaling horizontally?</h4>
+<p>Key messages by the entity whose order matters (accountId, customerId) so Kafka's default partitioner routes every event for that entity to the same partition, preserving its order while different entities are processed in parallel across partitions and consumers. Set the partition count high enough up front: increasing it later changes the key-to-partition mapping and can break ordering for existing keys. On the consumer side, process each partition's records sequentially; introducing async processing within a partition without ordering safeguards defeats the guarantee.</p>
+<p>For an extremely hot key (one customer generating disproportionate volume), consider sub-keying (customer ID plus a bounded sub-partition indicator, accepting slightly relaxed ordering across sub-partitions), and monitor consumer lag per partition to catch skew before it hurts SLAs.</p>
+<pre><button class="copy">Copy</button><code>@Service
+public class AccountEventProducer {
+    private final KafkaTemplate&lt;String, AccountEvent&gt; kafkaTemplate;
+ 
+    public void publish(AccountEvent accountEvent) {
+        // key = accountId: all events for this account go to the same partition, preserving order
+        kafkaTemplate.send("account-events", accountEvent.getAccountId(), accountEvent);
     }
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>In banking, orchestration's auditability usually wins outright: regulators and auditors want a clear, queryable record of what state a transaction was in at time T, which choreographed event trails make much harder to reconstruct. Choose orchestration for complex, business-critical workflows needing visibility, and choreography for simpler, high-throughput event flows.</p></aside>
-<h4 class="q">Q7. Design a system for 10,000 concurrent WebSocket connections delivering real-time stock prices.</h4>
-<p>A single Tomcat or Netty instance using NIO can handle tens of thousands of concurrent WebSocket connections, because each connection is a lightweight event-loop registration rather than a dedicated OS thread (the key contrast with old thread-per-connection servlet models).</p>
+<aside class="note"><p><strong>Note: </strong>A common production incident: “why were customer X's events processed out of order?” Trace it to a bad partition key (a random UUID instead of the entity ID) or an unnecessary re-key/repartition step in a stream job. Review partition-key decisions explicitly in design review; they're cheap to get right upfront and expensive to fix after data is produced.</p></aside>
+<h4 class="q">Q4. How do you commit offsets safely, and what is a dead-letter topic?</h4>
+<p>Prefer enable.auto.commit=false with explicit offset commits after successful processing. Committing only after a whole batch succeeds means a mid-batch failure causes reprocessing (so consumers must be idempotent); committing too eagerly risks message loss. A dead-letter topic receives records that repeatedly fail (poison pills) so one bad message doesn't block a partition indefinitely.</p>
+<pre><button class="copy">Copy</button><code>@KafkaListener(topics = "account-events", groupId = "ledger-service")
+public void consume(ConsumerRecord&lt;String, AccountEvent&gt; incomingRecord, Acknowledgment acknowledgment) {
+    try {
+        ledgerService.applyEvent(incomingRecord.value());
+        acknowledgment.acknowledge();               // commit only after successful processing
+    } catch (NonRetryableException nonRetryableFailure) {
+        deadLetterProducer.send("account-events-dlq", incomingRecord.value());
+        acknowledgment.acknowledge();               // don't block the partition on a poison message
+    }
+}</code></pre>
+<h4 class="q">Q5. How does Kafka ensure durability and fault tolerance?</h4>
+<p>Through replication and configurable acknowledgments. Each partition is replicated across brokers: a leader handles all reads and writes while followers replicate as in-sync replicas (ISRs). If the leader fails, an in-sync follower is elected leader. The producer's acks setting trades latency for durability: acks=0 (no acknowledgment), acks=1 (leader only), acks=all (all in-sync replicas, strongest and slowest). Messages are also persisted to disk under configurable retention, so data survives broker restarts.</p>
+<h4 class="q">Q6. Compare at-most-once, at-least-once, and exactly-once semantics. How does Kafka achieve exactly-once?</h4>
 <ul>
-<li>WebSocket gateway — Spring WebFlux + Netty (or raw Netty), stateless with respect to business logic, holding only the open connection and a subscription list (which symbols each client wants).</li>
-<li>Price feed ingestion — the market data feed (or internal price engine) publishes updates to Kafka, partitioned by symbol for parallelism.</li>
-<li>Fan-out — each gateway instance consumes relevant partitions and pushes to its locally subscribed connections; use a pub/sub layer (Redis Pub/Sub or Kafka directly) so a client on gateway A still receives symbols ingested by gateway B.</li>
-<li>Scaling out — multiple gateway instances behind a load balancer with session affinity (WebSockets are stateful connections); Kafka consumer groups ensure each partition is processed once.</li>
-<li>Backpressure — slow clients must not block the fan-out loop: use bounded per-session send queues and drop or coalesce stale ticks for a lagging client.</li>
+<li>At-most-once — messages may be lost but are never redelivered; happens when the offset is committed before processing, so a failure mid-processing skips the message.</li>
+<li>At-least-once — no loss but possible duplicates; the common default, from committing the offset after processing (a crash between processing and commit causes reprocessing).</li>
+<li>Exactly-once — each message processed one time even under failure, built from idempotent producers plus transactional APIs.</li>
 </ul>
-<pre><button class="copy">Copy</button><code>@Component
-public class PriceUpdateHandler extends TextWebSocketHandler {
-    // symbol -&gt; set of sessions subscribed to it
-    private final Map&lt;String, Set&lt;WebSocketSession&gt;&gt; subscriptionsBySymbol = new ConcurrentHashMap&lt;&gt;();
+<p>The idempotent producer gets a Producer ID (PID) and attaches a monotonically increasing sequence number per partition; the broker tracks the last sequence per PID/partition and drops duplicates from producer retries. Transactions extend this: a producer atomically writes to multiple partitions/topics and atomically commits both its output records and the consumer offsets (marking input as processed), using a transactional.id and a Transaction Coordinator that runs a two-phase-commit-like protocol, writing markers to the __transaction_state topic. Consumers with isolation.level=read_committed see only committed transactions.</p>
+<p>The cost is extra broker round trips for coordination and marker writes, plus consumer buffering until a commit marker arrives, so latency rises and throughput falls versus at-least-once. Reserve exactly-once for cases where duplicates cause real business harm (financial ledgers); logging can tolerate at-least-once with deduplication.</p>
+<h4 class="q">Q7. Explain log compaction versus time-based retention.</h4>
+<p>Time/size-based retention deletes whole log segments once they exceed an age or size threshold, regardless of content — right for event streams (logs, clickstream, metrics) where history matters. Log compaction instead keeps only the latest value per message key, discarding older records with the same key; a background thread builds a map of the latest offset per key and rewrites segments. A record with a null value (a tombstone) signals deletion of a key and is retained for a configurable grace period so all consumers see the deletion before it is purged. Compaction suits changelog or state topics (Kafka Streams state stores, database CDC, configuration data), where consumers rebuild current state by replaying the compacted topic without reading the whole unbounded history.</p>
+<h4 class="q">Q8. A consumer group is rebalancing frequently in production. How do you diagnose and fix it?</h4>
+<p>Common root causes and fixes:</p>
+<ul>
+<li>Processing exceeds max.poll.interval.ms — the broker assumes the consumer died and rebalances even though it's alive. Diagnose by comparing processing-time logs with the setting; fix by raising the interval, reducing max.poll.records for smaller faster batches, or offloading long work to a separate thread pool while the poll loop keeps heartbeating.</li>
+<li>session.timeout.ms with a blocked heartbeat — in older single-threaded clients a busy main thread could get a consumer falsely marked dead; newer clients heartbeat from a background thread. Tune session.timeout.ms and heartbeat.interval.ms.</li>
+<li>Genuine churn — unstable networks or frequent restarts (for example Kubernetes pod evictions without graceful shutdown) make consumers repeatedly leave and rejoin; correlate JoinGroup/LeaveGroup events with infrastructure events. Call consumer.close() in shutdown hooks to leave gracefully, and use static group membership (group.instance.id) to avoid rebalances during brief expected restarts such as rolling deployments.</li>
+</ul>
+<h2 id="s3">Section 3: AWS, Cloud &amp; Kubernetes</h2>
+<h4 class="q">Q1. What are the essential Kubernetes concepts for a Java tech lead, and how does Spring Boot integrate with liveness/readiness probes?</h4>
+<ul>
+<li>Pod — the smallest deployable unit (one or more containers sharing network/storage); typically one Spring Boot JVM per pod.</li>
+<li>Deployment — manages a ReplicaSet of pods and handles rolling updates and rollbacks declaratively.</li>
+<li>Service — a stable network endpoint (ClusterIP, NodePort, LoadBalancer) load-balancing across pod replicas, since pod IPs are ephemeral.</li>
+<li>ConfigMap / Secret — externalize configuration and credentials from the image, injected as env vars or mounted files, supporting the 12-factor principle.</li>
+<li>HPA (Horizontal Pod Autoscaler) — scales replica count on CPU/memory or custom metrics (Kafka consumer lag, queue depth via KEDA).</li>
+</ul>
+<p>Spring Boot Actuator (2.3+) exposes /actuator/health/liveness and /actuator/health/readiness as first-class Kubernetes probe groups.</p>
+<pre><button class="copy">Copy</button><code># application.yml
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
  
+# deployment.yaml
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 20
+  periodSeconds: 5</code></pre>
+<p>The critical distinction: a failing liveness probe makes Kubernetes restart the pod (use it only for unrecoverable states like a deadlocked JVM); a failing readiness probe removes the pod from the Service's load-balancing pool without restarting it (use it for “temporarily can't serve traffic,” such as warming caches at startup or a critical downstream dependency being unavailable). Conflating the two causes needless restart loops during transient outages.</p>
+<aside class="note"><p><strong>Note: </strong>Own the health-check strategy explicitly rather than accepting defaults: a readiness check including a database ping correctly pulls a pod out of rotation during a DB blip, but using the same check for liveness would cause a pointless restart storm during that same blip.</p></aside>
+<h4 class="q">Q2. What is the difference between EC2 and Lambda? Describe S3 storage classes.</h4>
+<p>EC2 provides resizable virtual servers with full control of the OS and runtime, billed by instance uptime regardless of utilization — suited to long-running, stateful, predictable workloads. Lambda is serverless compute that runs code in response to events with no server management: stateless, capped at 15 minutes per execution, billed per millisecond of compute — cost-effective for sporadic or event-driven work such as S3 uploads or API requests. The choice depends on traffic pattern, statefulness, and how much infrastructure management the team will accept.</p>
+<p>S3 is highly scalable object storage (buckets of objects addressed by key) with 11 nines of durability. Storage classes trade cost for access pattern: Standard (frequent access), Intelligent-Tiering (auto-moves objects by usage), Standard-IA and One Zone-IA (infrequent access, cheaper), and Glacier / Glacier Deep Archive (long-term archival, retrieval from minutes to hours). Lifecycle policies automate transitions as data ages.</p>
+<h4 class="q">Q3. What is a VPC, and what are IAM best practices?</h4>
+<p>A VPC is a logically isolated network where you define IP ranges, subnets, route tables, and gateways. Traffic is controlled by security groups (stateful, instance-level) and network ACLs (stateless, subnet-level). Put load balancers in public subnets with an internet gateway, and databases and application servers in private subnets with no direct internet access; use VPC peering or Transit Gateway to connect VPCs and on-premises networks (via VPN or Direct Connect), and deploy multi-AZ for availability.</p>
+<p>IAM controls authentication and authorization via users, groups, roles, and JSON policies. Best practices: least privilege; avoid the root account for daily work; enforce MFA; use roles rather than hardcoded credentials for EC2/Lambda; use temporary STS credentials instead of long-lived access keys; group users by function and attach policies to groups; and audit with IAM Access Analyzer to find unused or overly permissive policies.</p>
+<h4 class="q">Q4. What is the difference between horizontal and vertical scaling, and how does Auto Scaling work?</h4>
+<p>Vertical scaling (scale up) enlarges an existing instance (t3.medium to t3.xlarge): simpler, but bounded by hardware limits and usually needing downtime. Horizontal scaling (scale out) adds instances to spread load, managed on AWS by Auto Scaling Groups working with an Elastic Load Balancer. ASGs watch CloudWatch metrics (CPU, request count) and launch or terminate instances using target-tracking, step, or scheduled policies. Horizontal scaling is generally preferred in cloud-native design because it improves fault tolerance and removes single points of failure.</p>
+<h4 class="q">Q5. An Auto Scaling Group isn't scaling in despite low CPU. How do you troubleshoot?</h4>
+<ul>
+<li>Scaling policy and cooldown — a long scale-in cooldown (default 300 seconds, sometimes configured far higher) intentionally blocks rapid scale-in until it expires after the last activity.</li>
+<li>Scale-in protection — individual instances may have protection enabled (intentionally for stateful, long-running jobs, or left on by accident), which stops the ASG terminating them regardless of metrics.</li>
+<li>Conflicting policies or scheduled actions — a scheduled action holding minimum capacity, or step scaling conflicting with target tracking on the same ASG.</li>
+<li>Minimum capacity — a minimum set higher than desired artificially prevents scale-in below that floor.</li>
+<li>Multiple metrics — with combined metrics (ALB request count plus CPU), target tracking honors whichever needs more capacity, so another metric may block scale-in even though CPU looks low.</li>
+</ul>
+<p>The fastest path to root cause is the Activity History tab in the EC2 console or the DescribeScalingActivities API, which logs why scaling decisions were made or blocked.</p>
+<h4 class="q">Q6. Design a multi-region disaster-recovery architecture on AWS with an RPO of 5 minutes and an RTO of 15 minutes.</h4>
+<p>A 5-minute RPO and 15-minute RTO call for warm standby or pilot light rather than backup-and-restore (whose RTO is measured in hours). Warm standby is safer for the RTO because pilot light must start compute from zero.</p>
+<ul>
+<li>Database — Aurora Global Database (cross-region replication with typically sub-second lag, far inside the 5-minute RPO, plus fast regional failover), or DynamoDB Global Tables for active-active NoSQL.</li>
+<li>Compute — keep a scaled-down but fully functional copy running in the secondary region (Auto Scaling Groups behind an Application Load Balancer), ready to scale up quickly on failover.</li>
+<li>Traffic — Route 53 health checks with failover routing redirect DNS to the secondary region's load balancer on failure; keep DNS TTL low (around 60 seconds) to limit propagation delay.</li>
+<li>Assets and config — S3 with Cross-Region Replication.</li>
+<li>Automation — automate failover with Systems Manager runbooks or Lambda triggered by CloudWatch alarms, since manual steps add unpredictable delay that risks the RTO.</li>
+<li>Validation — run regular DR drills with AWS Fault Injection Simulator to confirm the real failover time meets the target.</li>
+</ul>
+<h4 class="q">Q7. Design a secure, cost-optimized architecture for sensitive financial data using Lambda and S3.</h4>
+<ul>
+<li>Encryption at rest — use SSE-KMS rather than default SSE-S3: KMS gives CloudTrail audit trails of key use and fine-grained key policies over which IAM roles can decrypt, often a compliance requirement (PCI-DSS, SOC 2).</li>
+<li>Encryption in transit and exposure — bucket policies deny non-HTTPS requests (aws:SecureTransport condition) and S3 Block Public Access is enabled at the account level.</li>
+<li>Lambda hardening — encrypt sensitive environment variables with KMS and give the execution role least-privilege access scoped to specific S3 prefixes and KMS keys, with no wildcards.</li>
+<li>Cold starts — provisioned concurrency keeps environments pre-warmed (at the cost of paying for reserved capacity continuously); for occasional cold-start pain, shrink the package, trim dependencies, and pick a faster-starting runtime. VPC-attached Lambdas once paid a big cold-start penalty for ENI creation, largely fixed by Hyperplane ENI sharing.</li>
+<li>Auditing — enable AWS Config rules and CloudTrail account-wide for an immutable audit trail of API calls and configuration changes.</li>
+</ul>
+<h4 class="q">Q8. How would you migrate a 5TB PostgreSQL database to AWS with minimal downtime?</h4>
+<p>Use AWS Database Migration Service (DMS) with continuous replication rather than dump-and-restore, which would mean unacceptable downtime at this size.</p>
+<ul>
+<li>1. Provision the target (RDS or Aurora PostgreSQL), sized from the source's utilization.</li>
+<li>2. Run DMS's initial full load, using a large replication instance and parallel multi-threaded table loads to shorten the window.</li>
+<li>3. Enable Change Data Capture (via PostgreSQL logical replication / WAL) so ongoing source writes keep replicating during and after the full load; the app sees zero downtime in this phase.</li>
+<li>4. When CDC lag nears zero, validate consistency with DMS's built-in data validation (row counts and checksums).</li>
+<li>5. Cut over in a brief window: pause writes, drain remaining CDC changes, repoint connection strings/DNS to the new instance, and resume, typically a few minutes of downtime.</li>
+<li>6. For network transfer from on-premises, use Direct Connect or a Site-to-Site VPN; if transfer time is still prohibitive, seed the bulk data with AWS Snowball and let DMS CDC catch up the delta.</li>
+</ul>
+<h2 id="s4">Section 4: Frontend Integration — Angular &amp; React</h2>
+<h3 id="s5">AngularJS &amp; Angular</h3>
+<h4 class="q">Q1. What is scope in AngularJS, and what is two-way data binding?</h4>
+<p>In AngularJS 1.x (the legacy framework, distinct from the completely rewritten Angular 2+), $scope is the glue object connecting a controller's logic to its HTML template: anything attached to $scope is accessible from the template. Two-way data binding (via ng-model) keeps the view and model synchronized automatically: typing in an input updates the $scope property and programmatic model changes update the display, with no manual DOM manipulation. Under the hood AngularJS runs a digest cycle with dirty checking: on any event (user input, HTTP response, timeout) it compares the current and previous values of every watched expression, updates the DOM on differences, and re-runs until nothing changes or 10 iterations are reached.</p>
+<pre><button class="copy">Copy</button><code>// AngularJS 1.x controller
+app.controller('EmployeeController', function($scope) {
+    $scope.employeeName = "Alice"; // attached to $scope: visible in the template
+    $scope.greetEmployee = function() {
+        alert("Hello, " + $scope.employeeName);
+    };
+});
+ 
+&lt;!-- Corresponding template --&gt;
+&lt;div ng-controller="EmployeeController"&gt;
+    &lt;input type="text" ng-model="employeeName"&gt;   &lt;!-- two-way bound to $scope.employeeName --&gt;
+    &lt;p&gt;{{ employeeName }}&lt;/p&gt;                        &lt;!-- displays the current value live --&gt;
+    &lt;button ng-click="greetEmployee()"&gt;Greet&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+<aside class="note"><p><strong>Note: </strong>$scope was entirely replaced in modern Angular (2+) by a TypeScript component architecture in which each component holds its own state as class fields, with unidirectional data flow and explicit change detection, one reason for the move away from AngularJS's watcher-heavy model.</p></aside>
+<h4 class="q">Q2. Why does the digest cycle cause performance problems and infinite loops, and how do you fix them?</h4>
+<p>Dirty checking is synchronous and runs on every digest, so thousands of watchers cause visible UI lag, especially on older browsers and mobile. An infinite digest loop occurs when a watched expression's value changes as a side effect of the digest itself: typically a template-bound function (like {{ getFormattedValue() }}, or ng-repeat over a function returning a new array) that returns a new object reference on every call, which reference-equality checks read as a change, triggering yet another pass until the “10 $digest() iterations reached” error.</p>
+<p><strong>Debugging and fixes:</strong></p>
+<ul>
+<li>Find the offending watcher by logging inside $watch callbacks or using the Batarang extension (with debug info temporarily enabled).</li>
+<li>Memoize the function so it returns a stable cached reference when inputs are unchanged, or precompute values in the controller and bind to scope properties updated explicitly.</li>
+<li>Use one-time bindings ({{::item.name}}) for data that doesn't change after first render, which deregisters those watchers.</li>
+<li>Use pagination or virtual scrolling (ui-grid) for large ng-repeat lists so only visible rows are watched, and track by (ng-repeat="item in items track by item.id") to avoid destroying and recreating DOM and watchers when the array reference changes.</li>
+<li>Prefer ng-if over ng-show for large hidden sections, and use deep-watch ($watch's third argument) or a custom equality function judiciously.</li>
+</ul>
+<h4 class="q">Q3. What are directives (structural vs. attribute), and how do isolated-scope bindings '=', '&amp;', and '@' differ?</h4>
+<p>A directive attaches custom behavior to, or creates, HTML elements and attributes. Kinds: component directives (a directive with its own template, e.g. &lt;app-employee-card&gt;); structural directives that change DOM structure by adding or removing elements (*ngIf, *ngFor); and attribute directives that change the appearance or behavior of an existing element (ngClass, ngStyle, or a custom highlighter).</p>
+<pre><button class="copy">Copy</button><code>&lt;!-- Structural: conditionally includes/excludes this whole element --&gt;
+&lt;div *ngIf="employee.isActive"&gt;{{ employee.name }} is currently active&lt;/div&gt;
+&lt;!-- Structural: repeats this element once per item --&gt;
+&lt;li *ngFor="let employee of employeeList"&gt;{{ employee.name }}&lt;/li&gt;
+&lt;!-- Attribute: conditionally applies a CSS class --&gt;
+&lt;div [ngClass]="{ 'highlighted': employee.isVip }"&gt;{{ employee.name }}&lt;/div&gt;
+ 
+// A custom ATTRIBUTE directive
+@Directive({ selector: '[appHighlightOnHover]' })
+export class HighlightOnHoverDirective {
+    constructor(private elementRef: ElementRef) { }
+ 
+    @HostListener('mouseenter') onMouseEnter() {
+        this.elementRef.nativeElement.style.backgroundColor = 'yellow';
+    }
+    @HostListener('mouseleave') onMouseLeave() {
+        this.elementRef.nativeElement.style.backgroundColor = '';
+    }
+}</code></pre>
+<p>For an AngularJS directive with an isolated scope, the three binding types are:</p>
+<ul>
+<li>'@' — one-way string binding: passes the literal attribute value (or an interpolated {{ }} string) into the isolated scope; good for simple config like a title or label.</li>
+<li>'=' — genuine two-way binding: a live link between a parent-scope property and an isolated-scope property (implemented with a $watch on each side), so changes propagate both ways.</li>
+<li>'&amp;' — passes behavior: wraps a parent expression or function so the directive can invoke it, often with locals (onSave({item: someItem})); the recommended way to trigger parent side effects with clean separation, versus $emit/$broadcast.</li>
+</ul>
+<p>For bidirectional communication, combine '=' for shared reactive data (a selected item) with '&amp;' for explicit action callbacks (onItemSelected), rather than leaking implementation detail through $rootScope.$broadcast.</p>
+<h4 class="q">Q4. What are decorators in Angular? What differs between ng-if and ng-show, factory and service, and dependency injection in AngularJS?</h4>
+<p>A decorator is a TypeScript feature that attaches metadata to a class, method, property, or parameter without changing its logic; Angular reads that metadata to wire things together.</p>
+<ul>
+<li>@Component — marks a class as a component with its template, styles, and selector.</li>
+<li>@Injectable — makes a class injectable via Angular's DI (parallel to Spring's DI on the backend).</li>
+<li>@Input / @Output — data flowing in from a parent template / events (usually an EventEmitter) flowing out to the parent.</li>
+<li>@NgModule — declares which components, directives, and modules belong together.</li>
+<li>@HostListener — binds a method to a DOM event on the host element.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>@Component({
+    selector: 'app-employee-card',
+    template: `&lt;div&gt;{{ employeeName }}&lt;/div&gt;`
+})
+export class EmployeeCardComponent {
+    @Input() employeeName: string;               // data flows IN from the parent
+    @Output() cardClicked = new EventEmitter();  // events flow OUT to the parent
+}</code></pre>
+<ul>
+<li>ng-if vs. ng-show/ng-hide — ng-show/ng-hide toggle the CSS display property, leaving the element (and its watchers and listeners) in the DOM: faster for frequent toggling of simple elements. ng-if adds or removes the element and creates or destroys its scope: better for complex or rarely shown content, with some overhead when toggled frequently.</li>
+<li>factory vs. service — both produce singletons. A factory is a function whose returned object becomes the service, flexible and good for returning a function or an object with private state; a service is a constructor function instantiated with new, so you attach members to this.</li>
+<li>Dependency injection in AngularJS — components declare dependencies (function($scope, $http, myService)) and the injector supplies them. Because minification renames parameters, use the array notation (['$scope', '$http', 'myService', function(...) {...}]). DI promotes loose coupling and easy mocking in tests (Jasmine/Karma).</li>
+</ul>
+<h4 class="q">Q5. How does AngularJS compare with Ext JS?</h4>
+<p>AngularJS (and Angular) is a comprehensive MVC/MVVM application framework focused on structuring logic and data flow (two-way binding, DI, routing, components) and deliberately ships few pre-styled visual widgets, so you pair it with a UI library (Angular Material, Bootstrap). Ext JS (Sencha) is primarily a rich UI component library of professionally styled, highly configurable widgets (sortable/filterable/groupable data grids, trees, complex forms, dashboards), historically strong for internal, data-heavy enterprise line-of-business apps and less common for public consumer sites.</p>
+<h3 id="s6">React</h3>
+<h4 class="q">Q6. What is the Virtual DOM, and how does React's Fiber reconciliation work?</h4>
+<p>The Virtual DOM is a lightweight in-memory JavaScript representation of the real DOM. On a state or props change React updates the Virtual DOM first, diffs the new tree against the previous one (reconciliation) to find the minimal set of changes, batches updates, and applies only those to the real DOM, avoiding costly reflow and repaint. It isn't always faster than hand-tuned direct manipulation, but it gives a predictable, declarative model that scales.</p>
+<p>Fiber (React 16+) reimplements reconciliation to allow incremental, interruptible rendering. The old stack-based reconciler processed the whole tree synchronously and recursively, so a large tree could block the main thread and cause jank. Fiber breaks work into units represented as a tree of fiber nodes (each holding component type, props, state, and parent/child/sibling pointers), checks after each unit whether higher-priority work (a user interaction) should preempt, and yields to the browser using cooperative scheduling. It has two phases: render/reconciliation (interruptible, building a work-in-progress tree by comparing it against the current one) and commit (synchronous and uninterruptible, applying DOM mutations at once to avoid an inconsistent UI). This underpins Concurrent Mode, Suspense, and time-slicing.</p>
+<h4 class="q">Q7. What are the differences between functional and class components, and what do Hooks and keys do?</h4>
+<p>Class components extend React.Component, require render(), manage state with this.state/this.setState(), and use lifecycle methods (componentDidMount, componentDidUpdate). Since Hooks arrived in React 16.8, functional components can manage state and effects: useState replaces this.state, and useEffect consolidates componentDidMount/DidUpdate/WillUnmount into one dependency-array-based API. Hooks remove the pain of binding this and let you share stateful logic through custom hooks rather than higher-order components or render props, so functional components with Hooks are now the standard.</p>
+<p>Keys are stable, unique attributes on list items that let React identify which items changed, were added, or removed during reconciliation. Use a stable data ID, not the array index: index keys on reorderable or filtered lists make React mismatch elements, causing state to persist on the wrong item, extra re-renders, or broken animations and focus.</p>
+<h4 class="q">Q8. How does useEffect work, and what is prop drilling?</h4>
+<p>useEffect runs side effects (data fetching, subscriptions, timers, manual DOM work) outside the render phase. The dependency array controls re-runs: omitted means after every render; empty ([]) means once after the initial render (like componentDidMount); listed values mean whenever any changes, compared with Object.is. The callback can return a cleanup function, which React calls before unmount or before the effect re-runs, essential for clearing subscriptions, timers, and listeners. An incomplete dependency array causes stale closures over outdated state or props; the ESLint exhaustive-deps rule catches this.</p>
+<p>Prop drilling is passing data through many intermediate components that don't need it just to reach a deeply nested one, coupling components to the data's shape and cluttering them. The Context API (a Provider supplying a value, any descendant reading it with useContext) avoids it; for frequent updates, async logic, or global state across unrelated trees, use Redux, Zustand, or Recoil for predictable updates, middleware, and dev tools. Choose by application complexity and update frequency.</p>
+<pre><button class="copy">Copy</button><code>useEffect(() =&gt; {
+    const abortController = new AbortController();
+    const refreshIntervalId = setInterval(refreshOrders, 5000);
+ 
+    fetch('/api/orders', { signal: abortController.signal })
+        .then(response =&gt; response.json())
+        .then(setOrders);
+ 
+    // cleanup: runs on unmount (or before the effect re-runs)
+    return () =&gt; {
+        clearInterval(refreshIntervalId);   // stop the timer
+        abortController.abort();            // cancel the in-flight request
+    };
+}, []); // empty dependency array: runs once after the initial render</code></pre>
+<h4 class="q">Q9. How do you prevent unnecessary re-renders when a frequently changing context is used by only a few components?</h4>
+<p>Every useContext consumer re-renders whenever the context value changes (compared by reference), regardless of whether the slice it uses changed.</p>
+<ul>
+<li>Split one large context into several granular ones so components subscribe only to the slice they need.</li>
+<li>Memoize the context value with useMemo, so the Provider doesn't create a new object reference on every parent re-render when the data is unchanged.</li>
+<li>Use a selector pattern (use-context-selector, or Zustand) so components re-render only when their selected derived value changes.</li>
+<li>Wrap expensive descendants that don't consume the context in React.memo (with a custom comparison if needed) to create re-render boundaries.</li>
+</ul>
+<p>Combining context splitting with strategic memoization usually gives the best balance without adopting a full external state library, unless complexity warrants one.</p>
+<h4 class="q">Q10. A React app leaks memory after many page navigations. How do you debug it?</h4>
+<p>Take heap snapshots in the browser DevTools Memory tab before and after repeated navigation cycles and use the comparison view to find object types whose instance counts grow with navigation but never return to baseline. Then trace retaining paths back to the root cause, commonly:</p>
+<ul>
+<li>Missing cleanup in useEffect — subscriptions, listeners, timers (setInterval/setTimeout), or WebSockets not torn down on unmount keep component state alive through captured closures.</li>
+<li>Async work resolving after unmount — fix with an AbortController to cancel in-flight requests, or a mounted-ref guard around state updates.</li>
+<li>Third-party libraries (charts, maps, rich-text editors) that create DOM or listeners outside React's lifecycle and need explicit destroy()/dispose() in the cleanup function.</li>
+<li>Global references — a module-level array or singleton event emitter accumulating listeners with no matching removeListener.</li>
+</ul>
+<p>The React DevTools Profiler, combined with looking for components with unexpectedly high retainer counts in snapshots, usually turns a vague “React memory leak” into a concrete reference-retention bug.</p>
+<h2 id="s7">Section 5: Security — Application-Level &amp; Secure Coding</h2>
+<h3 id="s8">Application-Level Security Questions</h3>
+<h4 class="q">Q1. What is the difference between authentication and authorization?</h4>
+<p>Authentication verifies identity (“who are you”) via credentials, tokens, or certificates. Authorization determines permissions (“what are you allowed to do”) after identity is established, checking roles/scopes against protected resources. Spring Security handles both: the AuthenticationManager for authentication, and access-control rules / AccessDecisionManager for authorization.</p>
+<h4 class="q">Q2. What is a JWT, and what is its structure?</h4>
+<p>A JSON Web Token is a compact, self-contained token for transmitting claims between parties, made of three Base64Url-encoded parts separated by dots: Header (algorithm and type), Payload (claims such as user ID and expiry), and Signature (verifies integrity using a secret or private key). Being stateless, servers avoid session storage, which suits scalable, distributed REST authentication.</p>
+<p><em>Figure: JWT structure</em></p>
+<h4 class="q">Q3. What are XSS and CSRF, and how does Spring Security help prevent them?</h4>
+<p>XSS injects malicious scripts into pages viewed by other users; mitigate with output encoding/escaping and Content-Security-Policy headers. CSRF tricks an authenticated user's browser into submitting unintended requests; mitigate with anti-CSRF tokens tied to the user session. Spring Security enables CSRF protection by default for state-changing requests and provides header utilities to reduce XSS exposure.</p>
+<h3 id="s9">Secure Coding Guidelines (Condensed)</h3>
+<p><em>Adapted and condensed from Oracle's “Secure Coding Guidelines for Java SE”; captures the most interview-relevant points from each major topic area.</em></p>
+<p><strong>0. Fundamentals</strong></p>
+<ul>
+<li>Prefer code that is obviously correct over code that merely has “no obvious flaws.”</li>
+<li>Design APIs with security in mind from the start; e.g. marking a class final prevents a malicious subclass from overriding methods or adding a finalizer.</li>
+<li>Avoid duplicating code or data; a security fix applied to one copy is easily missed in another.</li>
+<li>Follow least privilege: run code with the minimum permissions it needs, shrinking the blast radius of any flaw.</li>
+<li>Establish clear trust boundaries and validate/sanitize any data crossing one.</li>
+<li>Check permissions once and hand out a capability rather than re-checking throughout a call chain; encapsulate with private fields and a minimal public interface.</li>
+</ul>
+<p><strong>1. Denial of Service</strong></p>
+<p>Untrusted input must never trigger resource consumption wildly disproportionate to the request. Attack patterns to defend against:</p>
+<ul>
+<li>Enormous requested image/vector-graphic sizes; integer overflow bypassing a size check.</li>
+<li>A small payload expanding into a huge in-memory object graph; “zip bombs” (cap the decompressed size directly, never trust compressed size or metadata).</li>
+<li>The “billion laughs” XML entity-expansion attack (enable XMLConstants.FEATURE_SECURE_PROCESSING).</li>
+<li>Hash-flooding (many colliding keys degrading O(n) to O(n²)); catastrophic regex backtracking; unbounded XPath cost.</li>
+<li>Unbounded resource use during deserialization of untrusted data; infinite loops on corner-case input (ensure each iteration makes forward progress).</li>
+</ul>
+<p>Always release resources even when an exception occurs (try-with-resources), and watch for integer overflow in limit checks: rearrange arithmetic so no addition can overflow.</p>
+<pre><button class="copy">Copy</button><code>// Vulnerable: current + extra can overflow for large values and wrongly pass the check
+if (current + extra &gt; max) { throw new IllegalArgumentException(); }
+ 
+// Safe: rearranged so no addition can overflow
+private void checkGrowBy(long extra) {
+    if (extra &lt; 0 || current &gt; max - extra) {
+        throw new IllegalArgumentException();
+    }
+}</code></pre>
+<p><strong>2. Confidential Information</strong></p>
+<ul>
+<li>Strip sensitive details from exception messages and stack traces before they reach an untrusted caller or lower-privilege log.</li>
+<li>Never log passwords, session tokens, or full card numbers, even at debug level.</li>
+<li>For very sensitive in-memory data, overwrite it when no longer needed; Strings are immutable and can't be cleared, which is why password APIs prefer char[].</li>
+</ul>
+<p><strong>3. Injection and Inclusion</strong></p>
+<ul>
+<li>Never build SQL, HTML, XML, or shell commands by concatenating untrusted input; use PreparedStatement bind parameters and proper templating/serialization libraries.</li>
+<li>Never pass untrusted data onto a command line (Runtime.exec / ProcessBuilder) without careful validation.</li>
+<li>Disable DTD processing / external entity resolution when parsing untrusted XML (XXE).</li>
+<li>Treat evaluating untrusted expressions or scripts (scripting engines, EL) like executing arbitrary code.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Vulnerable: string concatenation allows SQL injection
+String unsafeQuery = "SELECT * FROM accounts WHERE username = '" + userInput + "'";
+ 
+// Safe: PreparedStatement handles escaping correctly
+PreparedStatement safeStatement =
+        connection.prepareStatement("SELECT * FROM accounts WHERE username = ?");
+safeStatement.setString(1, userInput);</code></pre>
+<p><strong>4. Accessibility and Extensibility</strong></p>
+<ul>
+<li>Default to private and widen access only when genuinely needed; limit package accessibility and avoid unrelated classes sharing a package.</li>
+<li>Limit exposure of ClassLoader instances, and mark security-sensitive classes final: a malicious subclass can override behavior, add a finalizer to resurrect a “destroyed” object, or violate invariants.</li>
+<li>Be careful calling overridable methods from a superclass, especially constructors.</li>
+</ul>
+<p><strong>5. Input Validation</strong></p>
+<ul>
+<li>Validate all input crossing a trust boundary, including values returned by untrusted/overridable code.</li>
+<li>Wrap native (JNI) methods in a Java-level wrapper that validates input before reaching native code, which lacks the JVM's memory-safety guarantees.</li>
+</ul>
+<p><strong>6. Mutability</strong></p>
+<ul>
+<li>Prefer immutable value types; return defensive copies of mutable fields and copy mutable inputs before storing them.</li>
+<li>Don't rely on == identity for objects supplied by untrusted code; treat data passed into and returned from untrusted objects as output and unvalidated input respectively.</li>
+<li>Make public static fields final and truly constant; never expose mutable static state publicly.</li>
+</ul>
+<p><strong>7. Object Construction</strong></p>
+<ul>
+<li>Prefer factory methods for sensitive classes so extra checks can be enforced; actively prevent unauthorized construction where it is a security problem.</li>
+<li>Defend against partially initialized instances, never call overridable methods from a constructor, and guard non-final classes against malicious clone().</li>
+</ul>
+<p><strong>8. Serialization and Deserialization</strong></p>
+<ul>
+<li>Avoid making security-sensitive classes serializable; serialization is an alternate construction path that bypasses constructors.</li>
+<li>Guard sensitive fields with transient or custom writeObject()/readObject().</li>
+<li>Treat deserialization exactly like construction from attacker-controlled bytes: all validation and defensive-copying concerns apply to readObject().</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>Deserializing untrusted data has caused numerous serious vulnerabilities, including remote code execution. If you must, use an object-input filter (ObjectInputFilter, standard since Java 9) to restrict which classes may be deserialized.</p></aside>
+<p><strong>9. Access Control</strong></p>
+<ul>
+<li>Understand how SecurityManager checks walk the call stack to determine the effective caller.</li>
+<li>Use AccessController.doPrivileged() carefully: it says “this trusted code knowingly exercises its own privilege on behalf of a possibly less-privileged caller.”</li>
+<li>Don't cache the result of a privileged operation and hand it to a caller who couldn't have triggered it; know that security context does not automatically transfer to new threads; and be aware that reflection (Method.invoke) can obscure who the “real” caller is.</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>SecurityManager and the sandbox-style permission model were deprecated for removal in Java 17 (JEP 411). This material remains useful for legacy code and the underlying concepts (trust boundaries, least privilege, privileged operations), but new applications should not be designed around SecurityManager.</p></aside>
+<p><em>Figure: XSS vs CSRF attack vectors</em></p>
+<h2 id="s10">Section 6: Security, Networking &amp; API Performance</h2>
+<h4 class="q">Q1. What is the difference between encryption and hashing?</h4>
+<p>They are frequently confused but are fundamentally different operations.</p>
+<ul>
+<li>Encryption — a reversible transformation of plaintext into ciphertext using a key. Anyone with the correct key (the same key for symmetric encryption, the corresponding private key for asymmetric) can decrypt it back to the exact original. Use it when the original data must eventually be recovered. “Encrypted data” is simply the ciphertext output.</li>
+<li>Hashing — a one-way, non-reversible transformation into a fixed-size digest. The same input always gives the same hash, but a good cryptographic hash makes it computationally infeasible to find any input producing a target hash. Use it to verify data (checking a password attempt against a stored hash without ever storing or recovering the plaintext) or to detect tampering.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Encryption: REVERSIBLE, the original plaintext CAN be recovered with the right key
+byte[] ciphertext = encryptCipher.doFinal(originalPlaintext.getBytes());
+byte[] recoveredPlaintext = decryptCipher.doFinal(ciphertext); // gets the ORIGINAL back
+ 
+// Hashing: NOT reversible, there is no "un-hash" operation
+MessageDigest sha256Digest = MessageDigest.getInstance("SHA-256");
+byte[] contentHash = sha256Digest.digest(inputData.getBytes());
+// Verification re-hashes a LATER input and compares the two hashes</code></pre>
+<aside class="note"><p><strong>Note: </strong>For passwords, use a purpose-built, deliberately slow, tunable algorithm (bcrypt, scrypt, or Argon2), not a fast general-purpose hash like plain SHA-256. A fast hash makes brute-forcing a leaked hash database dramatically cheaper, exactly what password-hashing algorithms are engineered to counteract.</p></aside>
+<h4 class="q">Q2. How are IP addresses communicated between servers?</h4>
+<ul>
+<li>1. Name resolution (DNS) — the application usually starts with a hostname (api.example.com); a DNS server resolves it to the current IP address.</li>
+<li>2. Connection — the OS networking stack (typically TCP, for reliable ordered delivery) connects to that IP on a port (443 for HTTPS) through the three-way handshake (SYN, SYN-ACK, ACK).</li>
+<li>3. Routing — packets cross intermediate routers, each forwarding them one step closer based on the destination IP in the packet header.</li>
+<li>4. Data exchange — over the open TCP connection the servers exchange application data (an HTTP request and response).</li>
+</ul>
+<p>From a Java application's viewpoint, java.net (or a higher-level HTTP client) handles all of this transparently; code supplies a URL or hostname and rarely touches raw IPs or packets.</p>
+<h4 class="q">Q3. What are HTTP handlers?</h4>
+<p>An HTTP handler is code that processes an incoming HTTP request and produces the response; the concept is universal even though naming varies by layer.</p>
+<ul>
+<li>Servlet — the foundational Java EE handler (doGet()/doPost()).</li>
+<li>Spring MVC @Controller methods — a higher-level abstraction on the Servlet API; each @RequestMapping-annotated method handles one URL and HTTP-method combination.</li>
+<li>Filters — related but distinct: rather than completing a request, a Filter intercepts it (and the response) on the way through the pipeline for cross-cutting concerns (authentication, logging, compression) and passes it down the chain.</li>
+<li>com.sun.net.httpserver.HttpHandler — the JDK's own minimal, built-in interface with one method, handle(HttpExchange), the barest expression of the concept.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+ 
+public class SimpleHandler implements HttpHandler {
     @Override
-    public void handleTextMessage(WebSocketSession clientSession, TextMessage subscribeMessage) {
-        String requestedSymbol = subscribeMessage.getPayload(); // client subscribes to a symbol
-        subscriptionsBySymbol
-                .computeIfAbsent(requestedSymbol, symbol -&gt; ConcurrentHashMap.newKeySet())
-                .add(clientSession);
-    }
- 
-    @KafkaListener(topics = "price-updates")
-    public void onPriceUpdate(PriceUpdate priceUpdate) {
-        Set&lt;WebSocketSession&gt; subscribedSessions =
-                subscriptionsBySymbol.getOrDefault(priceUpdate.getSymbol(), Set.of());
-        String jsonPayload = toJson(priceUpdate);
-        subscribedSessions.parallelStream().forEach(session -&gt; sendSafely(session, jsonPayload));
+    public void handle(HttpExchange httpExchange) throws IOException {
+        String responseText = "Hello from a raw HTTP handler";
+        httpExchange.sendResponseHeaders(200, responseText.length());
+        try (OutputStream responseBody = httpExchange.getResponseBody()) {
+            responseBody.write(responseText.getBytes());
+        }
     }
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>Push the team toward “coalesce, don't queue indefinitely” for real-time feeds: a client only cares about the latest price, so an unbounded backlog is waste and a memory-leak risk under a slow client. Catch this in design review before it becomes an incident.</p></aside>
-<h4 class="q">Q8. How do you decide between horizontal and vertical scaling for a legacy monolith under load?</h4>
-<p>Vertical scaling (scale up: more CPU/RAM/disk) is simple, needs no code changes, but has a hard ceiling and a single point of failure. Horizontal scaling (scale out: more instances behind a load balancer) is effectively unbounded and improves fault tolerance, but requires the application to be stateless or to externalize state, often meaning re-architecture for a monolith holding session state in memory.</p>
-<p><strong>Decision framework for a legacy monolith:</strong></p>
+<h4 class="q">Q4. How do you avoid SQL injection in a Java application?</h4>
+<p>Code examples of the vulnerable and safe forms are in Section 5 and Part 4, Section 4. The defenses, in priority order:</p>
 <ul>
-<li>1. Buy time — scale vertically immediately if under acute load; it's a same-day mitigation while a proper fix is planned.</li>
-<li>2. Audit stateful blockers — in-memory session state, local file caches, and in-JVM schedulers (which would run duplicated across instances). Externalize them first: a Redis session store, shared object storage, a distributed scheduler (Quartz with DB locking) or a dedicated job service.</li>
-<li>3. Externalize, then scale out — once stateless, add a load balancer with health checks and autoscaling on CPU or request-latency metrics.</li>
-<li>4. Check the database — scaling app servers is pointless if the single database is the real constraint; read replicas, connection-pool limits (HikariCP sizing), and query optimization often matter more than the app tier.</li>
+<li>Always use PreparedStatement (or an ORM/query builder that parameterizes internally) with bind parameters for any user-originated value; never concatenate untrusted input into SQL.</li>
+<li>If SQL structure must vary (an optional WHERE clause depending on selected filters), build the structure dynamically but still bind every value via parameters.</li>
+<li>Apply least privilege to the application's database account (only the specific permissions it needs, never broad administrative rights), limiting the damage of a successful injection.</li>
+<li>Add input validation (a numeric ID really is numeric) as defense in depth on top of parameterized queries, never as a replacement, since validation alone is easy to get wrong or bypass.</li>
 </ul>
-<aside class="note"><p><strong>Note: </strong>Resist scaling out blindly under pressure: teams that horizontally scale a monolith with in-memory session-affinity issues end up with intermittent “logged out” bugs. Audit statefulness first; a lead's job is to slow the team down just enough to avoid that trap.</p></aside>
-<h4 class="q">Q9. Implement the circuit breaker pattern with Resilience4j for an unreliable downstream API.</h4>
-<p>A circuit breaker stops a service from repeatedly calling an already failing dependency, which would waste threads and connections and cascade upstream (a thundering herd against a struggling service). States: Closed (normal; failures counted), Open (calls fail fast after the failure threshold is breached), Half-Open (after a wait, a limited number of trial calls test recovery). The basic mechanics are in Part 5, Section 4; here is a fuller configuration.</p>
-<pre><button class="copy">Copy</button><code>@CircuitBreaker(name = "inventoryService", fallbackMethod = "fallbackInventoryCheck")
-@Retry(name = "inventoryService")
-@TimeLimiter(name = "inventoryService")
-public CompletableFuture&lt;InventoryStatus&gt; checkInventory(String productId) {
-    return CompletableFuture.supplyAsync(() -&gt; inventoryClient.check(productId));
-}
- 
-public CompletableFuture&lt;InventoryStatus&gt; fallbackInventoryCheck(String productId, Throwable failureCause) {
-    log.warn("Inventory check failed for {}, using cached/default status", productId, failureCause);
-    return CompletableFuture.completedFuture(InventoryStatus.unknown());
-}
- 
-# application.yml
-resilience4j:
-  circuitbreaker:
-    instances:
-      inventoryService:
-        sliding-window-size: 20
-        failure-rate-threshold: 50
-        wait-duration-in-open-state: 10s
-        permitted-number-of-calls-in-half-open-state: 5</code></pre>
-<p><strong>Design decisions to discuss</strong></p>
+<h4 class="q">Q5. What steps would you take to improve the performance of an API?</h4>
 <ul>
-<li>Annotation order matters: TimeLimiter wraps the async call, with CircuitBreaker and Retry composed around it.</li>
-<li>Retries need backoff and must not be layered naively on a circuit breaker: retrying against an already open circuit should fail fast, not hammer a dead service.</li>
-<li>Fallbacks should be business-appropriate (last-known-good cached value, a degraded feature, or an explicit error), not a silent generic default that masks a real outage.</li>
+<li>1. Measure first — profile, use distributed tracing (Zipkin, Jaeger, APM), and log per-step timings; optimizing a non-bottleneck wastes effort and adds complexity.</li>
+<li>2. Optimize database queries — often the single biggest lever: review slow queries, add indexes, and eliminate N+1 queries with JOIN FETCH, @EntityGraph, or batch fetching (Part 4, Section 5).</li>
+<li>3. Cache — in-memory (Caffeine) for small hot data, distributed (Redis) for data shared and consistent across instances, for data read often but changed rarely.</li>
+<li>4. Go async for non-critical work — hand off side effects (a confirmation email) to a message queue or async task instead of making the caller wait.</li>
+<li>5. Pool connections — both database connections and outgoing HTTP client connections, rather than paying setup cost per request.</li>
+<li>6. Shrink payloads — return only needed fields (projection parameters), compress large responses (gzip), and paginate unbounded lists.</li>
+<li>7. Scale horizontally — once a single instance is reasonably optimized, run several behind a load balancer.</li>
 </ul>
-<aside class="note"><p><strong>Note: </strong>Resilience patterns are cheap to add but easy to misconfigure (wrong thresholds cause flapping or mask real outages). Insist on chaos/failure testing, deliberately killing the downstream in staging, before trusting the configuration in production.</p></aside>
-<h4 class="q">Q10. Design a distributed caching strategy for an e-commerce product catalog. How do you handle invalidation?</h4>
-<p>Use cache-aside (lazy loading) for a read-heavy catalog: on a miss, read the database, populate the cache, and return. On writes, update the database first, then invalidate (don't update) the cache entry; invalidation is simpler and safer than write-through updating, which risks stale data if the cache step fails independently of the database write.</p>
-<pre><button class="copy">Copy</button><code>public Product getProduct(String productId) {
-    String cacheKey = "product:" + productId;
-    Product cachedProduct = redisTemplate.opsForValue().get(cacheKey);
-    if (cachedProduct != null) {
-        return cachedProduct; // cache hit
-    }
-    Product databaseProduct = productRepository.findById(productId)
-            .orElseThrow(() -&gt; new ProductNotFoundException(productId));
-    // TTL is a safety net: even buggy invalidation self-heals within a bounded time
-    redisTemplate.opsForValue().set(cacheKey, databaseProduct, Duration.ofMinutes(30));
-    return databaseProduct;
+<h4 class="q">Q6. On Amazon, applying search filters uses which design pattern?</h4>
+<p>The Strategy pattern (closely related to, and often combined with, the Specification pattern). Each filter (“Brand: Sony”, “Price: $20–$50”, “Rating: 4 stars &amp; up”, “Prime eligible”) is modeled as its own predicate object behind a common interface with one method: does this product satisfy my criteria? The search engine combines the active filters (usually with logical AND) without knowing what any individual filter checks. This is the same design as the FilteredList exercise in Part 3, Section 6.</p>
+<p><em>Problem statement: Combine any set of user-selected filters over a product list without the search engine knowing what each filter checks.</em></p>
+<pre><button class="copy">Copy</button><code>public interface ProductFilter {
+    boolean matches(Product candidateProduct);
 }
  
-@Transactional
-public void updateProduct(Product updatedProduct) {
-    productRepository.save(updatedProduct);
-    redisTemplate.delete("product:" + updatedProduct.getId()); // invalidate, don't update
-}</code></pre>
-<p><strong>Hard cases</strong></p>
-<ul>
-<li>Cache stampede — many requests miss at once on a hot, just-expired key. Use a short-lived lock/mutex or request coalescing so only one thread repopulates while others wait briefly.</li>
-<li>Stale reads across instances — if instances also keep a local in-process cache, a write on instance A must invalidate instance B's copy: broadcast via a Redis Pub/Sub channel, or avoid local caching for frequently updated entities.</li>
-<li>Always set a TTL, since even correct invalidation logic can have bugs or race conditions.</li>
-</ul>
-<aside class="note"><p><strong>Note: </strong>Cache-invalidation bugs are timing-dependent and hard to reproduce. Mandate cache hit/miss metrics and stale-data alerting (periodically compare a sampled cache value to the database) so problems surface through monitoring rather than customer complaints.</p></aside>
-<h4 class="q">Q11. Low-level design notes: Parking Lot, plus how a lead should approach a design round.</h4>
-<p><strong>Parking Lot (LLD)</strong></p>
-<ul>
-<li>Classes: ParkingLot, Level, ParkingSpot (SpotSize enum), Vehicle (VehicleType enum), Ticket.</li>
-<li>Strategy pattern for spot assignment (nearest-first vs. size-fit-first); Factory for Vehicle subtypes; Observer to notify a display board when spots free up.</li>
-<li>Lock per spot or level during assignment to avoid double-booking.</li>
-</ul>
-<p><strong>Bank/trading-system design layer</strong></p>
-<ul>
-<li>Low latency (minimize GC pauses, consider off-heap structures), Kafka for event decoupling, and clear real-time vs. batch boundaries.</li>
-<li>Production ownership under regulatory rigor: change control, audit trails, and rollback planning beyond a typical startup's process.</li>
-<li>Leading compliance-driven change: translating a regulatory requirement into an engineering backlog and getting risk/compliance sign-off alongside engineering.</li>
-</ul>
-<p>Preparation advice: go deep on two or three LLD problems (Parking Lot, Rate Limiter, Splitwise) rather than skimming many, and pair every design with “how would I explain this trade-off to my team,” since communication is scored too.</p>
-<h2 id="s3">Section 2: DSA / Coding Problems with Java Solutions</h2>
-<p><em>Each problem lists the problem statement, approach, a commented Java solution with descriptive names, and complexity. Always state time and space complexity aloud, and be ready to trace your code line by line. Patterns covered: hash maps, two pointers, sliding window, stacks, binary search, DP, backtracking, trees, graphs, heaps, and greedy.</em></p>
-<h3 id="s4">Arrays, Strings &amp; Hashing</h3>
-<h4 class="q">Q1. Two Sum</h4>
-<p><em>Problem statement: Given an array of integers and a target, return the indices of the two numbers that add up to the target.</em></p>
-<p>Approach: store each number's value and index in a HashMap as you iterate; for each element, check whether (target minus current value) is already in the map. This is O(n) instead of the brute-force O(n²).</p>
-<pre><button class="copy">Copy</button><code>public int[] findTwoSumIndices(int[] numbers, int targetSum) {
-    Map&lt;Integer, Integer&gt; valueToIndex = new HashMap&lt;&gt;();
-    for (int currentIndex = 0; currentIndex &lt; numbers.length; currentIndex++) {
-        int neededComplement = targetSum - numbers[currentIndex];
-        if (valueToIndex.containsKey(neededComplement)) {
-            // the complement was seen earlier, so we found the pair
-            return new int[] { valueToIndex.get(neededComplement), currentIndex };
-        }
-        valueToIndex.put(numbers[currentIndex], currentIndex);
-    }
-    throw new IllegalArgumentException("No two sum solution");
-}</code></pre>
-<p>Complexity: time O(n), space O(n).</p>
-<h4 class="q">Q2. Reverse Words in a String</h4>
-<p><em>Problem statement: Reverse the order of the words in a sentence, collapsing any extra whitespace.</em></p>
-<p>Approach: split on a whitespace regex that handles multiple spaces, then rebuild the words in reverse order.</p>
-<pre><button class="copy">Copy</button><code>public String reverseWordOrder(String sentence) {
-    String[] wordArray = sentence.trim().split("\\s+"); // handles runs of spaces
-    StringBuilder reversedSentence = new StringBuilder();
-    for (int wordIndex = wordArray.length - 1; wordIndex &gt;= 0; wordIndex--) {
-        reversedSentence.append(wordArray[wordIndex]);
-        if (wordIndex != 0) {
-            reversedSentence.append(" ");
-        }
-    }
-    return reversedSentence.toString();
-}</code></pre>
-<p>Complexity: time O(n), space O(n).</p>
-<h4 class="q">Q3. First Unique Character in a String</h4>
-<p><em>Problem statement: Return the index of the first character that does not repeat, or -1 if none.</em></p>
-<p>Approach: count each character's frequency in one pass, then scan the string again and return the first index whose count is 1.</p>
-<pre><button class="copy">Copy</button><code>public int findFirstUniqueCharacter(String inputText) {
-    int[] characterCounts = new int[256]; // fixed-size table covers extended ASCII
-    for (char currentCharacter : inputText.toCharArray()) {
-        characterCounts[currentCharacter]++;
-    }
-    for (int position = 0; position &lt; inputText.length(); position++) {
-        if (characterCounts[inputText.charAt(position)] == 1) {
-            return position;
-        }
-    }
-    return -1;
-}</code></pre>
-<p>Complexity: time O(n), space O(1) (fixed-size array).</p>
-<h4 class="q">Q4. Majority Element (Boyer–Moore Voting)</h4>
-<p><em>Problem statement: In an array where one element appears more than n/2 times, find that element.</em></p>
-<p>Approach: keep a candidate and a count. When the count is 0, adopt the current element as candidate; increment the count on a match, decrement otherwise. Because the majority element occurs more than half the time, it survives as the final candidate.</p>
-<pre><button class="copy">Copy</button><code>public int findMajorityElement(int[] numbers) {
-    int voteCount = 0;
-    int candidateValue = 0;
-    for (int currentNumber : numbers) {
-        if (voteCount == 0) {
-            candidateValue = currentNumber; // adopt a new candidate when votes cancel out
-        }
-        voteCount += (currentNumber == candidateValue) ? 1 : -1;
-    }
-    return candidateValue;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q5. Valid Anagram</h4>
-<p><em>Problem statement: Determine whether two strings contain the same characters with the same frequencies.</em></p>
-<p>Approach: differing lengths can't be anagrams. Otherwise increment counts from the first string and decrement from the second; all counts must end at zero.</p>
-<pre><button class="copy">Copy</button><code>public boolean areAnagrams(String firstText, String secondText) {
-    if (firstText.length() != secondText.length()) {
-        return false;
-    }
-    int[] letterBalance = new int[26]; // lowercase letters only
-    for (int position = 0; position &lt; firstText.length(); position++) {
-        letterBalance[firstText.charAt(position) - 'a']++;
-        letterBalance[secondText.charAt(position) - 'a']--;
-    }
-    for (int balance : letterBalance) {
-        if (balance != 0) {
-            return false;
-        }
-    }
-    return true;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q6. Group Anagrams</h4>
-<p><em>Problem statement: Group an array of strings so that anagrams are together.</em></p>
-<p>Approach: compute a canonical key for each string (its characters sorted); anagrams share the same key, so group them in a HashMap keyed by that form.</p>
-<pre><button class="copy">Copy</button><code>public List&lt;List&lt;String&gt;&gt; groupAnagramWords(String[] wordArray) {
-    Map&lt;String, List&lt;String&gt;&gt; wordsByCanonicalKey = new HashMap&lt;&gt;();
-    for (String currentWord : wordArray) {
-        char[] sortedLetters = currentWord.toCharArray();
-        Arrays.sort(sortedLetters);
-        String canonicalKey = new String(sortedLetters); // identical for all anagrams
-        wordsByCanonicalKey.computeIfAbsent(canonicalKey, key -&gt; new ArrayList&lt;&gt;()).add(currentWord);
-    }
-    return new ArrayList&lt;&gt;(wordsByCanonicalKey.values());
-}</code></pre>
-<p>Complexity: time O(n · k log k) where k is the average word length; space O(n · k).</p>
-<h4 class="q">Q7. Top K Frequent Elements</h4>
-<p><em>Problem statement: Return the k most frequent elements of an integer array.</em></p>
-<p>Approach: count frequencies in a HashMap, then keep a min-heap of size k ordered by frequency, evicting the least frequent whenever the heap exceeds k.</p>
-<pre><button class="copy">Copy</button><code>public int[] findTopKFrequent(int[] numbers, int topCount) {
-    Map&lt;Integer, Integer&gt; frequencyByValue = new HashMap&lt;&gt;();
-    for (int currentNumber : numbers) {
-        frequencyByValue.merge(currentNumber, 1, Integer::sum);
-    }
-    // min-heap by frequency: the root is always the least frequent of the current top-k
-    PriorityQueue&lt;Integer&gt; frequencyHeap =
-            new PriorityQueue&lt;&gt;((first, second) -&gt; frequencyByValue.get(first) - frequencyByValue.get(second));
-    for (int distinctValue : frequencyByValue.keySet()) {
-        frequencyHeap.offer(distinctValue);
-        if (frequencyHeap.size() &gt; topCount) {
-            frequencyHeap.poll(); // evict the least frequent
-        }
-    }
-    int[] topElements = new int[topCount];
-    for (int position = topCount - 1; position &gt;= 0; position--) {
-        topElements[position] = frequencyHeap.poll();
-    }
-    return topElements;
-}</code></pre>
-<p>Complexity: time O(n log k), space O(n).</p>
-<h4 class="q">Q8. Valid Palindrome</h4>
-<p><em>Problem statement: Decide whether a string is a palindrome after removing non-alphanumeric characters and ignoring case.</em></p>
-<p>Approach: two pointers from both ends, skipping non-alphanumeric characters, comparing lowercase characters, moving inward; any mismatch means not a palindrome.</p>
-<pre><button class="copy">Copy</button><code>public boolean isPalindromeIgnoringSymbols(String inputText) {
-    int leftPointer = 0;
-    int rightPointer = inputText.length() - 1;
-    while (leftPointer &lt; rightPointer) {
-        while (leftPointer &lt; rightPointer &amp;&amp; !Character.isLetterOrDigit(inputText.charAt(leftPointer))) {
-            leftPointer++;
-        }
-        while (leftPointer &lt; rightPointer &amp;&amp; !Character.isLetterOrDigit(inputText.charAt(rightPointer))) {
-            rightPointer--;
-        }
-        if (Character.toLowerCase(inputText.charAt(leftPointer))
-                != Character.toLowerCase(inputText.charAt(rightPointer))) {
-            return false;
-        }
-        leftPointer++;
-        rightPointer--;
-    }
-    return true;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q9. Longest Substring Without Repeating Characters (sliding window)</h4>
-<p><em>Problem statement: Find the length of the longest substring with no repeated characters.</em></p>
-<p>Approach: a sliding window with two pointers and a map of each character's last-seen index; when a repeat falls inside the window, jump the left edge just past its previous occurrence.</p>
-<pre><button class="copy">Copy</button><code>public int lengthOfLongestUniqueSubstring(String inputText) {
-    Map&lt;Character, Integer&gt; lastSeenIndex = new HashMap&lt;&gt;();
-    int longestLength = 0;
-    int windowStart = 0;
-    for (int windowEnd = 0; windowEnd &lt; inputText.length(); windowEnd++) {
-        char currentCharacter = inputText.charAt(windowEnd);
-        if (lastSeenIndex.containsKey(currentCharacter)
-                &amp;&amp; lastSeenIndex.get(currentCharacter) &gt;= windowStart) {
-            windowStart = lastSeenIndex.get(currentCharacter) + 1; // shrink past the duplicate
-        }
-        lastSeenIndex.put(currentCharacter, windowEnd);
-        longestLength = Math.max(longestLength, windowEnd - windowStart + 1);
-    }
-    return longestLength;
-}</code></pre>
-<p>Complexity: time O(n), space O(min(n, alphabet size)).</p>
-<h4 class="q">Q10. Sliding Window Maximum</h4>
-<p><em>Problem statement: Given an array and window size k, return the maximum of every window of size k as it slides across.</em></p>
-<p>Approach: keep a deque of indices whose values are in decreasing order; the front is always the current window's maximum.</p>
-<pre><button class="copy">Copy</button><code>public int[] findSlidingWindowMaximums(int[] numbers, int windowSize) {
-    Deque&lt;Integer&gt; candidateIndices = new ArrayDeque&lt;&gt;(); // values decrease from front to back
-    int[] windowMaximums = new int[numbers.length - windowSize + 1];
-    for (int currentIndex = 0; currentIndex &lt; numbers.length; currentIndex++) {
-        // drop the front index if it has slid out of the window
-        while (!candidateIndices.isEmpty() &amp;&amp; candidateIndices.peekFirst() &lt;= currentIndex - windowSize) {
-            candidateIndices.pollFirst();
-        }
-        // drop smaller values from the back: they can never be a maximum again
-        while (!candidateIndices.isEmpty()
-                &amp;&amp; numbers[candidateIndices.peekLast()] &lt; numbers[currentIndex]) {
-            candidateIndices.pollLast();
-        }
-        candidateIndices.offerLast(currentIndex);
-        if (currentIndex &gt;= windowSize - 1) {
-            windowMaximums[currentIndex - windowSize + 1] = numbers[candidateIndices.peekFirst()];
-        }
-    }
-    return windowMaximums;
-}</code></pre>
-<p>Complexity: time O(n), space O(k).</p>
-<h4 class="q">Q11. Longest Palindromic Substring (expand around center)</h4>
-<p><em>Problem statement: Return the longest palindromic substring of a given string.</em></p>
-<p>Approach: for each index, expand outward while characters match, once for odd-length centers and once for even-length ones, tracking the best span.</p>
-<pre><button class="copy">Copy</button><code>public String findLongestPalindrome(String inputText) {
-    if (inputText == null || inputText.length() &lt; 1) {
-        return "";
-    }
-    int bestStart = 0;
-    int bestEnd = 0;
-    for (int centerIndex = 0; centerIndex &lt; inputText.length(); centerIndex++) {
-        int oddLength = expandAroundCenter(inputText, centerIndex, centerIndex);      // single-char center
-        int evenLength = expandAroundCenter(inputText, centerIndex, centerIndex + 1); // between two chars
-        int longerLength = Math.max(oddLength, evenLength);
-        if (longerLength &gt; bestEnd - bestStart + 1) {
-            bestStart = centerIndex - (longerLength - 1) / 2;
-            bestEnd = centerIndex + longerLength / 2;
-        }
-    }
-    return inputText.substring(bestStart, bestEnd + 1);
-}
+public class BrandFilter implements ProductFilter {
+    private final String requiredBrand;
  
-private int expandAroundCenter(String inputText, int leftEdge, int rightEdge) {
-    while (leftEdge &gt;= 0 &amp;&amp; rightEdge &lt; inputText.length()
-            &amp;&amp; inputText.charAt(leftEdge) == inputText.charAt(rightEdge)) {
-        leftEdge--;
-        rightEdge++;
-    }
-    return rightEdge - leftEdge - 1; // length of the palindrome found
-}</code></pre>
-<p>Complexity: time O(n²), space O(1).</p>
-<h4 class="q">Q12. Maximum Subarray (Kadane's Algorithm)</h4>
-<p><em>Problem statement: Find the contiguous subarray with the largest sum and return that sum.</em></p>
-<p>Approach: track the best sum ending at the current index and the best overall; at each element decide whether to extend the previous subarray or start fresh, whichever gives the larger sum.</p>
-<pre><button class="copy">Copy</button><code>public int findMaximumSubarraySum(int[] numbers) {
-    int sumEndingHere = numbers[0];
-    int bestSumOverall = numbers[0];
-    for (int position = 1; position &lt; numbers.length; position++) {
-        // extend the running subarray, or restart at the current element
-        sumEndingHere = Math.max(numbers[position], sumEndingHere + numbers[position]);
-        bestSumOverall = Math.max(bestSumOverall, sumEndingHere);
-    }
-    return bestSumOverall;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q13. Best Time to Buy and Sell Stock</h4>
-<p><em>Problem statement: Maximize profit from one buy followed by a later sell, given daily prices.</em></p>
-<p>Approach (greedy): track the minimum price so far and the best profit if selling at each day's price.</p>
-<pre><button class="copy">Copy</button><code>public int findMaximumProfit(int[] dailyPrices) {
-    int lowestPriceSoFar = Integer.MAX_VALUE;
-    int bestProfit = 0;
-    for (int currentPrice : dailyPrices) {
-        lowestPriceSoFar = Math.min(lowestPriceSoFar, currentPrice);
-        bestProfit = Math.max(bestProfit, currentPrice - lowestPriceSoFar);
-    }
-    return bestProfit;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q14. Merge Intervals</h4>
-<p><em>Problem statement: Merge all overlapping intervals in a collection.</em></p>
-<p>Approach: sort by start time; extend the last merged interval when the next one overlaps, otherwise begin a new interval.</p>
-<pre><button class="copy">Copy</button><code>public int[][] mergeOverlappingIntervals(int[][] intervals) {
-    Arrays.sort(intervals, (first, second) -&gt; first[0] - second[0]); // sort by start time
-    List&lt;int[]&gt; mergedIntervals = new ArrayList&lt;&gt;();
-    for (int[] currentInterval : intervals) {
-        int lastMergedIndex = mergedIntervals.size() - 1;
-        if (mergedIntervals.isEmpty() || mergedIntervals.get(lastMergedIndex)[1] &lt; currentInterval[0]) {
-            mergedIntervals.add(currentInterval); // no overlap: start a new interval
-        } else {
-            // overlap: extend the end of the last merged interval
-            mergedIntervals.get(lastMergedIndex)[1] =
-                    Math.max(mergedIntervals.get(lastMergedIndex)[1], currentInterval[1]);
-        }
-    }
-    return mergedIntervals.toArray(new int[mergedIntervals.size()][]);
-}</code></pre>
-<p>Complexity: time O(n log n), space O(n).</p>
-<h4 class="q">Q15. Trapping Rain Water</h4>
-<p><em>Problem statement: Given elevation heights, compute the total rainwater trapped between them.</em></p>
-<p>Approach: two pointers from both ends, tracking the running maximum on each side; always advance the side with the smaller maximum, since water there is bounded by its own maximum.</p>
-<pre><button class="copy">Copy</button><code>public int computeTrappedWater(int[] elevationHeights) {
-    int leftPointer = 0;
-    int rightPointer = elevationHeights.length - 1;
-    int leftMaximum = 0;
-    int rightMaximum = 0;
-    int totalWater = 0;
-    while (leftPointer &lt; rightPointer) {
-        if (elevationHeights[leftPointer] &lt; elevationHeights[rightPointer]) {
-            leftMaximum = Math.max(leftMaximum, elevationHeights[leftPointer]);
-            totalWater += leftMaximum - elevationHeights[leftPointer]; // bounded by leftMaximum
-            leftPointer++;
-        } else {
-            rightMaximum = Math.max(rightMaximum, elevationHeights[rightPointer]);
-            totalWater += rightMaximum - elevationHeights[rightPointer]; // bounded by rightMaximum
-            rightPointer--;
-        }
-    }
-    return totalWater;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h3 id="s5">Linked Lists, Stacks &amp; Searching</h3>
-<h4 class="q">Q16. Reverse a Linked List</h4>
-<p><em>Problem statement: Reverse a singly linked list in place.</em></p>
-<p>Approach: walk the list keeping the previous node; at each step point the current node's next at the previous node, then advance both.</p>
-<pre><button class="copy">Copy</button><code>public ListNode reverseLinkedList(ListNode headNode) {
-    ListNode previousNode = null;
-    ListNode currentNode = headNode;
-    while (currentNode != null) {
-        ListNode nextNode = currentNode.next; // remember the rest before overwriting the link
-        currentNode.next = previousNode;      // reverse this node's pointer
-        previousNode = currentNode;
-        currentNode = nextNode;
-    }
-    return previousNode; // the old tail is the new head
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q17. Detect a Cycle in a Linked List (Floyd's algorithm)</h4>
-<p><em>Problem statement: Determine whether a linked list contains a cycle.</em></p>
-<p>Approach: move a slow pointer one step and a fast pointer two steps; if they ever meet there is a cycle, and if fast reaches null there is none.</p>
-<pre><button class="copy">Copy</button><code>public boolean hasCycle(ListNode headNode) {
-    ListNode slowPointer = headNode;
-    ListNode fastPointer = headNode;
-    while (fastPointer != null &amp;&amp; fastPointer.next != null) {
-        slowPointer = slowPointer.next;          // one step
-        fastPointer = fastPointer.next.next;     // two steps
-        if (slowPointer == fastPointer) {
-            return true; // the fast pointer lapped the slow one
-        }
-    }
-    return false;
-}</code></pre>
-<p>Complexity: time O(n), space O(1).</p>
-<h4 class="q">Q18. Valid Parentheses</h4>
-<p><em>Problem statement: Check that a string of ( ) [ ] { } brackets is balanced. (A longer, object-oriented version with tests is in Part 2, Section 4.)</em></p>
-<p>Approach: push opening brackets on a stack; on a closing bracket, the top of the stack must be its matching opener.</p>
-<pre><button class="copy">Copy</button><code>public boolean areBracketsValid(String bracketText) {
-    Deque&lt;Character&gt; openBracketStack = new ArrayDeque&lt;&gt;();
-    Map&lt;Character, Character&gt; closingToOpening = Map.of(')', '(', ']', '[', '}', '{');
-    for (char currentCharacter : bracketText.toCharArray()) {
-        if (closingToOpening.containsValue(currentCharacter)) {
-            openBracketStack.push(currentCharacter); // opening bracket
-        } else {
-            if (openBracketStack.isEmpty()
-                    || openBracketStack.pop() != closingToOpening.get(currentCharacter)) {
-                return false; // nothing to match, or the wrong opener
-            }
-        }
-    }
-    return openBracketStack.isEmpty(); // leftover openers mean unbalanced
-}</code></pre>
-<p>Complexity: time O(n), space O(n).</p>
-<h4 class="q">Q19. Binary Search</h4>
-<p><em>Problem statement: In a sorted array, return the index of a target, or -1 if absent.</em></p>
-<p>Approach: keep low/high bounds, compare the middle element to the target, and halve the range each iteration.</p>
-<pre><button class="copy">Copy</button><code>public int binarySearchIndex(int[] sortedNumbers, int targetValue) {
-    int lowIndex = 0;
-    int highIndex = sortedNumbers.length - 1;
-    while (lowIndex &lt;= highIndex) {
-        int middleIndex = lowIndex + (highIndex - lowIndex) / 2; // avoids int overflow of (low + high)
-        if (sortedNumbers[middleIndex] == targetValue) {
-            return middleIndex;
-        }
-        if (sortedNumbers[middleIndex] &lt; targetValue) {
-            lowIndex = middleIndex + 1;
-        } else {
-            highIndex = middleIndex - 1;
-        }
-    }
-    return -1;
-}</code></pre>
-<p>Complexity: time O(log n), space O(1).</p>
-<h3 id="s6">Backtracking &amp; Dynamic Programming</h3>
-<h4 class="q">Q20. Permutations</h4>
-<p><em>Problem statement: Return all permutations of a list of distinct integers.</em></p>
-<p>Approach: backtracking; build a partial permutation, try every unused number at each step, recurse, then remove the number to try the next option.</p>
-<pre><button class="copy">Copy</button><code>public List&lt;List&lt;Integer&gt;&gt; generatePermutations(int[] numbers) {
-    List&lt;List&lt;Integer&gt;&gt; allPermutations = new ArrayList&lt;&gt;();
-    buildPermutations(allPermutations, new ArrayList&lt;&gt;(), numbers);
-    return allPermutations;
-}
- 
-private void buildPermutations(List&lt;List&lt;Integer&gt;&gt; allPermutations,
-                               List&lt;Integer&gt; currentPermutation, int[] numbers) {
-    if (currentPermutation.size() == numbers.length) {
-        allPermutations.add(new ArrayList&lt;&gt;(currentPermutation)); // snapshot a complete permutation
-        return;
-    }
-    for (int candidateNumber : numbers) {
-        if (currentPermutation.contains(candidateNumber)) {
-            continue; // already used in this branch
-        }
-        currentPermutation.add(candidateNumber);                              // choose
-        buildPermutations(allPermutations, currentPermutation, numbers);      // explore
-        currentPermutation.remove(currentPermutation.size() - 1);             // undo (backtrack)
-    }
-}</code></pre>
-<p>Complexity: time O(n · n!), space O(n) recursion depth plus output.</p>
-<h4 class="q">Q21. Combination Sum II</h4>
-<p><em>Problem statement: Find all unique combinations, from a list that may contain duplicates, that sum to a target, using each number at most once.</em></p>
-<p>Approach: sort first, then backtrack while skipping same-valued siblings at the same recursion level to avoid duplicate combinations.</p>
-<pre><button class="copy">Copy</button><code>public List&lt;List&lt;Integer&gt;&gt; findCombinationSum(int[] candidateNumbers, int targetSum) {
-    Arrays.sort(candidateNumbers); // sorting lets us skip duplicates and stop early
-    List&lt;List&lt;Integer&gt;&gt; validCombinations = new ArrayList&lt;&gt;();
-    searchCombinations(candidateNumbers, targetSum, 0, new ArrayList&lt;&gt;(), validCombinations);
-    return validCombinations;
-}
- 
-private void searchCombinations(int[] candidateNumbers, int remainingSum, int startIndex,
-                                List&lt;Integer&gt; currentCombination, List&lt;List&lt;Integer&gt;&gt; validCombinations) {
-    if (remainingSum == 0) {
-        validCombinations.add(new ArrayList&lt;&gt;(currentCombination));
-        return;
-    }
-    for (int index = startIndex; index &lt; candidateNumbers.length; index++) {
-        if (index &gt; startIndex &amp;&amp; candidateNumbers[index] == candidateNumbers[index - 1]) {
-            continue; // skip a duplicate value at the same level
-        }
-        if (candidateNumbers[index] &gt; remainingSum) {
-            break; // sorted, so no later number can fit either
-        }
-        currentCombination.add(candidateNumbers[index]);
-        searchCombinations(candidateNumbers, remainingSum - candidateNumbers[index],
-                index + 1, currentCombination, validCombinations); // index+1: use each number once
-        currentCombination.remove(currentCombination.size() - 1);
-    }
-}</code></pre>
-<p>Complexity: time O(2ⁿ) worst case, space O(n).</p>
-<h4 class="q">Q22. Edit Distance (dynamic programming)</h4>
-<p><em>Problem statement: Find the minimum number of insertions, deletions, or substitutions needed to convert one string into another.</em></p>
-<p>Approach: build a table where entry [i][j] is the edit distance between the first i characters of one word and the first j of the other. A match reuses the diagonal; a mismatch costs 1 plus the minimum of insert, delete, or replace.</p>
-<pre><button class="copy">Copy</button><code>public int computeEditDistance(String sourceWord, String targetWord) {
-    int sourceLength = sourceWord.length();
-    int targetLength = targetWord.length();
-    int[][] distanceTable = new int[sourceLength + 1][targetLength + 1];
-    for (int row = 0; row &lt;= sourceLength; row++) {
-        distanceTable[row][0] = row;      // delete every source character
-    }
-    for (int column = 0; column &lt;= targetLength; column++) {
-        distanceTable[0][column] = column; // insert every target character
-    }
-    for (int row = 1; row &lt;= sourceLength; row++) {
-        for (int column = 1; column &lt;= targetLength; column++) {
-            if (sourceWord.charAt(row - 1) == targetWord.charAt(column - 1)) {
-                distanceTable[row][column] = distanceTable[row - 1][column - 1]; // characters match
-            } else {
-                distanceTable[row][column] = 1 + Math.min(
-                        distanceTable[row - 1][column - 1],            // replace
-                        Math.min(distanceTable[row - 1][column],       // delete
-                                 distanceTable[row][column - 1]));     // insert
-            }
-        }
-    }
-    return distanceTable[sourceLength][targetLength];
-}</code></pre>
-<p>Complexity: time O(m·n), space O(m·n).</p>
-<h4 class="q">Q23. Regular Expression Matching (dynamic programming)</h4>
-<p><em>Problem statement: Implement matching that supports '.' (any single character) and '*' (zero or more of the preceding element).</em></p>
-<p>Approach: a boolean table where [i][j] means the first i characters of the text match the first j characters of the pattern. A '*' either matches zero preceding elements (skip two pattern characters) or one more when the preceding pattern element matches the current text character.</p>
-<pre><button class="copy">Copy</button><code>public boolean isPatternMatch(String inputText, String pattern) {
-    int textLength = inputText.length();
-    int patternLength = pattern.length();
-    boolean[][] matchTable = new boolean[textLength + 1][patternLength + 1];
-    matchTable[0][0] = true; // empty text matches empty pattern
-    for (int column = 1; column &lt;= patternLength; column++) {
-        if (pattern.charAt(column - 1) == '*') {
-            matchTable[0][column] = matchTable[0][column - 2]; // x* can match zero characters
-        }
-    }
-    for (int row = 1; row &lt;= textLength; row++) {
-        for (int column = 1; column &lt;= patternLength; column++) {
-            char textCharacter = inputText.charAt(row - 1);
-            char patternCharacter = pattern.charAt(column - 1);
-            if (patternCharacter == '.' || patternCharacter == textCharacter) {
-                matchTable[row][column] = matchTable[row - 1][column - 1];
-            } else if (patternCharacter == '*') {
-                matchTable[row][column] = matchTable[row][column - 2]; // zero occurrences
-                char precedingPatternCharacter = pattern.charAt(column - 2);
-                if (precedingPatternCharacter == '.' || precedingPatternCharacter == textCharacter) {
-                    matchTable[row][column] = matchTable[row][column] || matchTable[row - 1][column]; // one more
-                }
-            }
-        }
-    }
-    return matchTable[textLength][patternLength];
-}</code></pre>
-<p>Complexity: time O(m·n), space O(m·n).</p>
-<h3 id="s7">Trees, Graphs &amp; Design</h3>
-<h4 class="q">Q24. Lowest Common Ancestor of a Binary Tree</h4>
-<p><em>Problem statement: Given a binary tree and two nodes, find their lowest common ancestor.</em></p>
-<p>Approach: recurse; if both the left and right subtree calls return non-null, the current node is the LCA; otherwise propagate the non-null side upward.</p>
-<pre><button class="copy">Copy</button><code>public TreeNode findLowestCommonAncestor(TreeNode rootNode, TreeNode firstTarget, TreeNode secondTarget) {
-    if (rootNode == null || rootNode == firstTarget || rootNode == secondTarget) {
-        return rootNode; // found a target, or ran off the tree
-    }
-    TreeNode foundInLeft = findLowestCommonAncestor(rootNode.left, firstTarget, secondTarget);
-    TreeNode foundInRight = findLowestCommonAncestor(rootNode.right, firstTarget, secondTarget);
-    if (foundInLeft != null &amp;&amp; foundInRight != null) {
-        return rootNode; // targets are on different sides, so this node is the ancestor
-    }
-    return foundInLeft != null ? foundInLeft : foundInRight;
-}</code></pre>
-<p>Complexity: time O(n), space O(h) for tree height h.</p>
-<h4 class="q">Q25. Binary Tree Level Order Traversal</h4>
-<p><em>Problem statement: Return a binary tree's values level by level.</em></p>
-<p>Approach: breadth-first search with a queue, processing exactly one level per outer-loop iteration using a snapshot of the queue's size.</p>
-<pre><button class="copy">Copy</button><code>public List&lt;List&lt;Integer&gt;&gt; traverseLevelOrder(TreeNode rootNode) {
-    List&lt;List&lt;Integer&gt;&gt; levelValues = new ArrayList&lt;&gt;();
-    if (rootNode == null) {
-        return levelValues;
-    }
-    Queue&lt;TreeNode&gt; nodeQueue = new LinkedList&lt;&gt;();
-    nodeQueue.add(rootNode);
-    while (!nodeQueue.isEmpty()) {
-        int nodesInThisLevel = nodeQueue.size(); // snapshot: exactly one level per pass
-        List&lt;Integer&gt; currentLevel = new ArrayList&lt;&gt;();
-        for (int counter = 0; counter &lt; nodesInThisLevel; counter++) {
-            TreeNode currentNode = nodeQueue.poll();
-            currentLevel.add(currentNode.val);
-            if (currentNode.left != null) nodeQueue.add(currentNode.left);
-            if (currentNode.right != null) nodeQueue.add(currentNode.right);
-        }
-        levelValues.add(currentLevel);
-    }
-    return levelValues;
-}</code></pre>
-<p>Complexity: time O(n), space O(n).</p>
-<h4 class="q">Q26. Serialize and Deserialize a Binary Tree</h4>
-<p><em>Problem statement: Convert a binary tree to a string and reconstruct the identical tree from it.</em></p>
-<p>Approach: pre-order DFS writing a 'null' marker for each empty child on serialize; rebuild recursively in the same order on deserialize.</p>
-<pre><button class="copy">Copy</button><code>public String serializeTree(TreeNode rootNode) {
-    StringBuilder serializedText = new StringBuilder();
-    appendNodeToText(rootNode, serializedText);
-    return serializedText.toString();
-}
- 
-private void appendNodeToText(TreeNode currentNode, StringBuilder serializedText) {
-    if (currentNode == null) {
-        serializedText.append("null,"); // marker keeps the shape recoverable
-        return;
-    }
-    serializedText.append(currentNode.val).append(",");
-    appendNodeToText(currentNode.left, serializedText);   // pre-order: node, left, right
-    appendNodeToText(currentNode.right, serializedText);
-}
- 
-public TreeNode deserializeTree(String serializedText) {
-    Deque&lt;String&gt; tokenQueue = new ArrayDeque&lt;&gt;(Arrays.asList(serializedText.split(",")));
-    return rebuildTree(tokenQueue);
-}
- 
-private TreeNode rebuildTree(Deque&lt;String&gt; tokenQueue) {
-    String nextToken = tokenQueue.poll();
-    if (nextToken.equals("null")) {
-        return null;
-    }
-    TreeNode rebuiltNode = new TreeNode(Integer.parseInt(nextToken));
-    rebuiltNode.left = rebuildTree(tokenQueue);  // same pre-order sequence as serialization
-    rebuiltNode.right = rebuildTree(tokenQueue);
-    return rebuiltNode;
-}</code></pre>
-<p>Complexity: time O(n), space O(n).</p>
-<h4 class="q">Q27. Number of Islands</h4>
-<p><em>Problem statement: Given a grid of land ('1') and water ('0') cells, count the connected land regions.</em></p>
-<p>Approach: scan cells; on an unvisited land cell, run a depth-first search that “sinks” the entire connected region, and count it as one island.</p>
-<pre><button class="copy">Copy</button><code>public int countIslands(char[][] landGrid) {
-    int islandCount = 0;
-    for (int row = 0; row &lt; landGrid.length; row++) {
-        for (int column = 0; column &lt; landGrid[0].length; column++) {
-            if (landGrid[row][column] == '1') {
-                islandCount++;                    // new, unvisited island
-                sinkConnectedLand(landGrid, row, column);
-            }
-        }
-    }
-    return islandCount;
-}
- 
-private void sinkConnectedLand(char[][] landGrid, int row, int column) {
-    if (row &lt; 0 || column &lt; 0 || row &gt;= landGrid.length
-            || column &gt;= landGrid[0].length || landGrid[row][column] != '1') {
-        return; // out of bounds, water, or already visited
-    }
-    landGrid[row][column] = '0'; // mark visited by turning land into water
-    sinkConnectedLand(landGrid, row + 1, column);
-    sinkConnectedLand(landGrid, row - 1, column);
-    sinkConnectedLand(landGrid, row, column + 1);
-    sinkConnectedLand(landGrid, row, column - 1);
-}</code></pre>
-<p>Complexity: time O(rows · cols), space O(rows · cols) for recursion depth.</p>
-<h4 class="q">Q28. Course Schedule (topological sort)</h4>
-<p><em>Problem statement: Given prerequisite pairs, decide whether all courses can be finished (i.e. the dependency graph has no cycle).</em></p>
-<p>Approach: Kahn's algorithm. Repeatedly remove nodes with zero in-degree; if every node gets processed, there is no cycle.</p>
-<pre><button class="copy">Copy</button><code>public boolean canFinishAllCourses(int courseCount, int[][] prerequisitePairs) {
-    List&lt;List&lt;Integer&gt;&gt; dependentCourses = new ArrayList&lt;&gt;();
-    int[] incomingEdgeCount = new int[courseCount];
-    for (int course = 0; course &lt; courseCount; course++) {
-        dependentCourses.add(new ArrayList&lt;&gt;());
-    }
-    for (int[] prerequisitePair : prerequisitePairs) {
-        dependentCourses.get(prerequisitePair[1]).add(prerequisitePair[0]); // prerequisite -&gt; course
-        incomingEdgeCount[prerequisitePair[0]]++;
-    }
-    Deque&lt;Integer&gt; readyCourses = new ArrayDeque&lt;&gt;();
-    for (int course = 0; course &lt; courseCount; course++) {
-        if (incomingEdgeCount[course] == 0) {
-            readyCourses.add(course); // no prerequisites left
-        }
-    }
-    int processedCourses = 0;
-    while (!readyCourses.isEmpty()) {
-        int finishedCourse = readyCourses.poll();
-        processedCourses++;
-        for (int unlockedCourse : dependentCourses.get(finishedCourse)) {
-            if (--incomingEdgeCount[unlockedCourse] == 0) {
-                readyCourses.add(unlockedCourse);
-            }
-        }
-    }
-    return processedCourses == courseCount; // fewer processed means a cycle exists
-}</code></pre>
-<p>Complexity: time O(V+E), space O(V+E).</p>
-<h4 class="q">Q29. LRU Cache</h4>
-<p><em>Problem statement: Design a Least-Recently-Used cache with O(1) get and put. (A TTL variant with locking is in Part 2, Section 8, Q7.)</em></p>
-<p>Approach: a LinkedHashMap in access-order mode plus removeEldestEntry gives an O(1) LRU directly.</p>
-<pre><button class="copy">Copy</button><code>class LeastRecentlyUsedCache extends LinkedHashMap&lt;Integer, Integer&gt; {
-    private final int maximumCapacity;
- 
-    public LeastRecentlyUsedCache(int maximumCapacity) {
-        super(maximumCapacity, 0.75f, true); // true = access order (most recent moves to the end)
-        this.maximumCapacity = maximumCapacity;
-    }
- 
-    public int get(int key) {
-        return super.getOrDefault(key, -1);
-    }
- 
-    public void put(int key, int value) {
-        super.put(key, value);
+    public BrandFilter(String requiredBrand) {
+        this.requiredBrand = requiredBrand;
     }
  
     @Override
-    protected boolean removeEldestEntry(Map.Entry&lt;Integer, Integer&gt; eldestEntry) {
-        return size() &gt; maximumCapacity; // evict the least recently used when over capacity
+    public boolean matches(Product candidateProduct) {
+        return candidateProduct.getBrand().equalsIgnoreCase(requiredBrand);
     }
-}</code></pre>
-<p>Complexity: time O(1) average, space O(capacity).</p>
-<h4 class="q">Q30. Filter, Multiply, and Sum Using Java Streams</h4>
-<p><em>Problem statement: Remove the odd numbers, multiply the rest by a constant, and sum the result, using Streams only.</em></p>
-<p>Approach: chain filter, map, and sum; banks often test live fluency with idiomatic Stream pipelines.</p>
-<pre><button class="copy">Copy</button><code>public int filterMultiplyAndSum(int[] numbers, int multiplierConstant) {
-    return Arrays.stream(numbers)
-            .filter(currentNumber -&gt; currentNumber % 2 == 0)           // keep evens only
-            .map(currentNumber -&gt; currentNumber * multiplierConstant)  // scale each
-            .sum();                                                    // terminal operation
-}</code></pre>
-<p>Complexity: time O(n), space O(1) beyond pipeline overhead.</p>
-<h3 id="s8">Coding-Round Concepts and Lead-Level Themes</h3>
-<h4 class="q">Q31. How would you design an immutable, thread-safe Money class for a financial system?</h4>
-<p>Make the class final with private final BigDecimal amount and Currency fields (never double, because of rounding). No setters: arithmetic returns new instances. Implement equals()/hashCode() on value, and validate currency compatibility before any operation. (The general immutable-class rules and defensive-copy details are in Part 1, Section 1.)</p>
-<pre><button class="copy">Copy</button><code>public final class Money {
-    private final BigDecimal amount;   // BigDecimal, never double: exact decimal arithmetic
-    private final Currency currency;
+}
  
-    public Money(BigDecimal amount, Currency currency) {
-        this.amount = Objects.requireNonNull(amount);
-        this.currency = Objects.requireNonNull(currency);
-    }
+public class PriceRangeFilter implements ProductFilter {
+    private final BigDecimal minimumPrice;
+    private final BigDecimal maximumPrice;
  
-    public Money add(Money other) {
-        if (!this.currency.equals(other.currency)) {
-            throw new IllegalArgumentException("Currency mismatch");
-        }
-        return new Money(this.amount.add(other.amount), this.currency); // returns a NEW instance
+    public PriceRangeFilter(BigDecimal minimumPrice, BigDecimal maximumPrice) {
+        this.minimumPrice = minimumPrice;
+        this.maximumPrice = maximumPrice;
     }
  
     @Override
-    public boolean equals(Object otherObject) {
-        if (this == otherObject) return true;
-        if (!(otherObject instanceof Money)) return false;
-        Money otherMoney = (Money) otherObject;
-        return amount.compareTo(otherMoney.amount) == 0 &amp;&amp; currency.equals(otherMoney.currency);
+    public boolean matches(Product candidateProduct) {
+        return candidateProduct.getPrice().compareTo(minimumPrice) &gt;= 0
+                &amp;&amp; candidateProduct.getPrice().compareTo(maximumPrice) &lt;= 0;
     }
+}
  
-    @Override
-    public int hashCode() {
-        return Objects.hash(amount.stripTrailingZeros(), currency); // consistent with equals
-    }
+// The engine applies whichever filters are currently active (logical AND)
+public List&lt;Product&gt; applyActiveFilters(List&lt;Product&gt; allProducts, List&lt;ProductFilter&gt; activeFilters) {
+    return allProducts.stream()
+            .filter(product -&gt; activeFilters.stream().allMatch(filter -&gt; filter.matches(product)))
+            .collect(Collectors.toList());
 }</code></pre>
-<h4 class="q">Q32. How do you size a thread pool for a Java service?</h4>
-<p>CPU-bound work: roughly the number of cores (more threads only add context switching). I/O-bound work: larger, since threads mostly wait; a common starting formula is threads = cores × (1 + wait time / compute time), then tune with load testing. Use separate bounded pools for distinct kinds of work so one slow dependency can't exhaust the threads serving everything else (bulkheading). On Java 21, virtual threads (Part 2, Section 8) largely remove the need to size pools for blocking I/O.</p>
-<h4 class="q">Q33. What other core-concept questions commonly accompany coding rounds?</h4>
-<p>Already answered in depth in earlier parts, with one-line pointers here for revision: immutable class design and why String is immutable (Part 1); thread-safe Singleton via enum or volatile double-checked locking (Part 1); deadlock causes and avoidance (Part 1); fail-fast vs. fail-safe iterators (Part 2); transient and serialVersionUID (Part 3, Section 2), where serialVersionUID is the explicit version identifier of a serializable class and, without it, any class change can silently break deserialization of older data; generics and type erasure (Part 1 and Part 3); Java 8/11/17/21 features (Part 3, Section 10); defensive design (Part 3, Section 6); and JDBC vs. JPA/Hibernate (Part 4). The last is worth restating: JDBC is low-level raw SQL execution with manual ResultSet mapping, while JPA/Hibernate lets you work with entity objects while it generates SQL and manages the persistence context, caching, and lazy loading.</p>
-<h4 class="q">Q34. How should you prepare efficiently for coding rounds?</h4>
+<p>Adding a new filter (“seller rating”) means writing one new class implementing ProductFilter, with zero changes to the engine: a textbook application of the Open/Closed Principle.</p><h2 id="s11">Section 7: Unix / Linux Command Line</h2>
+<h4 class="q">Q1. How do you find a file recursively in Unix?</h4>
+<p>find searches recursively by default (unlike ls, which lists only a directory's immediate contents). To search inside file contents instead of by name, use grep -r.</p>
+<pre><button class="copy">Copy</button><code># Find a file by exact name, searching recursively from the current directory downward
+find . -name "application.properties"
+ 
+# Case-insensitive name search
+find . -iname "readme*"
+ 
+# Only regular files (excluding directories) matching a pattern
+find /var/log -type f -name "*.log"
+ 
+# Combine criteria, e.g. files modified in the last 7 days
+find . -name "*.tmp" -mtime -7
+ 
+# Search WITHIN file contents, recursively
+grep -r "TODO" /path/to/project</code></pre>
+<h4 class="q">Q2. How do you see CPU and memory utilization in Unix?</h4>
 <ul>
-<li>Build pattern fluency rather than memorizing answers: sliding window, two pointers, DFS/BFS, DP, heap/top-K, and graph traversal cover most problems above.</li>
-<li>For lead rounds, pair every problem with “how would I explain this trade-off to my team”; communication is scored too.</li>
-<li>Practice writing code in a plain editor without IDE auto-complete, and always state time/space complexity.</li>
-<li>Know at least one real project example for each concept (where you used multithreading, Streams, and so on).</li>
-<li>For banks, rehearse writing correct Java Streams code live; for roles mentioning newer Java, review records, sealed classes, pattern matching, and virtual threads.</li>
+<li>top — the classic interactive, continuously refreshing view of processes (sorted by CPU by default) with a system-wide summary.</li>
+<li>htop — a friendlier, colorized alternative with easier sorting, filtering, and a process tree (often must be installed separately).</li>
+<li>free -h — a one-shot summary of total, used, and free RAM and swap in human-readable units.</li>
+<li>vmstat — virtual-memory, CPU, and I/O statistics, useful for spotting system-level problems like heavy swapping.</li>
+<li>ps aux — a one-shot snapshot of all processes with CPU and memory use, good for scripting and piping.</li>
 </ul>
-<h2 id="s9">Section 3: Leadership, Team Management &amp; Behavioral</h2>
-<p><em>Use STAR (Situation, Task, Action, Result). For Amazon, map stories explicitly to a Leadership Principle, since interviewers score against them. The answers below are frameworks to adapt to your real experience, not scripted stories.</em></p>
-<h4 class="q">Q1. Tell me about a time you disagreed with a decision made by your manager or a senior architect.</h4>
-<p>Interviewers are screening for one thing: did you raise the disagreement constructively, with evidence, and then commit fully once a decision was made, even if it didn't go your way? (Amazon: “Have Backbone; Disagree and Commit.”)</p>
+<pre><button class="copy">Copy</button><code>top                                # interactive, continuously refreshing view
+free -h                            # quick memory summary in human-readable units
+ps aux --sort=-%cpu | head -10     # top 10 processes by CPU usage, as a one-shot list</code></pre>
+<h4 class="q">Q3. How can you run the last command without using the up arrow?</h4>
 <ul>
-<li>Situation — brief context, e.g. “Our architect proposed a synchronous call chain across four services for checkout; I was concerned about cascading latency and availability risk under load.”</li>
-<li>Task — what was at stake and why you felt compelled to speak up rather than privately worry.</li>
-<li>Action — raise it with data (a rough latency-budget calculation, or a past incident) in an appropriate private forum first, and propose a concrete alternative (“what if the notification step were asynchronous via Kafka?”) rather than just objecting.</li>
-<li>Result — be honest about the outcome. If you disagreed and committed, explain how you supported the decision fully in execution and what you learned; this is often more impressive than “and I was proven right.”</li>
+<li>!! — repeats the immediately preceding command exactly; sudo !! re-runs it prefixed with sudo, handy after a permission failure.</li>
+<li>!n — repeats a specific command by its number in the history list (shown by history).</li>
+<li>!string — repeats the most recent command that started with the string (e.g. !git).</li>
+<li>Ctrl+R — an interactive, incremental reverse search through history: type a few characters and jump to the matching past command.</li>
 </ul>
-<aside class="note"><p><strong>Note: </strong>Avoid a story where you were simply right and everyone else wrong; it reads as an inability to see other perspectives, a red flag for a lead who must operate through influence. Practice this story aloud; it is one of the highest-probability questions in any lead interview.</p></aside>
-<h4 class="q">Q2. How do you handle a team member who consistently misses deadlines or delivers low-quality code?</h4>
-<p>Start with diagnosis, not judgment.</p>
+<pre><button class="copy">Copy</button><code>ls -la /some/directory
+!!        # re-runs "ls -la /some/directory" exactly
+sudo !!   # re-runs the previous command again, prefixed with sudo</code></pre>
+<h4 class="q">Q4. How does the Unix shell work at a high level?</h4>
+<p>A shell (bash, zsh, sh) is the command-line interpreter between the user and the kernel. When you press Enter it:</p>
 <ul>
-<li>1. Understand the root cause privately and non-confrontationally: a skills gap, an estimation or scope problem, a personal issue affecting focus, unclear requirements they were hesitant to raise, or an engagement problem. Each needs a different fix, and misdiagnosing damages trust.</li>
-<li>2. Set explicit, specific expectations. “Code quality needs to improve” isn't actionable; “let's pair on the next two PRs, focusing on test coverage and null-safety, the recurring review comment” is.</li>
-<li>3. Provide the right support: pairing, smaller reviewable increments, a mentor, or temporarily adjusted workload if it's a burnout issue.</li>
-<li>4. Document and follow up on a cadence, not to build a paper trail against them but so both of you share an unambiguous view of whether things are improving.</li>
-<li>5. Escalate appropriately if there's no improvement after genuine support; this is also a duty to the rest of the team, who are affected by consistently under-delivered work.</li>
+<li>1. Reads the input line.</li>
+<li>2. Parses it into tokens (command and arguments) and identifies shell syntax: pipes (|), redirection (&gt;, &gt;&gt;, &lt;), background execution (&amp;), and command substitution ($(...)).</li>
+<li>3. Performs expansions: variables (like $HOME), wildcard/glob patterns (*.txt expanded to matching filenames), and tilde (~).</li>
+<li>4. Decides whether the command is a built-in (cd, echo, export, implemented by the shell itself with no new process) or an external program.</li>
+<li>5. For an external program, searches the directories in the PATH variable, in order, for a matching executable.</li>
+<li>6. Forks a child process and, in it, execs the program, replacing the child's memory image — the classic fork-then-exec mechanism.</li>
+<li>7. Waits for the process to finish, unless it was started in the background with a trailing &amp;.</li>
+<li>8. Makes the exit status available (via $?), used by scripts for control flow such as an if statement.</li>
 </ul>
-<aside class="note"><p><strong>Note: </strong>Interviewers listen for empathy plus accountability. Leads who show only empathy let poor performance persist; leads who show only accountability burn trust by skipping straight to write-ups. Both fail.</p></aside>
-<h4 class="q">Q3. How do you balance technical debt against feature delivery pressure?</h4>
-<p>Don't frame it as “tech debt vs. features” (which sounds like engineering's pet concern competing with business value). Translate debt into business-legible risk and cost: “this shortcut will cost about two extra days on every future feature touching this module, with a meaningful risk of a production incident within two quarters.”</p>
+<h4 class="q">Q5. What does grep do, and how does grep "word" filename execute?</h4>
+<p>grep (“Global Regular Expression Print”) searches input (files, or data piped from another command) for lines matching a literal string or regular expression and prints the matching lines.</p>
 <ul>
-<li>Categorize debt explicitly: “reckless and inadvertent” (bugs from not knowing better) versus “prudent and deliberate” (a conscious shortcut for a real deadline, with a plan to revisit), which is often a legitimate decision, not a failure.</li>
-<li>Make debt visible and trackable: a tagged, estimated backlog category reviewed with the team and referenced in planning.</li>
-<li>Negotiate a standing “tax rate” (e.g. 15–20% of each sprint's capacity) instead of a dedicated tech-debt sprint, which is a hard sell and the first thing cut under pressure.</li>
-<li>Tie the highest-priority items to actual business risk: “the authentication module hasn't been load-tested past 500 concurrent users and a marketing campaign launches next quarter” is actionable; “this code is messy” is not.</li>
+<li>grep "pattern" file.txt — print matching lines.</li>
+<li>-i — case-insensitive; -r — search recursively through a directory tree; -v — invert (print lines that do NOT match); -c — print only a count; -n — prefix line numbers; -E — extended regex, enabling alternation (pattern1|pattern2).</li>
 </ul>
-<p>The skill being tested is stakeholder communication and business framing: any senior engineer can spot debt, but a lead gets organizational buy-in and sustained capacity to address it.</p>
-<h4 class="q">Q4. How do you conduct code reviews as a tech lead without becoming a bottleneck?</h4>
-<ul>
-<li>Review correctness and design first, style second; automate formatting entirely (Checkstyle, Spotless, pre-commit hooks) so human time goes to what automation can't catch.</li>
-<li>Mark comments as blocking or non-blocking (“blocking:”, “nit:”, “consider:”) so authors aren't left guessing.</li>
-<li>Set a review turnaround SLA (e.g. first pass within 4 business hours) and protect calendar time for it; a lead who is the review bottleneck is one of the most common and avoidable causes of lost velocity.</li>
-<li>Don't be the only reviewer: distribute review responsibility among senior engineers, which scales capacity, develops their review skills, and removes a bus-factor risk.</li>
-<li>Use review as teaching, not just a gate: explain why something is a problem, with a link or brief rationale.</li>
-</ul>
-<p>Treat review process design as a leadership deliverable: periodically look at PR open-to-merge time like any other team-health metric. (Review red flags to look for are in Part 5, Section 3, Q4.)</p>
-<h4 class="q">Q5. How do you run sprint planning and estimation for a team of mixed experience?</h4>
-<ul>
-<li>Refine stories before planning, in a separate earlier session, so planning is about commitment and sequencing rather than rediscovering scope live.</li>
-<li>Use relative estimation (story points via Planning Poker) rather than absolute hours, calibrated periodically against actual velocity so points stay meaningful.</li>
-<li>Pair juniors and seniors on unfamiliar work: a junior's honest estimate for an unfamiliar area often surfaces risks a senior would silently absorb.</li>
-<li>Guard against systematic optimism: track estimate-versus-actual over several sprints and use the data in retrospectives.</li>
-<li>Leave explicit buffer for unplanned work (production support, urgent bugs) instead of planning at 100% theoretical capacity.</li>
-</ul>
-<p>Good estimation isn't about better guessing; it is about making real capacity and risk visible early enough to adjust scope gracefully. (For the full Agile planning lifecycle, see Section 5, Q1.)</p>
-<h4 class="q">Q6. How do you mentor junior and mid-level engineers into senior roles while still delivering?</h4>
-<ul>
-<li>Delegate stretch work with real ownership, not just busywork. It's slower short-term but is the actual mechanism of growth.</li>
-<li>Build in explicit early design-review checkpoints rather than “come to me if you're stuck,” since juniors don't know what they don't know.</li>
-<li>Make your reasoning visible: explain the “why” and point to a broader principle so the lesson generalizes.</li>
-<li>Protect mentoring time on your calendar like a customer deadline; unscheduled, it's the first thing dropped.</li>
-<li>Give specific feedback tied to the next level's expectations (“seniors proactively flag cross-team dependencies during design”).</li>
-</ul>
-<p>Without formal authority, influence through technical credibility: pairing and reviews as teaching moments, design docs/RFCs that make trade-offs explicit, guiding questions instead of dictating, and consensus built with data and prototypes. The question tests whether you understand that a lead's primary output shifts from personal code to the team's collective output and growth.</p>
-<h4 class="q">Q7. How would you handle a Sev-1 production incident during off-hours, technically and in communication?</h4>
-<p><strong>First 15 minutes (technical)</strong></p>
-<ul>
-<li>Stabilize before diagnosing: stop customer/business impact first via reversible, low-risk actions (roll back the last deploy, fail over to a healthy region, disable a feature flag).</li>
-<li>Establish an incident commander early (often you, or explicitly delegated), avoiding five engineers independently trying different fixes.</li>
-<li>Communicate on a fixed cadence (every 15–30 minutes) even with no news; “still investigating, next update in 15 minutes” beats silence.</li>
-</ul>
-<p><strong>Communication</strong></p>
-<ul>
-<li>Notify stakeholders early so business and support teams can manage customer communication in parallel; under-communicating a Sev-1 compounds the damage.</li>
-<li>Keep updates factual and blameless during the incident; save “whose deploy broke this” for the postmortem.</li>
-</ul>
-<p><strong>After resolution</strong></p>
-<ul>
-<li>Hold a blameless postmortem within 48 hours, focused on systemic factors (why didn't tests or monitoring catch it? why was rollback slow?) so people surface information in future incidents.</li>
-<li>Track concrete, owned, time-bound action items to completion; a postmortem with no follow-through is theater.</li>
-</ul>
-<p>Interviewers, especially at banks where outages carry regulatory and financial impact, assess composure under pressure and communication discipline as much as technical skill. Cover detection, mitigation, root cause (logs, traces, metrics correlation), stakeholder cadence, and prevention in your story.</p>
-<h4 class="q">Q8. How do you make an architecture decision when the team is split and time is short?</h4>
-<ul>
-<li>1. Make the decision criteria explicit before debating options (“time-to-market beats long-term flexibility for this three-month pilot”), so the debate isn't a proxy battle over personal technology preferences.</li>
-<li>2. Use a lightweight Architecture Decision Record: list two or three real options, their trade-offs against the agreed criteria, and a recommendation. Writing it surfaces reasoning gaps and gives quieter members a structured way to contribute.</li>
-<li>3. Time-box it (“input until Thursday EOD; I decide Friday morning if we haven't converged”).</li>
-<li>4. As lead you own the final call after genuinely hearing dissent; avoid false consensus-seeking that just delays an unavoidable trade-off.</li>
-<li>5. Note in the ADR what would make you reconsider, so reversing later is a planned response to new information, not a failure.</li>
-</ul>
-<p>The question tests whether you can drive convergence without steamrolling the team (resentment) or seeking endless consensus (paralysis). The same reasoning applies to a difficult architectural trade-off under time pressure: state the competing constraints, the options and trade-offs, why you chose your path, how you mitigated the downside (documented debt, a planned follow-up refactor), and the measurable outcome.</p>
-<h4 class="q">Q9. How do you handle scope creep mid-sprint, especially in a client-services model?</h4>
-<ul>
-<li>Distinguish genuine urgent business need (a production-blocking client issue) from habitual scope drift (“nice to have while you're in there”).</li>
-<li>Make the trade-off visible: “we can add this, but it pushes out [specific item] by [amount], or we add it next sprint with no impact; which do you prefer?” Silently absorbing it trains stakeholders that scope creep is free.</li>
-<li>Protect the sprint commitment as a team promise; if stakeholders can add work mid-sprint with no visible trade-off, planning credibility erodes.</li>
-<li>In client-services contexts, tie scope changes to the contractual/change-request process; it protects both the team and the client relationship by keeping cost and timeline changes explicit and agreed.</li>
-<li>Keep a small buffer for genuinely reasonable minor asks; rigidity about every request damages the relationship more than it protects the sprint.</li>
-</ul>
-<p>The core skill is making trade-offs visible rather than absorbing them silently, since silent absorption (unpaid overtime, cut corners) builds morale and quality debt over quarters.</p>
-<h4 class="q">Q10. What do you look for when interviewing a candidate for a senior or lead role?</h4>
-<ul>
-<li>Reasoning process over memorized answers: do they ask clarifying questions, state assumptions, and reason through trade-offs aloud? A confident design produced without ever asking about scale or consistency is a red flag.</li>
-<li>How they handle being wrong or challenged: I deliberately push back mid-interview to see whether they defend with evidence, genuinely reconsider, or get defensive, which maps to real design reviews.</li>
-<li>Ownership and impact, not just task completion: probe “what did you personally decide or drive” versus “what I did within an effort someone else directed.”</li>
-<li>Communication clarity, especially translating technical trade-offs for non-technical stakeholders.</li>
-<li>Calibrated confidence: comfortable saying “I don't know, but here's how I'd find out”; bluffing is a bigger red flag than a knowledge gap, since leads set the team's norm for intellectual honesty.</li>
-</ul>
-<h4 class="q">Q11. Quick-reference STAR story bank.</h4>
-<p>Before interviews, prepare five to seven real stories that each flex across several questions above, and practice each in under two minutes with a clear Situation, Task, Action, Result arc. Have ready:</p>
-<ul>
-<li>A technical decision under significant ambiguity or time pressure.</li>
-<li>A disagreement with leadership and how it resolved.</li>
-<li>A production incident you led the response to.</li>
-<li>Someone you mentored into a promotion or major capability jump.</li>
-<li>Influencing another team without direct authority.</li>
-<li>A project that failed or missed its goal, and what you learned.</li>
-<li>Pushing back on scope or deadline pressure and managing the trade-off conversation.</li>
-</ul>
-<aside class="note"><p><strong>Note: </strong>Be ready for follow-up “why” questions probing your specific reasoning at each step; that depth is usually where lead-level candidates separate from individual-contributor candidates telling similar surface stories. Also cover the tech-lead layer at banks: production ownership under regulatory rigor (change control, audit trails, rollback plans).</p></aside>
-<h2 id="s10">Section 4: Domain Knowledge &amp; Application-Server Clustering</h2>
-<h4 class="q">Q1. What is a swap (in finance)?</h4>
-<p>A swap is a derivative contract in which two parties agree to exchange a series of future cash flows under a predetermined formula over a set period. Swaps are used for hedging (reducing exposure to interest-rate or currency movements) and for speculation. This appears on Java interview lists because financial-services roles expect engineers to understand the instruments their systems process; the interviewer is checking domain familiarity, not a pure Java skill.</p>
-<ul>
-<li>Interest rate swap — the most commonly intended type. The parties exchange interest payment obligations on an agreed notional principal (the notional itself is never exchanged; it only drives the calculation). The plain-vanilla structure swaps a fixed rate for a floating rate tied to a benchmark (historically LIBOR, increasingly SOFR in USD markets). A company with a floating-rate loan that wants predictable payments can convert to an effectively fixed rate without refinancing.</li>
-<li>Currency swap — the parties exchange principal and interest denominated in different currencies, e.g. a multinational raising financing in a foreign currency at a better effective rate than borrowing there directly.</li>
-<li>Credit default swap (CDS) — conceptually closer to insurance: the protection buyer pays a regular premium to the seller, who compensates the buyer if a specified debt instrument (a corporate or government bond) defaults.</li>
-</ul>
-<p>From a software perspective, a swap-processing system must store each swap's terms (notional, fixed rate, floating-rate reference index, payment schedule, start and maturity dates); calculate each party's cash-flow obligation on every scheduled date (the floating leg needs the current reference rate at that time); and compute the mark-to-market value (its theoretical worth if unwound today, from discounting all remaining expected cash flows to present value) for risk management and reporting.</p>
-<h4 class="q">Q2. What is WebLogic clustering?</h4>
-<p>Oracle WebLogic Server is a full Java EE (now Jakarta EE) application server, historically common in banking, insurance, and telecom for complex, transaction-heavy applications. A cluster is a group of WebLogic server instances (on one machine or several) configured to act as one logical unit, delivering two related benefits:</p>
-<ul>
-<li>High availability — if one instance fails or is taken down for maintenance, the others keep serving. For stateful applications, session replication copies each user's HTTP session data to at least one other instance, so if the original instance fails mid-session another takes over seamlessly with no re-login or lost state.</li>
-<li>Scalability — requests are distributed across instances (via a dedicated load balancer or WebLogic's cluster-aware HTTP proxy plugin), so aggregate capacity exceeds any single instance.</li>
-</ul>
-<p><strong>Underlying mechanisms</strong></p>
-<ul>
-<li>In-memory replication — each instance designates another as the replica holding a synchronized backup of a session's data; if the primary fails, the replica takes over immediately.</li>
-<li>Multicast or unicast cluster communication — members continuously exchange heartbeats to know who is in the cluster and healthy so failed instances are excluded from routing (unicast is the modern, firewall-friendly recommendation over historical IP multicast).</li>
-<li>JNDI replication — cluster-aware JNDI lookups let clients find clustered EJBs and resources without hard-coding which instance serves a request.</li>
-</ul>
-<aside class="note"><p><strong>Note: </strong>The concepts being tested (load balancing across instances, session replication/affinity for high availability, cluster membership and health monitoring) transfer across every mainstream Java EE server (JBoss/WildFly, WebSphere, GlassFish/Payara) and, conceptually, to how Kubernetes load-balances replicas of a containerized app.</p></aside>
-<h2 id="s11">Section 5: Agile Project Planning</h2>
-<h4 class="q">Q1. How do you plan a complex project in Agile?</h4>
-<p>Work at several granularities and time horizons at once instead of producing one giant, fully detailed upfront (waterfall) plan.</p>
-<ul>
-<li>1. Break the project into epics — large bodies of related work representing significant business value (“Customer Self-Service Portal”, “Payment Processing Overhaul”), too big for one sprint and used as an organizing layer.</li>
-<li>2. Decompose epics into user stories — small, independently deliverable units ideally finishable in one sprint, written from the user's perspective (“As a [role], I want [capability], so that [benefit]”) and meeting the INVEST criteria: Independent, Negotiable, Valuable, Estimable, Small, Testable.</li>
-<li>3. Prioritize the backlog by business value and risk. On a complex, higher-risk project, tackle the biggest technical unknowns early (a “walking skeleton” or spike) to surface blockers while there's time to adjust.</li>
-<li>4. Estimate relatively with story points, determined collaboratively (Planning Poker) to reconcile differing views of complexity before committing.</li>
-<li>5. Establish velocity — the empirically observed average points completed per sprint over several sprints — to forecast realistically how many sprints the project needs.</li>
-<li>6. Plan and execute in sprints (typically 1–4 weeks), committing at each start to a subset of the highest-priority stories that fits velocity.</li>
-<li>7. Hold retrospectives at each sprint's end to decide concrete process changes for the next one, so estimation and delivery improve instead of repeating avoidable mistakes.</li>
-<li>8. Keep stakeholders informed through sprint reviews/demos of working software and a current backlog/roadmap, so feedback arrives early instead of only at the end.</li>
-</ul>
-<p>For very large projects with multiple teams, frameworks such as SAFe (Scaled Agile Framework), LeSS (Large-Scale Scrum), or Spotify's tribes-and-squads model add higher-level structure for coordinating dependencies and shared priorities across teams.</p>
-<aside class="note"><p><strong>Note: </strong>Agile planning is deliberately iterative and adaptive, not a one-time exercise. Backlog, priorities, and even the overall timeline are continuously revisited as the team learns from feedback on delivered increments, unexpected technical findings, and its own increasingly accurate estimation.</p></aside></main></div>
+<p>For grep "word" filename: it reads the file line by line and checks whether the literal text “word” appears anywhere in each line. By default this is a substring match, so it also matches “password” and “wordsmith”. Matching lines are printed in file order and non-matching lines are skipped. If nothing matches, grep prints nothing and its exit status is 1 (0 means at least one match), which is what lets it drive shell if conditions.</p>
+<pre><button class="copy">Copy</button><code># Match "word" as a whole, separate word (not a substring of "password"):
+grep -w "word" filename
+ 
+# Using grep's exit status directly in a shell script's control flow:
+if grep -q "ERROR" application.log; then
+    echo "Errors were found in the log file"
+fi</code></pre>
+<h4 class="q">Q6. What are nohup and &amp; used for, and how do you run a process in the background?</h4>
+<p>They solve two different, complementary problems. A trailing &amp; runs the command in the background so the shell returns control immediately. nohup (“no hang up”) makes the command immune to SIGHUP, the signal sent to a session's processes when its controlling terminal closes (for example, closing an SSH connection); without it the process is normally killed with the terminal. Used together, they launch a long-running job that neither ties up your terminal nor dies when you log out.</p>
+<pre><button class="copy">Copy</button><code>nohup ./long_running_script.sh &amp;
+# Runs in the background AND survives closing this SSH session.
+# By default nohup writes the output to nohup.out in the current directory:
+cat nohup.out
+ 
+./my_script.sh &amp;   # runs immediately in the background
+jobs               # lists background jobs in THIS shell session
+fg %1              # brings background job 1 back to the foreground
+bg %1              # resumes a STOPPED job (e.g. paused with Ctrl+Z) in the background
+ 
+# Move an already-running foreground process to the background:
+# press Ctrl+Z to pause it, then run: bg</code></pre>
+<aside class="note"><p><strong>Note: </strong>Better options for genuinely long-running work: tmux or screen (terminal multiplexers that let you detach and later re-attach to view live output), or for a real production service a process supervisor/init system such as systemd or supervisord rather than nohup.</p></aside>
+<h4 class="q">Q7. How do you see the first and last 10 lines of a file, and how do you delete files recursively?</h4>
+<pre><button class="copy">Copy</button><code>head -10 filename.txt   # first 10 lines (10 is also the default)
+tail -10 filename.txt   # last 10 lines (10 is also the default)
+tail -f application.log # follow a growing log file live, printing new lines as they are appended
+ 
+rm -r some_directory    # recursively remove a directory and everything in it
+rm -rf some_directory   # same, but FORCE: no confirmation, ignore missing files/errors
+ 
+# Delete only files matching a pattern, recursively:
+find . -name "*.tmp" -type f -delete</code></pre>
+<aside class="note"><p><strong>Note: </strong>rm -rf is genuinely dangerous: it deletes recursively and silently with no confirmation and no recycle bin. A typo, an unexpectedly expanded wildcard, or (worst) running it as root against / or a variable that evaluated to empty has caused countless data-loss incidents. Double- and triple-check the exact target, especially in automated scripts.</p></aside></main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
 document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};

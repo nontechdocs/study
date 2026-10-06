@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en"><head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Java Interview Guide – Part 5</title>
@@ -31,10 +32,76 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 .hide{display:none!important}
 @media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
 </style></head><body>
-<header><button id="menu">☰</button><h1>Java Interview Guide — Part 5: Spring Boot, Microservices, Messaging, Cloud &amp; Frontend</h1><button id="theme">◐</button></header>
-<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s3">Section 2: Spring &amp; Spring Boot</a><a class="l2" href="#s4">Section 3: Testing, Code Quality &amp; Production Readiness</a><a class="l2" href="#s5">Section 4: Microservices Architecture &amp; Distributed Systems</a><a class="l2" href="#s6">Section 5: Messaging Systems — JMS, IBM MQ, RabbitMQ</a><a class="l2" href="#s7">Section 6: Apache Kafka &amp; Event-Driven Architecture</a><a class="l2" href="#s8">Section 7: AWS, Cloud &amp; Kubernetes</a><a class="l2" href="#s9">Section 8: Frontend Integration — Angular &amp; React</a><a class="l3" href="#s10">AngularJS &amp; Angular</a><a class="l3" href="#s11">React</a><a class="l2" href="#s12">Section 9: Security, Networking &amp; API Performance</a></nav>
-<main id="main"><h2 id="s3">Section 2: Spring &amp; Spring Boot</h2>
-<p>Already covered in Part 3, Section 7 and not repeated here: DI/IoC and the three injection styles, bean scopes and their thread-safety implications, and @Component/@Service/@Repository/@Controller. Below are the Spring Boot topics beyond those.</p>
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 5: Spring, Spring Boot, Testing, Web Services &amp; Microservices</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s1">Section 1: Spring Framework Quick Reference &amp; Java Annotations</a><a class="l2" href="#s2">Section 2: Spring &amp; Spring Boot</a><a class="l2" href="#s3">Section 3: Testing, Code Quality &amp; Production Readiness</a><a class="l2" href="#s4">Section 4: Web Services — REST</a><a class="l2" href="#s5">Section 5: Microservices Architecture &amp; Distributed Systems</a></nav>
+<main id="main"><h2 id="s1">Section 1: Spring Framework Quick Reference &amp; Java Annotations</h2>
+<h4 class="q">Q1. What is Dependency Injection, and how does Spring implement it? Which injection style is best?</h4>
+<p>DI supplies an object's dependencies from outside rather than having it construct or look them up itself, decoupling classes from concrete implementations and making unit tests easier (dependencies can be mocked). Spring's IoC container implements DI: you declare beans (via @Component, @Service, @Repository, or Java/XML configuration) and Spring wires them together. (See Part 1, Section 9 for the IoC principle itself.)</p>
+<ul>
+<li>Constructor injection (recommended) — makes dependencies explicit, enables immutability (final fields), fully initializes the object on construction, and fails fast if a bean is missing.</li>
+<li>Setter injection — suits optional dependencies and reconfiguration after construction, but risks partially initialized objects if the setter is never called.</li>
+<li>Field injection — concise, but hides dependencies and is harder to test and mock.</li>
+</ul>
+<p>Rule of thumb: constructor injection for mandatory dependencies, setter injection for optional ones. Compared with the Factory pattern, DI yields cleaner code: the class is a plain POJO that declares what it needs, with no knowledge of how dependencies are built or of any factory API, so it is easier to test in isolation.</p>
+<pre><button class="copy">Copy</button><code>@Service
+public class OrderProcessingService {
+    private final PaymentGateway paymentGateway; // dependency
+ 
+    // constructor injection -- Spring supplies a PaymentGateway bean automatically
+    @Autowired
+    public OrderProcessingService(PaymentGateway paymentGateway) {
+        this.paymentGateway = paymentGateway;
+    }
+}</code></pre>
+<h4 class="q">Q2. What are Spring bean scopes, and how do they interact with thread safety?</h4>
+<ul>
+<li>singleton (default) — one shared instance per container. Spring does nothing special to make it thread-safe; it is an ordinary singleton, so concurrent access is the developer's responsibility.</li>
+<li>prototype — a new instance every time the bean is requested.</li>
+<li>request — one instance per HTTP request; thread-safe by construction since no two requests share an instance.</li>
+<li>session — one instance per HTTP session; requests from multiple browser tabs in the same session CAN run concurrently against it, so mutable state needs care.</li>
+</ul>
+<p>Any bean with no mutable instance state is a safe singleton candidate, which is why DAO, Service, and Controller beans are usually singletons: each thread passes what it needs as method arguments. A bad singleton candidate is a bean that carries per-use mutable state, such as a Person bean with mutable name/age fields, which concurrent callers would silently corrupt.</p>
+<h4 class="q">Q3. What is the difference between @Component, @Service, @Repository, and @Controller?</h4>
+<p>All are specializations of @Component, registered as Spring beans by component scanning and functionally similar; the distinction is semantic (and useful for AOP targeting). @Service marks business-logic classes; @Repository marks data-access classes and additionally enables automatic translation of persistence-technology exceptions into Spring's DataAccessException hierarchy; @Controller marks web-layer classes handling HTTP requests.</p>
+<h4 class="q">Q4. What is an annotation, and what are the standard built-in and meta-annotations?</h4>
+<p>An annotation is metadata attached to code elements (classes, methods, fields, parameters) without directly affecting the semantics of the annotated code; it is consumed by the compiler, build tools, or runtime reflection. By themselves annotations execute nothing — something (the compiler, an annotation processor, or a framework such as Spring or Hibernate) must read and act on them.</p>
+<ul>
+<li>@Override — the compiler errors if the method doesn't actually override, catching signature typos.</li>
+<li>@Deprecated — marks an element as discouraged; usage triggers a compiler warning.</li>
+<li>@SuppressWarnings — suppresses specific warning categories (e.g. "unchecked").</li>
+<li>@FunctionalInterface — asserts exactly one abstract method; the compiler errors otherwise.</li>
+</ul>
+<p>Meta-annotations control custom annotations: @Target (which elements it may annotate), @Retention (SOURCE: discarded at compile time, useful for tools like Lombok; CLASS: kept in the .class file but invisible at runtime, the default; RUNTIME: available via reflection, required for framework-style annotations), @Documented (include in Javadoc), and @Inherited (class-level annotation inherited by subclasses).</p>
+<p><em>Problem statement: Define a custom runtime annotation and read it via reflection to audit an operation.</em></p>
+<pre><button class="copy">Copy</button><code>import java.lang.annotation.*;
+import java.lang.reflect.Method;
+ 
+@Retention(RetentionPolicy.RUNTIME) // needed to read it via reflection
+@Target(ElementType.METHOD)
+@interface AuditableOperation {
+    String description();
+}
+ 
+class OrderService {
+    @AuditableOperation(description = "Processes customer order")
+    public void placeOrder() {
+        System.out.println("Order placed");
+    }
+}
+ 
+public class AnnotationProcessorDemo {
+    public static void main(String[] arguments) throws Exception {
+        Method targetMethod = OrderService.class.getMethod("placeOrder");
+        if (targetMethod.isAnnotationPresent(AuditableOperation.class)) {
+            AuditableOperation annotationData = targetMethod.getAnnotation(AuditableOperation.class);
+            System.out.println("Audit: " + annotationData.description());
+        }
+    }
+}</code></pre>
+<h4 class="q">Q5. What is reflection, and what are its use cases and drawbacks?</h4>
+<p>Reflection (java.lang.reflect) allows runtime inspection and manipulation of classes, methods, fields, and constructors, even private ones. Use cases: frameworks (Spring and Hibernate annotation processing), serialization libraries, and testing tools. Drawbacks: performance overhead, broken encapsulation, bypassed compile-time type safety, and blocking by module-system restrictions (Java 9+).</p>
+<h2 id="s2">Section 2: Spring &amp; Spring Boot</h2>
+<p>Already covered in Section 1 and not repeated here: DI/IoC and the three injection styles, bean scopes and their thread-safety implications, and @Component/@Service/@Repository/@Controller. Below are the Spring Boot topics beyond those.</p>
 <h4 class="q">Q1. What is Spring Boot, and how does it differ from the traditional Spring Framework?</h4>
 <p>Spring Boot is an opinionated extension of Spring that minimizes boilerplate configuration. Traditional Spring needs extensive XML or Java configuration for beans, data sources, and infrastructure; Spring Boot adds auto-configuration driven by the classpath and sensible defaults, an embedded server (Tomcat or Jetty) so the app runs as a standalone JAR, starters (spring-boot-starter-web, spring-boot-starter-data-jpa) that bundle related dependencies, and production-ready features via Actuator. It is the default choice for microservices and cloud-native apps.</p>
 <h4 class="q">Q2. How does Spring Boot auto-configuration work? How would you write a custom starter?</h4>
@@ -117,8 +184,8 @@ public class OrderProcessingService {
 <li>httpOnly cookies mitigate XSS but introduce CSRF risk, requiring CSRF tokens or SameSite cookie attributes.</li>
 <li>JWTs are stateless and can't be revoked before expiry; for logout or a compromised account, keep a blacklist (often in Redis with a TTL matching the token's expiry), which reintroduces a little of the statefulness JWTs were meant to avoid.</li>
 </ul>
-<p>JWT structure and XSS/CSRF basics are in Part 3, Section 6.</p>
-<h2 id="s4">Section 3: Testing, Code Quality &amp; Production Readiness</h2>
+<p>JWT structure and XSS/CSRF basics are in Part 6, Section 5.</p>
+<h2 id="s3">Section 3: Testing, Code Quality &amp; Production Readiness</h2>
 <h4 class="q">Q1. What is the difference between @Mock and @InjectMocks in Mockito?</h4>
 <p>@Mock creates a fake implementation of a dependency with stubbed behavior, isolating the class under test from real collaborators. @InjectMocks creates a real instance of the class under test and injects the @Mock fields into it (via constructor, setter, or field), enabling isolated unit tests with no Spring context.</p>
 <p><em>Problem statement: Unit test that an order is confirmed when the inventory repository reports stock, and verify the repository was consulted exactly once.</em></p>
@@ -156,7 +223,54 @@ class OrderServiceTest {
 <li>Missing timeout, retry, or circuit-breaker configuration on external calls.</li>
 <li>Tests that assert implementation details instead of observable behavior.</li>
 </ul>
-<h2 id="s5">Section 4: Microservices Architecture &amp; Distributed Systems</h2>
+<h2 id="s4">Section 4: Web Services — REST</h2>
+<h4 class="q">Q2. What HTTP methods do RESTful services support, and what do safe and idempotent mean?</h4>
+<ul>
+<li>GET — retrieve a representation; safe (no side effects) and idempotent.</li>
+<li>POST — typically create a resource or trigger a non-idempotent action; calling it twice is expected to create two resources.</li>
+<li>PUT — replace a resource entirely with the supplied representation (or create it at that client-specified URL); idempotent.</li>
+<li>PATCH — partial update of only the fields supplied; not necessarily idempotent, though many implementations are designed to be.</li>
+<li>DELETE — remove a resource; conventionally idempotent (deleting an already-deleted resource shouldn't be treated as a failure).</li>
+<li>HEAD — like GET but returns headers only, with no body; cheap for checking size or last-modified metadata.</li>
+<li>OPTIONS — asks which methods a resource supports; browsers use it for the CORS preflight check before a cross-origin request.</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>PUT vs. PATCH is a common follow-up: PUT requires the complete updated representation, and any omitted field is typically reset or cleared; PATCH sends only the fields that should change and leaves everything else untouched.</p></aside>
+<h4 class="q">Q4. Why can't you send arbitrary data in a web service header?</h4>
+<ul>
+<li>Purpose — headers carry metadata (auth tokens, content type, caching directives, correlation/trace IDs), not business payload; mixing them blurs “how to process this message” and “what it contains.”</li>
+<li>Size limits — servers, proxies, and load balancers typically cap total header size (commonly 4KB–16KB), so large data risks silent, mysterious request failures; bodies are built for large payloads.</li>
+<li>Encoding — header values are restricted to a limited (essentially ASCII) character set, making them a poor fit for structured or binary data without awkward Base64 overhead.</li>
+<li>Caching, logging, and security — headers are far more likely to be logged, cached, or inspected by intermediaries (proxies, API gateways, monitoring), so placing sensitive business data there is a genuine security risk.</li>
+</ul>
+<p>Convention in both SOAP and REST: headers for metadata, body for business data.</p>
+<h4 class="q">Q6. How do you test web services?</h4>
+<ul>
+<li>Manual, exploratory testing — Postman (mainly REST/JSON) or SoapUI (built for SOAP, also supports REST) for interactive requests and saved collections.</li>
+<li>Automated unit tests — test controller/service logic with dependencies mocked; Spring's MockMvc simulates an HTTP request without a running server.</li>
+<li>Automated integration tests — exercise the real endpoint end to end (routing, serialization, business logic, persistence), typically with a real or embedded test database.</li>
+<li>Contract testing — tools like Pact let a consumer define the request/response contract it expects and verify the provider satisfies it, catching breaking API changes early.</li>
+<li>Load/performance testing — JMeter or Gatling simulate many concurrent users to verify response time and error rate under realistic or peak load.</li>
+</ul>
+<p><em>Problem statement: Test a REST endpoint's JSON response without starting a real server.</em></p>
+<pre><button class="copy">Copy</button><code>@WebMvcTest(EmployeeController.class)
+public class EmployeeControllerTest {
+ 
+    @Autowired
+    private MockMvc mockMvc;
+ 
+    @MockBean
+    private EmployeeService employeeService; // dependency mocked out
+ 
+    @Test
+    public void shouldReturnEmployeeDetailsAsJson() throws Exception {
+        when(employeeService.findById(42L)).thenReturn(new Employee(42L, "Alice"));
+ 
+        mockMvc.perform(get("/api/employees/42"))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.employeeName").value("Alice"));
+    }
+}</code></pre>
+<h2 id="s5">Section 5: Microservices Architecture &amp; Distributed Systems</h2>
 <h4 class="q">Q1. How have microservices been used in a project? What are the key concepts and trade-offs?</h4>
 <p>Microservices structure an application as small, independently deployable services, each owning one well-bounded business capability (Order, Payment, Inventory), with its own codebase, deployment lifecycle, and often its own database, in contrast to a monolith's single unified codebase and deployment unit.</p>
 <ul>
@@ -290,427 +404,7 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}   # injected from a secrets manager, never hardcoded</code></pre>
 <aside class="note"><p><strong>Note: </strong>Vault is a strong choice for banking-grade rotation because it supports dynamic, short-lived credentials (a database password that rotates every few hours). In regulated environments, secret rotation and audit logging of secret access are non-negotiable and far cheaper to design in from day one than to retrofit.</p></aside>
-<h2 id="s6">Section 5: Messaging Systems — JMS, IBM MQ, RabbitMQ</h2>
-<h4 class="q">Q1. What is JMS, and when would you use it?</h4>
-<p>JMS (Java Message Service, part of Java/Jakarta EE) is a standard, vendor-neutral Java API for creating, sending, receiving, and reading messages asynchronously, decoupling sender and receiver in time and space. The sender places a message on a queue or topic and the broker (IBM MQ, ActiveMQ, or another JMS provider) reliably delivers it whenever the receiver is ready.</p>
-<ul>
-<li>Point-to-Point (queues) — each message goes to exactly one consumer, even with several listening; it is removed once consumed. Suits work distribution across a pool of workers.</li>
-<li>Publish/Subscribe (topics) — each message goes to every current subscriber (one-to-many broadcast). Suits event notification where several independent parts of a system react to the same event.</li>
-</ul>
-<p>Common uses: decoupling microservices (Service A publishes OrderPlaced without knowing who reacts), absorbing traffic spikes by buffering work, and distributing long-running background jobs.</p>
-<pre><button class="copy">Copy</button><code>// Simplified JMS producer
-ConnectionFactory connectionFactory = /* provided by the JMS provider, e.g. IBM MQ */;
-try (JMSContext jmsContext = connectionFactory.createContext()) {
-    Queue orderQueue = jmsContext.createQueue("ORDER_PROCESSING_QUEUE");
-    jmsContext.createProducer().send(orderQueue, "New order: #12345");
-}
- 
-// Simplified JMS consumer
-try (JMSContext jmsContext = connectionFactory.createContext()) {
-    Queue orderQueue = jmsContext.createQueue("ORDER_PROCESSING_QUEUE");
-    String receivedMessage = jmsContext.createConsumer(orderQueue).receiveBody(String.class);
-    System.out.println("Received: " + receivedMessage);
-}</code></pre>
-<h4 class="q">Q2. Have you used IBM MQ? What is it used for?</h4>
-<p>IBM MQ (formerly WebSphere MQ) is a mature, enterprise-grade message-oriented middleware: a commercial implementation of exactly the broker infrastructure the JMS API targets. It is common in large, established, especially financial, environments for its long track record and strong reliability guarantees (messages persisted to disk survive a broker restart) and mature support for guaranteed delivery across complex, cross-platform landscapes. Java apps typically use it through the standard JMS API with IBM's provider driver, so the code looks like the generic JMS code above, and the same application could be pointed at another JMS-compliant broker with minimal change.</p>
-<h4 class="q">Q3. How do you handle transactions and reliability in RabbitMQ?</h4>
-<p>RabbitMQ is an open-source broker implementing AMQP (distinct from, though similar in spirit to, JMS). It offers two producer-side mechanisms:</p>
-<ul>
-<li>AMQP transactions (tx.select / tx.commit / tx.rollback) — group several publishes and commit or roll them back together like a database transaction, but with a significant throughput cost because each commit requires a synchronous broker round trip.</li>
-<li>Publisher confirms — the lightweight, higher-throughput, generally recommended approach: the broker asynchronously acknowledges each published message once received (and, depending on configuration, persisted), and the producer tracks unconfirmed messages and retries as needed.</li>
-</ul>
-<p>On the consumer side, RabbitMQ uses message acknowledgments: a consumer acks only after successfully finishing processing. If it disconnects or crashes before acking, RabbitMQ requeues the message for redelivery, which is what prevents silent message loss.</p>
-<pre><button class="copy">Copy</button><code>// Publisher confirms (RabbitMQ Java client)
-channel.confirmSelect(); // enable publisher confirms on this channel
-channel.basicPublish("", "orderQueue", null, messageBytes);
-boolean isConfirmed = channel.waitForConfirms(5000); // broker's acknowledgment
-if (!isConfirmed) {
-    // handle the failure: retry, log, alert
-}
- 
-// Consumer-side manual acknowledgment
-channel.basicConsume("orderQueue", false, (consumerTag, delivery) -&gt; {
-    try {
-        processMessage(delivery.getBody());
-        channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);        // ack ONLY after success
-    } catch (Exception processingException) {
-        channel.basicNack(delivery.getEnvelope().getDeliveryTag(), false, true);  // requeue on failure
-    }
-}, consumerTag -&gt; { });</code></pre>
-<h2 id="s7">Section 6: Apache Kafka &amp; Event-Driven Architecture</h2>
-<h4 class="q">Q1. What is Apache Kafka, and what problem does it solve?</h4>
-<p>Kafka is a distributed event-streaming platform for high-throughput, fault-tolerant, real-time data feeds. It replaces tightly coupled point-to-point integrations with a central, durable log: producers publish records to topics and consumers read them independently. Unlike a traditional queue, messages persist on disk for a configurable retention period and aren't removed when consumed, so many consumers can read the same data at different times without affecting each other. Common uses: log aggregation, event sourcing, real-time analytics pipelines, and decoupling microservices.</p>
-<h4 class="q">Q2. Explain partitions, consumer groups, and offsets.</h4>
-<ul>
-<li>Partitions — the unit of parallelism and scalability. A topic is split into partitions, each an ordered, immutable, append-only sequence spread across brokers. Ordering is guaranteed only within a partition, not across a topic. A producer key is hashed so the same key always lands in the same partition.</li>
-<li>Consumer group — consumers sharing a topic's work; each partition is assigned to exactly one consumer in a group at a time, and multiple groups each receive a full copy of all messages (publish-subscribe across groups). Joining or leaving triggers a rebalance. Scaling consumers beyond the partition count adds no throughput (extras sit idle). If a consumer crashes, its partitions are reassigned.</li>
-<li>Offset — a sequential, ever-increasing integer identifying a message's position within a partition. It is the consumer, not the broker, that tracks how far it has read, which lets a consumer resume where it left off, lets independent groups progress separately, and enables replay by seeking back to an earlier offset, something a consume-and-remove queue cannot do.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>KafkaConsumer&lt;String, String&gt; consumer = new KafkaConsumer&lt;&gt;(consumerProperties);
-consumer.subscribe(List.of("order-events"));
-while (true) {
-    ConsumerRecords&lt;String, String&gt; polledRecords = consumer.poll(Duration.ofMillis(100));
-    for (ConsumerRecord&lt;String, String&gt; currentRecord : polledRecords) {
-        System.out.println("Offset " + currentRecord.offset() + ": " + currentRecord.value());
-        processRecord(currentRecord);
-    }
-    consumer.commitSync(); // persist how far this consumer has read
-}</code></pre>
-<h4 class="q">Q3. How do you guarantee message ordering in Kafka while still scaling horizontally?</h4>
-<p>Key messages by the entity whose order matters (accountId, customerId) so Kafka's default partitioner routes every event for that entity to the same partition, preserving its order while different entities are processed in parallel across partitions and consumers. Set the partition count high enough up front: increasing it later changes the key-to-partition mapping and can break ordering for existing keys. On the consumer side, process each partition's records sequentially; introducing async processing within a partition without ordering safeguards defeats the guarantee.</p>
-<p>For an extremely hot key (one customer generating disproportionate volume), consider sub-keying (customer ID plus a bounded sub-partition indicator, accepting slightly relaxed ordering across sub-partitions), and monitor consumer lag per partition to catch skew before it hurts SLAs.</p>
-<pre><button class="copy">Copy</button><code>@Service
-public class AccountEventProducer {
-    private final KafkaTemplate&lt;String, AccountEvent&gt; kafkaTemplate;
- 
-    public void publish(AccountEvent accountEvent) {
-        // key = accountId: all events for this account go to the same partition, preserving order
-        kafkaTemplate.send("account-events", accountEvent.getAccountId(), accountEvent);
-    }
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>A common production incident: “why were customer X's events processed out of order?” Trace it to a bad partition key (a random UUID instead of the entity ID) or an unnecessary re-key/repartition step in a stream job. Review partition-key decisions explicitly in design review; they're cheap to get right upfront and expensive to fix after data is produced.</p></aside>
-<h4 class="q">Q4. How do you commit offsets safely, and what is a dead-letter topic?</h4>
-<p>Prefer enable.auto.commit=false with explicit offset commits after successful processing. Committing only after a whole batch succeeds means a mid-batch failure causes reprocessing (so consumers must be idempotent); committing too eagerly risks message loss. A dead-letter topic receives records that repeatedly fail (poison pills) so one bad message doesn't block a partition indefinitely.</p>
-<pre><button class="copy">Copy</button><code>@KafkaListener(topics = "account-events", groupId = "ledger-service")
-public void consume(ConsumerRecord&lt;String, AccountEvent&gt; incomingRecord, Acknowledgment acknowledgment) {
-    try {
-        ledgerService.applyEvent(incomingRecord.value());
-        acknowledgment.acknowledge();               // commit only after successful processing
-    } catch (NonRetryableException nonRetryableFailure) {
-        deadLetterProducer.send("account-events-dlq", incomingRecord.value());
-        acknowledgment.acknowledge();               // don't block the partition on a poison message
-    }
-}</code></pre>
-<h4 class="q">Q5. How does Kafka ensure durability and fault tolerance?</h4>
-<p>Through replication and configurable acknowledgments. Each partition is replicated across brokers: a leader handles all reads and writes while followers replicate as in-sync replicas (ISRs). If the leader fails, an in-sync follower is elected leader. The producer's acks setting trades latency for durability: acks=0 (no acknowledgment), acks=1 (leader only), acks=all (all in-sync replicas, strongest and slowest). Messages are also persisted to disk under configurable retention, so data survives broker restarts.</p>
-<h4 class="q">Q6. Compare at-most-once, at-least-once, and exactly-once semantics. How does Kafka achieve exactly-once?</h4>
-<ul>
-<li>At-most-once — messages may be lost but are never redelivered; happens when the offset is committed before processing, so a failure mid-processing skips the message.</li>
-<li>At-least-once — no loss but possible duplicates; the common default, from committing the offset after processing (a crash between processing and commit causes reprocessing).</li>
-<li>Exactly-once — each message processed one time even under failure, built from idempotent producers plus transactional APIs.</li>
-</ul>
-<p>The idempotent producer gets a Producer ID (PID) and attaches a monotonically increasing sequence number per partition; the broker tracks the last sequence per PID/partition and drops duplicates from producer retries. Transactions extend this: a producer atomically writes to multiple partitions/topics and atomically commits both its output records and the consumer offsets (marking input as processed), using a transactional.id and a Transaction Coordinator that runs a two-phase-commit-like protocol, writing markers to the __transaction_state topic. Consumers with isolation.level=read_committed see only committed transactions.</p>
-<p>The cost is extra broker round trips for coordination and marker writes, plus consumer buffering until a commit marker arrives, so latency rises and throughput falls versus at-least-once. Reserve exactly-once for cases where duplicates cause real business harm (financial ledgers); logging can tolerate at-least-once with deduplication.</p>
-<h4 class="q">Q7. Explain log compaction versus time-based retention.</h4>
-<p>Time/size-based retention deletes whole log segments once they exceed an age or size threshold, regardless of content — right for event streams (logs, clickstream, metrics) where history matters. Log compaction instead keeps only the latest value per message key, discarding older records with the same key; a background thread builds a map of the latest offset per key and rewrites segments. A record with a null value (a tombstone) signals deletion of a key and is retained for a configurable grace period so all consumers see the deletion before it is purged. Compaction suits changelog or state topics (Kafka Streams state stores, database CDC, configuration data), where consumers rebuild current state by replaying the compacted topic without reading the whole unbounded history.</p>
-<h4 class="q">Q8. A consumer group is rebalancing frequently in production. How do you diagnose and fix it?</h4>
-<p>Common root causes and fixes:</p>
-<ul>
-<li>Processing exceeds max.poll.interval.ms — the broker assumes the consumer died and rebalances even though it's alive. Diagnose by comparing processing-time logs with the setting; fix by raising the interval, reducing max.poll.records for smaller faster batches, or offloading long work to a separate thread pool while the poll loop keeps heartbeating.</li>
-<li>session.timeout.ms with a blocked heartbeat — in older single-threaded clients a busy main thread could get a consumer falsely marked dead; newer clients heartbeat from a background thread. Tune session.timeout.ms and heartbeat.interval.ms.</li>
-<li>Genuine churn — unstable networks or frequent restarts (for example Kubernetes pod evictions without graceful shutdown) make consumers repeatedly leave and rejoin; correlate JoinGroup/LeaveGroup events with infrastructure events. Call consumer.close() in shutdown hooks to leave gracefully, and use static group membership (group.instance.id) to avoid rebalances during brief expected restarts such as rolling deployments.</li>
-</ul>
-<h2 id="s8">Section 7: AWS, Cloud &amp; Kubernetes</h2>
-<h4 class="q">Q1. What are the essential Kubernetes concepts for a Java tech lead, and how does Spring Boot integrate with liveness/readiness probes?</h4>
-<ul>
-<li>Pod — the smallest deployable unit (one or more containers sharing network/storage); typically one Spring Boot JVM per pod.</li>
-<li>Deployment — manages a ReplicaSet of pods and handles rolling updates and rollbacks declaratively.</li>
-<li>Service — a stable network endpoint (ClusterIP, NodePort, LoadBalancer) load-balancing across pod replicas, since pod IPs are ephemeral.</li>
-<li>ConfigMap / Secret — externalize configuration and credentials from the image, injected as env vars or mounted files, supporting the 12-factor principle.</li>
-<li>HPA (Horizontal Pod Autoscaler) — scales replica count on CPU/memory or custom metrics (Kafka consumer lag, queue depth via KEDA).</li>
-</ul>
-<p>Spring Boot Actuator (2.3+) exposes /actuator/health/liveness and /actuator/health/readiness as first-class Kubernetes probe groups.</p>
-<pre><button class="copy">Copy</button><code># application.yml
-management:
-  endpoint:
-    health:
-      probes:
-        enabled: true
-  health:
-    livenessstate:
-      enabled: true
-    readinessstate:
-      enabled: true
- 
-# deployment.yaml
-livenessProbe:
-  httpGet:
-    path: /actuator/health/liveness
-    port: 8080
-  initialDelaySeconds: 30
-  periodSeconds: 10
-readinessProbe:
-  httpGet:
-    path: /actuator/health/readiness
-    port: 8080
-  initialDelaySeconds: 20
-  periodSeconds: 5</code></pre>
-<p>The critical distinction: a failing liveness probe makes Kubernetes restart the pod (use it only for unrecoverable states like a deadlocked JVM); a failing readiness probe removes the pod from the Service's load-balancing pool without restarting it (use it for “temporarily can't serve traffic,” such as warming caches at startup or a critical downstream dependency being unavailable). Conflating the two causes needless restart loops during transient outages.</p>
-<aside class="note"><p><strong>Note: </strong>Own the health-check strategy explicitly rather than accepting defaults: a readiness check including a database ping correctly pulls a pod out of rotation during a DB blip, but using the same check for liveness would cause a pointless restart storm during that same blip.</p></aside>
-<h4 class="q">Q2. What is the difference between EC2 and Lambda? Describe S3 storage classes.</h4>
-<p>EC2 provides resizable virtual servers with full control of the OS and runtime, billed by instance uptime regardless of utilization — suited to long-running, stateful, predictable workloads. Lambda is serverless compute that runs code in response to events with no server management: stateless, capped at 15 minutes per execution, billed per millisecond of compute — cost-effective for sporadic or event-driven work such as S3 uploads or API requests. The choice depends on traffic pattern, statefulness, and how much infrastructure management the team will accept.</p>
-<p>S3 is highly scalable object storage (buckets of objects addressed by key) with 11 nines of durability. Storage classes trade cost for access pattern: Standard (frequent access), Intelligent-Tiering (auto-moves objects by usage), Standard-IA and One Zone-IA (infrequent access, cheaper), and Glacier / Glacier Deep Archive (long-term archival, retrieval from minutes to hours). Lifecycle policies automate transitions as data ages.</p>
-<h4 class="q">Q3. What is a VPC, and what are IAM best practices?</h4>
-<p>A VPC is a logically isolated network where you define IP ranges, subnets, route tables, and gateways. Traffic is controlled by security groups (stateful, instance-level) and network ACLs (stateless, subnet-level). Put load balancers in public subnets with an internet gateway, and databases and application servers in private subnets with no direct internet access; use VPC peering or Transit Gateway to connect VPCs and on-premises networks (via VPN or Direct Connect), and deploy multi-AZ for availability.</p>
-<p>IAM controls authentication and authorization via users, groups, roles, and JSON policies. Best practices: least privilege; avoid the root account for daily work; enforce MFA; use roles rather than hardcoded credentials for EC2/Lambda; use temporary STS credentials instead of long-lived access keys; group users by function and attach policies to groups; and audit with IAM Access Analyzer to find unused or overly permissive policies.</p>
-<h4 class="q">Q4. What is the difference between horizontal and vertical scaling, and how does Auto Scaling work?</h4>
-<p>Vertical scaling (scale up) enlarges an existing instance (t3.medium to t3.xlarge): simpler, but bounded by hardware limits and usually needing downtime. Horizontal scaling (scale out) adds instances to spread load, managed on AWS by Auto Scaling Groups working with an Elastic Load Balancer. ASGs watch CloudWatch metrics (CPU, request count) and launch or terminate instances using target-tracking, step, or scheduled policies. Horizontal scaling is generally preferred in cloud-native design because it improves fault tolerance and removes single points of failure.</p>
-<h4 class="q">Q5. An Auto Scaling Group isn't scaling in despite low CPU. How do you troubleshoot?</h4>
-<ul>
-<li>Scaling policy and cooldown — a long scale-in cooldown (default 300 seconds, sometimes configured far higher) intentionally blocks rapid scale-in until it expires after the last activity.</li>
-<li>Scale-in protection — individual instances may have protection enabled (intentionally for stateful, long-running jobs, or left on by accident), which stops the ASG terminating them regardless of metrics.</li>
-<li>Conflicting policies or scheduled actions — a scheduled action holding minimum capacity, or step scaling conflicting with target tracking on the same ASG.</li>
-<li>Minimum capacity — a minimum set higher than desired artificially prevents scale-in below that floor.</li>
-<li>Multiple metrics — with combined metrics (ALB request count plus CPU), target tracking honors whichever needs more capacity, so another metric may block scale-in even though CPU looks low.</li>
-</ul>
-<p>The fastest path to root cause is the Activity History tab in the EC2 console or the DescribeScalingActivities API, which logs why scaling decisions were made or blocked.</p>
-<h4 class="q">Q6. Design a multi-region disaster-recovery architecture on AWS with an RPO of 5 minutes and an RTO of 15 minutes.</h4>
-<p>A 5-minute RPO and 15-minute RTO call for warm standby or pilot light rather than backup-and-restore (whose RTO is measured in hours). Warm standby is safer for the RTO because pilot light must start compute from zero.</p>
-<ul>
-<li>Database — Aurora Global Database (cross-region replication with typically sub-second lag, far inside the 5-minute RPO, plus fast regional failover), or DynamoDB Global Tables for active-active NoSQL.</li>
-<li>Compute — keep a scaled-down but fully functional copy running in the secondary region (Auto Scaling Groups behind an Application Load Balancer), ready to scale up quickly on failover.</li>
-<li>Traffic — Route 53 health checks with failover routing redirect DNS to the secondary region's load balancer on failure; keep DNS TTL low (around 60 seconds) to limit propagation delay.</li>
-<li>Assets and config — S3 with Cross-Region Replication.</li>
-<li>Automation — automate failover with Systems Manager runbooks or Lambda triggered by CloudWatch alarms, since manual steps add unpredictable delay that risks the RTO.</li>
-<li>Validation — run regular DR drills with AWS Fault Injection Simulator to confirm the real failover time meets the target.</li>
-</ul>
-<h4 class="q">Q7. Design a secure, cost-optimized architecture for sensitive financial data using Lambda and S3.</h4>
-<ul>
-<li>Encryption at rest — use SSE-KMS rather than default SSE-S3: KMS gives CloudTrail audit trails of key use and fine-grained key policies over which IAM roles can decrypt, often a compliance requirement (PCI-DSS, SOC 2).</li>
-<li>Encryption in transit and exposure — bucket policies deny non-HTTPS requests (aws:SecureTransport condition) and S3 Block Public Access is enabled at the account level.</li>
-<li>Lambda hardening — encrypt sensitive environment variables with KMS and give the execution role least-privilege access scoped to specific S3 prefixes and KMS keys, with no wildcards.</li>
-<li>Cold starts — provisioned concurrency keeps environments pre-warmed (at the cost of paying for reserved capacity continuously); for occasional cold-start pain, shrink the package, trim dependencies, and pick a faster-starting runtime. VPC-attached Lambdas once paid a big cold-start penalty for ENI creation, largely fixed by Hyperplane ENI sharing.</li>
-<li>Auditing — enable AWS Config rules and CloudTrail account-wide for an immutable audit trail of API calls and configuration changes.</li>
-</ul>
-<h4 class="q">Q8. How would you migrate a 5TB PostgreSQL database to AWS with minimal downtime?</h4>
-<p>Use AWS Database Migration Service (DMS) with continuous replication rather than dump-and-restore, which would mean unacceptable downtime at this size.</p>
-<ul>
-<li>1. Provision the target (RDS or Aurora PostgreSQL), sized from the source's utilization.</li>
-<li>2. Run DMS's initial full load, using a large replication instance and parallel multi-threaded table loads to shorten the window.</li>
-<li>3. Enable Change Data Capture (via PostgreSQL logical replication / WAL) so ongoing source writes keep replicating during and after the full load; the app sees zero downtime in this phase.</li>
-<li>4. When CDC lag nears zero, validate consistency with DMS's built-in data validation (row counts and checksums).</li>
-<li>5. Cut over in a brief window: pause writes, drain remaining CDC changes, repoint connection strings/DNS to the new instance, and resume, typically a few minutes of downtime.</li>
-<li>6. For network transfer from on-premises, use Direct Connect or a Site-to-Site VPN; if transfer time is still prohibitive, seed the bulk data with AWS Snowball and let DMS CDC catch up the delta.</li>
-</ul>
-<h2 id="s9">Section 8: Frontend Integration — Angular &amp; React</h2>
-<h3 id="s10">AngularJS &amp; Angular</h3>
-<h4 class="q">Q1. What is scope in AngularJS, and what is two-way data binding?</h4>
-<p>In AngularJS 1.x (the legacy framework, distinct from the completely rewritten Angular 2+), $scope is the glue object connecting a controller's logic to its HTML template: anything attached to $scope is accessible from the template. Two-way data binding (via ng-model) keeps the view and model synchronized automatically: typing in an input updates the $scope property and programmatic model changes update the display, with no manual DOM manipulation. Under the hood AngularJS runs a digest cycle with dirty checking: on any event (user input, HTTP response, timeout) it compares the current and previous values of every watched expression, updates the DOM on differences, and re-runs until nothing changes or 10 iterations are reached.</p>
-<pre><button class="copy">Copy</button><code>// AngularJS 1.x controller
-app.controller('EmployeeController', function($scope) {
-    $scope.employeeName = "Alice"; // attached to $scope: visible in the template
-    $scope.greetEmployee = function() {
-        alert("Hello, " + $scope.employeeName);
-    };
-});
- 
-&lt;!-- Corresponding template --&gt;
-&lt;div ng-controller="EmployeeController"&gt;
-    &lt;input type="text" ng-model="employeeName"&gt;   &lt;!-- two-way bound to $scope.employeeName --&gt;
-    &lt;p&gt;{{ employeeName }}&lt;/p&gt;                        &lt;!-- displays the current value live --&gt;
-    &lt;button ng-click="greetEmployee()"&gt;Greet&lt;/button&gt;
-&lt;/div&gt;</code></pre>
-<aside class="note"><p><strong>Note: </strong>$scope was entirely replaced in modern Angular (2+) by a TypeScript component architecture in which each component holds its own state as class fields, with unidirectional data flow and explicit change detection, one reason for the move away from AngularJS's watcher-heavy model.</p></aside>
-<h4 class="q">Q2. Why does the digest cycle cause performance problems and infinite loops, and how do you fix them?</h4>
-<p>Dirty checking is synchronous and runs on every digest, so thousands of watchers cause visible UI lag, especially on older browsers and mobile. An infinite digest loop occurs when a watched expression's value changes as a side effect of the digest itself: typically a template-bound function (like {{ getFormattedValue() }}, or ng-repeat over a function returning a new array) that returns a new object reference on every call, which reference-equality checks read as a change, triggering yet another pass until the “10 $digest() iterations reached” error.</p>
-<p><strong>Debugging and fixes:</strong></p>
-<ul>
-<li>Find the offending watcher by logging inside $watch callbacks or using the Batarang extension (with debug info temporarily enabled).</li>
-<li>Memoize the function so it returns a stable cached reference when inputs are unchanged, or precompute values in the controller and bind to scope properties updated explicitly.</li>
-<li>Use one-time bindings ({{::item.name}}) for data that doesn't change after first render, which deregisters those watchers.</li>
-<li>Use pagination or virtual scrolling (ui-grid) for large ng-repeat lists so only visible rows are watched, and track by (ng-repeat="item in items track by item.id") to avoid destroying and recreating DOM and watchers when the array reference changes.</li>
-<li>Prefer ng-if over ng-show for large hidden sections, and use deep-watch ($watch's third argument) or a custom equality function judiciously.</li>
-</ul>
-<h4 class="q">Q3. What are directives (structural vs. attribute), and how do isolated-scope bindings '=', '&amp;', and '@' differ?</h4>
-<p>A directive attaches custom behavior to, or creates, HTML elements and attributes. Kinds: component directives (a directive with its own template, e.g. &lt;app-employee-card&gt;); structural directives that change DOM structure by adding or removing elements (*ngIf, *ngFor); and attribute directives that change the appearance or behavior of an existing element (ngClass, ngStyle, or a custom highlighter).</p>
-<pre><button class="copy">Copy</button><code>&lt;!-- Structural: conditionally includes/excludes this whole element --&gt;
-&lt;div *ngIf="employee.isActive"&gt;{{ employee.name }} is currently active&lt;/div&gt;
-&lt;!-- Structural: repeats this element once per item --&gt;
-&lt;li *ngFor="let employee of employeeList"&gt;{{ employee.name }}&lt;/li&gt;
-&lt;!-- Attribute: conditionally applies a CSS class --&gt;
-&lt;div [ngClass]="{ 'highlighted': employee.isVip }"&gt;{{ employee.name }}&lt;/div&gt;
- 
-// A custom ATTRIBUTE directive
-@Directive({ selector: '[appHighlightOnHover]' })
-export class HighlightOnHoverDirective {
-    constructor(private elementRef: ElementRef) { }
- 
-    @HostListener('mouseenter') onMouseEnter() {
-        this.elementRef.nativeElement.style.backgroundColor = 'yellow';
-    }
-    @HostListener('mouseleave') onMouseLeave() {
-        this.elementRef.nativeElement.style.backgroundColor = '';
-    }
-}</code></pre>
-<p>For an AngularJS directive with an isolated scope, the three binding types are:</p>
-<ul>
-<li>'@' — one-way string binding: passes the literal attribute value (or an interpolated {{ }} string) into the isolated scope; good for simple config like a title or label.</li>
-<li>'=' — genuine two-way binding: a live link between a parent-scope property and an isolated-scope property (implemented with a $watch on each side), so changes propagate both ways.</li>
-<li>'&amp;' — passes behavior: wraps a parent expression or function so the directive can invoke it, often with locals (onSave({item: someItem})); the recommended way to trigger parent side effects with clean separation, versus $emit/$broadcast.</li>
-</ul>
-<p>For bidirectional communication, combine '=' for shared reactive data (a selected item) with '&amp;' for explicit action callbacks (onItemSelected), rather than leaking implementation detail through $rootScope.$broadcast.</p>
-<h4 class="q">Q4. What are decorators in Angular? What differs between ng-if and ng-show, factory and service, and dependency injection in AngularJS?</h4>
-<p>A decorator is a TypeScript feature that attaches metadata to a class, method, property, or parameter without changing its logic; Angular reads that metadata to wire things together.</p>
-<ul>
-<li>@Component — marks a class as a component with its template, styles, and selector.</li>
-<li>@Injectable — makes a class injectable via Angular's DI (parallel to Spring's DI on the backend).</li>
-<li>@Input / @Output — data flowing in from a parent template / events (usually an EventEmitter) flowing out to the parent.</li>
-<li>@NgModule — declares which components, directives, and modules belong together.</li>
-<li>@HostListener — binds a method to a DOM event on the host element.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>@Component({
-    selector: 'app-employee-card',
-    template: `&lt;div&gt;{{ employeeName }}&lt;/div&gt;`
-})
-export class EmployeeCardComponent {
-    @Input() employeeName: string;               // data flows IN from the parent
-    @Output() cardClicked = new EventEmitter();  // events flow OUT to the parent
-}</code></pre>
-<ul>
-<li>ng-if vs. ng-show/ng-hide — ng-show/ng-hide toggle the CSS display property, leaving the element (and its watchers and listeners) in the DOM: faster for frequent toggling of simple elements. ng-if adds or removes the element and creates or destroys its scope: better for complex or rarely shown content, with some overhead when toggled frequently.</li>
-<li>factory vs. service — both produce singletons. A factory is a function whose returned object becomes the service, flexible and good for returning a function or an object with private state; a service is a constructor function instantiated with new, so you attach members to this.</li>
-<li>Dependency injection in AngularJS — components declare dependencies (function($scope, $http, myService)) and the injector supplies them. Because minification renames parameters, use the array notation (['$scope', '$http', 'myService', function(...) {...}]). DI promotes loose coupling and easy mocking in tests (Jasmine/Karma).</li>
-</ul>
-<h4 class="q">Q5. How does AngularJS compare with Ext JS?</h4>
-<p>AngularJS (and Angular) is a comprehensive MVC/MVVM application framework focused on structuring logic and data flow (two-way binding, DI, routing, components) and deliberately ships few pre-styled visual widgets, so you pair it with a UI library (Angular Material, Bootstrap). Ext JS (Sencha) is primarily a rich UI component library of professionally styled, highly configurable widgets (sortable/filterable/groupable data grids, trees, complex forms, dashboards), historically strong for internal, data-heavy enterprise line-of-business apps and less common for public consumer sites.</p>
-<h3 id="s11">React</h3>
-<h4 class="q">Q6. What is the Virtual DOM, and how does React's Fiber reconciliation work?</h4>
-<p>The Virtual DOM is a lightweight in-memory JavaScript representation of the real DOM. On a state or props change React updates the Virtual DOM first, diffs the new tree against the previous one (reconciliation) to find the minimal set of changes, batches updates, and applies only those to the real DOM, avoiding costly reflow and repaint. It isn't always faster than hand-tuned direct manipulation, but it gives a predictable, declarative model that scales.</p>
-<p>Fiber (React 16+) reimplements reconciliation to allow incremental, interruptible rendering. The old stack-based reconciler processed the whole tree synchronously and recursively, so a large tree could block the main thread and cause jank. Fiber breaks work into units represented as a tree of fiber nodes (each holding component type, props, state, and parent/child/sibling pointers), checks after each unit whether higher-priority work (a user interaction) should preempt, and yields to the browser using cooperative scheduling. It has two phases: render/reconciliation (interruptible, building a work-in-progress tree by comparing it against the current one) and commit (synchronous and uninterruptible, applying DOM mutations at once to avoid an inconsistent UI). This underpins Concurrent Mode, Suspense, and time-slicing.</p>
-<h4 class="q">Q7. What are the differences between functional and class components, and what do Hooks and keys do?</h4>
-<p>Class components extend React.Component, require render(), manage state with this.state/this.setState(), and use lifecycle methods (componentDidMount, componentDidUpdate). Since Hooks arrived in React 16.8, functional components can manage state and effects: useState replaces this.state, and useEffect consolidates componentDidMount/DidUpdate/WillUnmount into one dependency-array-based API. Hooks remove the pain of binding this and let you share stateful logic through custom hooks rather than higher-order components or render props, so functional components with Hooks are now the standard.</p>
-<p>Keys are stable, unique attributes on list items that let React identify which items changed, were added, or removed during reconciliation. Use a stable data ID, not the array index: index keys on reorderable or filtered lists make React mismatch elements, causing state to persist on the wrong item, extra re-renders, or broken animations and focus.</p>
-<h4 class="q">Q8. How does useEffect work, and what is prop drilling?</h4>
-<p>useEffect runs side effects (data fetching, subscriptions, timers, manual DOM work) outside the render phase. The dependency array controls re-runs: omitted means after every render; empty ([]) means once after the initial render (like componentDidMount); listed values mean whenever any changes, compared with Object.is. The callback can return a cleanup function, which React calls before unmount or before the effect re-runs, essential for clearing subscriptions, timers, and listeners. An incomplete dependency array causes stale closures over outdated state or props; the ESLint exhaustive-deps rule catches this.</p>
-<p>Prop drilling is passing data through many intermediate components that don't need it just to reach a deeply nested one, coupling components to the data's shape and cluttering them. The Context API (a Provider supplying a value, any descendant reading it with useContext) avoids it; for frequent updates, async logic, or global state across unrelated trees, use Redux, Zustand, or Recoil for predictable updates, middleware, and dev tools. Choose by application complexity and update frequency.</p>
-<pre><button class="copy">Copy</button><code>useEffect(() =&gt; {
-    const abortController = new AbortController();
-    const refreshIntervalId = setInterval(refreshOrders, 5000);
- 
-    fetch('/api/orders', { signal: abortController.signal })
-        .then(response =&gt; response.json())
-        .then(setOrders);
- 
-    // cleanup: runs on unmount (or before the effect re-runs)
-    return () =&gt; {
-        clearInterval(refreshIntervalId);   // stop the timer
-        abortController.abort();            // cancel the in-flight request
-    };
-}, []); // empty dependency array: runs once after the initial render</code></pre>
-<h4 class="q">Q9. How do you prevent unnecessary re-renders when a frequently changing context is used by only a few components?</h4>
-<p>Every useContext consumer re-renders whenever the context value changes (compared by reference), regardless of whether the slice it uses changed.</p>
-<ul>
-<li>Split one large context into several granular ones so components subscribe only to the slice they need.</li>
-<li>Memoize the context value with useMemo, so the Provider doesn't create a new object reference on every parent re-render when the data is unchanged.</li>
-<li>Use a selector pattern (use-context-selector, or Zustand) so components re-render only when their selected derived value changes.</li>
-<li>Wrap expensive descendants that don't consume the context in React.memo (with a custom comparison if needed) to create re-render boundaries.</li>
-</ul>
-<p>Combining context splitting with strategic memoization usually gives the best balance without adopting a full external state library, unless complexity warrants one.</p>
-<h4 class="q">Q10. A React app leaks memory after many page navigations. How do you debug it?</h4>
-<p>Take heap snapshots in the browser DevTools Memory tab before and after repeated navigation cycles and use the comparison view to find object types whose instance counts grow with navigation but never return to baseline. Then trace retaining paths back to the root cause, commonly:</p>
-<ul>
-<li>Missing cleanup in useEffect — subscriptions, listeners, timers (setInterval/setTimeout), or WebSockets not torn down on unmount keep component state alive through captured closures.</li>
-<li>Async work resolving after unmount — fix with an AbortController to cancel in-flight requests, or a mounted-ref guard around state updates.</li>
-<li>Third-party libraries (charts, maps, rich-text editors) that create DOM or listeners outside React's lifecycle and need explicit destroy()/dispose() in the cleanup function.</li>
-<li>Global references — a module-level array or singleton event emitter accumulating listeners with no matching removeListener.</li>
-</ul>
-<p>The React DevTools Profiler, combined with looking for components with unexpectedly high retainer counts in snapshots, usually turns a vague “React memory leak” into a concrete reference-retention bug.</p>
-<h2 id="s12">Section 9: Security, Networking &amp; API Performance</h2>
-<h4 class="q">Q1. What is the difference between encryption and hashing?</h4>
-<p>They are frequently confused but are fundamentally different operations.</p>
-<ul>
-<li>Encryption — a reversible transformation of plaintext into ciphertext using a key. Anyone with the correct key (the same key for symmetric encryption, the corresponding private key for asymmetric) can decrypt it back to the exact original. Use it when the original data must eventually be recovered. “Encrypted data” is simply the ciphertext output.</li>
-<li>Hashing — a one-way, non-reversible transformation into a fixed-size digest. The same input always gives the same hash, but a good cryptographic hash makes it computationally infeasible to find any input producing a target hash. Use it to verify data (checking a password attempt against a stored hash without ever storing or recovering the plaintext) or to detect tampering.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>// Encryption: REVERSIBLE, the original plaintext CAN be recovered with the right key
-byte[] ciphertext = encryptCipher.doFinal(originalPlaintext.getBytes());
-byte[] recoveredPlaintext = decryptCipher.doFinal(ciphertext); // gets the ORIGINAL back
- 
-// Hashing: NOT reversible, there is no "un-hash" operation
-MessageDigest sha256Digest = MessageDigest.getInstance("SHA-256");
-byte[] contentHash = sha256Digest.digest(inputData.getBytes());
-// Verification re-hashes a LATER input and compares the two hashes</code></pre>
-<aside class="note"><p><strong>Note: </strong>For passwords, use a purpose-built, deliberately slow, tunable algorithm (bcrypt, scrypt, or Argon2), not a fast general-purpose hash like plain SHA-256. A fast hash makes brute-forcing a leaked hash database dramatically cheaper, exactly what password-hashing algorithms are engineered to counteract.</p></aside>
-<h4 class="q">Q2. How are IP addresses communicated between servers?</h4>
-<ul>
-<li>1. Name resolution (DNS) — the application usually starts with a hostname (api.example.com); a DNS server resolves it to the current IP address.</li>
-<li>2. Connection — the OS networking stack (typically TCP, for reliable ordered delivery) connects to that IP on a port (443 for HTTPS) through the three-way handshake (SYN, SYN-ACK, ACK).</li>
-<li>3. Routing — packets cross intermediate routers, each forwarding them one step closer based on the destination IP in the packet header.</li>
-<li>4. Data exchange — over the open TCP connection the servers exchange application data (an HTTP request and response).</li>
-</ul>
-<p>From a Java application's viewpoint, java.net (or a higher-level HTTP client) handles all of this transparently; code supplies a URL or hostname and rarely touches raw IPs or packets.</p>
-<h4 class="q">Q3. What are HTTP handlers?</h4>
-<p>An HTTP handler is code that processes an incoming HTTP request and produces the response; the concept is universal even though naming varies by layer.</p>
-<ul>
-<li>Servlet — the foundational Java EE handler (doGet()/doPost()).</li>
-<li>Spring MVC @Controller methods — a higher-level abstraction on the Servlet API; each @RequestMapping-annotated method handles one URL and HTTP-method combination.</li>
-<li>Filters — related but distinct: rather than completing a request, a Filter intercepts it (and the response) on the way through the pipeline for cross-cutting concerns (authentication, logging, compression) and passes it down the chain.</li>
-<li>com.sun.net.httpserver.HttpHandler — the JDK's own minimal, built-in interface with one method, handle(HttpExchange), the barest expression of the concept.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
- 
-public class SimpleHandler implements HttpHandler {
-    @Override
-    public void handle(HttpExchange httpExchange) throws IOException {
-        String responseText = "Hello from a raw HTTP handler";
-        httpExchange.sendResponseHeaders(200, responseText.length());
-        try (OutputStream responseBody = httpExchange.getResponseBody()) {
-            responseBody.write(responseText.getBytes());
-        }
-    }
-}</code></pre>
-<h4 class="q">Q4. How do you avoid SQL injection in a Java application?</h4>
-<p>Code examples of the vulnerable and safe forms are in Part 3, Section 6 and Part 4, Section 4. The defenses, in priority order:</p>
-<ul>
-<li>Always use PreparedStatement (or an ORM/query builder that parameterizes internally) with bind parameters for any user-originated value; never concatenate untrusted input into SQL.</li>
-<li>If SQL structure must vary (an optional WHERE clause depending on selected filters), build the structure dynamically but still bind every value via parameters.</li>
-<li>Apply least privilege to the application's database account (only the specific permissions it needs, never broad administrative rights), limiting the damage of a successful injection.</li>
-<li>Add input validation (a numeric ID really is numeric) as defense in depth on top of parameterized queries, never as a replacement, since validation alone is easy to get wrong or bypass.</li>
-</ul>
-<h4 class="q">Q5. What steps would you take to improve the performance of an API?</h4>
-<ul>
-<li>1. Measure first — profile, use distributed tracing (Zipkin, Jaeger, APM), and log per-step timings; optimizing a non-bottleneck wastes effort and adds complexity.</li>
-<li>2. Optimize database queries — often the single biggest lever: review slow queries, add indexes, and eliminate N+1 queries with JOIN FETCH, @EntityGraph, or batch fetching (Part 4, Section 5).</li>
-<li>3. Cache — in-memory (Caffeine) for small hot data, distributed (Redis) for data shared and consistent across instances, for data read often but changed rarely.</li>
-<li>4. Go async for non-critical work — hand off side effects (a confirmation email) to a message queue or async task instead of making the caller wait.</li>
-<li>5. Pool connections — both database connections and outgoing HTTP client connections, rather than paying setup cost per request.</li>
-<li>6. Shrink payloads — return only needed fields (projection parameters), compress large responses (gzip), and paginate unbounded lists.</li>
-<li>7. Scale horizontally — once a single instance is reasonably optimized, run several behind a load balancer.</li>
-</ul>
-<h4 class="q">Q6. On Amazon, applying search filters uses which design pattern?</h4>
-<p>The Strategy pattern (closely related to, and often combined with, the Specification pattern). Each filter (“Brand: Sony”, “Price: $20–$50”, “Rating: 4 stars &amp; up”, “Prime eligible”) is modeled as its own predicate object behind a common interface with one method: does this product satisfy my criteria? The search engine combines the active filters (usually with logical AND) without knowing what any individual filter checks. This is the same design as the FilteredList exercise in Part 2, Section 7.</p>
-<p><em>Problem statement: Combine any set of user-selected filters over a product list without the search engine knowing what each filter checks.</em></p>
-<pre><button class="copy">Copy</button><code>public interface ProductFilter {
-    boolean matches(Product candidateProduct);
-}
- 
-public class BrandFilter implements ProductFilter {
-    private final String requiredBrand;
- 
-    public BrandFilter(String requiredBrand) {
-        this.requiredBrand = requiredBrand;
-    }
- 
-    @Override
-    public boolean matches(Product candidateProduct) {
-        return candidateProduct.getBrand().equalsIgnoreCase(requiredBrand);
-    }
-}
- 
-public class PriceRangeFilter implements ProductFilter {
-    private final BigDecimal minimumPrice;
-    private final BigDecimal maximumPrice;
- 
-    public PriceRangeFilter(BigDecimal minimumPrice, BigDecimal maximumPrice) {
-        this.minimumPrice = minimumPrice;
-        this.maximumPrice = maximumPrice;
-    }
- 
-    @Override
-    public boolean matches(Product candidateProduct) {
-        return candidateProduct.getPrice().compareTo(minimumPrice) &gt;= 0
-                &amp;&amp; candidateProduct.getPrice().compareTo(maximumPrice) &lt;= 0;
-    }
-}
- 
-// The engine applies whichever filters are currently active (logical AND)
-public List&lt;Product&gt; applyActiveFilters(List&lt;Product&gt; allProducts, List&lt;ProductFilter&gt; activeFilters) {
-    return allProducts.stream()
-            .filter(product -&gt; activeFilters.stream().allMatch(filter -&gt; filter.matches(product)))
-            .collect(Collectors.toList());
-}</code></pre>
-<p>Adding a new filter (“seller rating”) means writing one new class implementing ProductFilter, with zero changes to the engine: a textbook application of the Open/Closed Principle.</p></main></div>
+</main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
 document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};

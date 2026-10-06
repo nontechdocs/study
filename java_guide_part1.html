@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en"><head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Java Interview Guide – Part 1</title>
@@ -31,9 +32,9 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 .hide{display:none!important}
 @media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
 </style></head><body>
-<header><button id="menu">☰</button><h1>Java Interview Guide — Part 1: Core Java Fundamentals, Design Patterns &amp; Concurrency</h1><button id="theme">◐</button></header>
-<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s3">Section 1: Core Java Fundamentals</a><a class="l2" href="#s4">Section 2: Design Patterns</a><a class="l3" href="#s5">Quick Reference</a><a class="l3" href="#s6">Design Pattern Interview Questions</a><a class="l2" href="#s7">Section 3: Multithreading &amp; Concurrency</a><a class="l3" href="#s8">The Executor Framework</a><a class="l3" href="#s9">Thread Safety &amp; Synchronization Fundamentals</a><a class="l3" href="#s10">Multithreading Interview Questions</a></nav>
-<main id="main"><h2 id="s3">Section 1: Core Java Fundamentals</h2>
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 1: Core Java, Language Features &amp; Design Patterns</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s1">Section 1: Core Java Fundamentals</a><a class="l2" href="#s2">Section 2: Java Object Fundamentals &amp; Lifecycle</a><a class="l2" href="#s3">Section 3: Exception Handling</a><a class="l2" href="#s4">Section 4: Generics</a><a class="l2" href="#s5">Section 5: Java 7–21 Features &amp; Modern Java</a><a class="l2" href="#s6">Section 6: Core Java &amp; OO Design — Rapid-Fire</a><a class="l2" href="#s7">Section 7: Java Serialization</a><a class="l2" href="#s8">Section 8: Date, Time &amp; Calendar</a><a class="l2" href="#s9">Section 9: Design Patterns</a><a class="l3" href="#s10">Quick Reference</a><a class="l3" href="#s11">Design Pattern Interview Questions</a></nav>
+<main id="main"><h2 id="s1">Section 1: Core Java Fundamentals</h2>
 <h4 class="q">Q1. What is an immutable object? Can you write an immutable class?</h4>
 <p>An immutable object is an object whose state cannot be changed after construction. Any “modification” instead produces a brand-new object, leaving the original untouched. String is the most common example of an immutable class in Java.</p>
 <p>Immutable classes are typically declared final, to stop a subclass from overriding methods in a way that could break immutability. You can achieve the same safety without the final keyword by making fields private and never modifying them after the constructor runs.</p>
@@ -251,8 +252,446 @@ System.out.println("Time taken (ns): " + (endTimeNanos - startTimeNanos));</code
 }</code></pre>
 <h4 class="q">Q21. What is the difference between shallow copy and deep copy?</h4>
 <p>A shallow copy duplicates an object's top-level fields, but any reference-type fields still point to the same underlying objects as the original — mutating a shared nested object through the copy affects the original too. A deep copy recursively duplicates every referenced object as well, producing a fully independent object graph. Object.clone() performs a shallow copy by default; a true deep copy requires manual recursive cloning, a copy constructor that itself deep-copies nested fields, or serialization-based cloning.</p>
-<h2 id="s4">Section 2: Design Patterns</h2>
-<h3 id="s5">Quick Reference</h3>
+<h2 id="s2">Section 2: Java Object Fundamentals &amp; Lifecycle</h2>
+<h4 class="q">Q1. What is an object, and what three steps does a statement like Human person = new Human() perform?</h4>
+<p>An object is an instance of a class — a bundle of state (fields) and behavior (methods). Car, Bird, and Human are classes; a specific car with a given license plate is an object. The single statement performs three steps: Declaration (the name refers to an object of type Human), Instantiation (the new operator allocates memory), and Initialization (the constructor runs to set the initial state).</p>
+<h4 class="q">Q2. Describe the seven states in a Java object's lifecycle.</h4>
+<ul>
+<li>1. Created — memory is allocated; if immediately assigned to a variable, the object moves straight to In Use.</li>
+<li>2. In Use — held by at least one strong reference (the default kind, as opposed to Weak/Soft/Phantom).</li>
+<li>3. Invisible — no strong reference is accessible from the currently executing program logic, even though one may technically still exist (e.g. a field that will never be read again).</li>
+<li>4. Unreachable — no strong reference exists from any GC root (local variables on a thread stack, active static fields, JNI references).</li>
+<li>5. Collected — the GC recognizes it as unreachable; if the class overrides finalize(), it is marked for that call.</li>
+<li>6. Finalized — still unreachable after finalize() ran, now awaiting deallocation.</li>
+<li>7. Deallocated — memory is reclaimed and made available for future allocations.</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>Do not rely on finalize() to release important resources: there is no guarantee when (or if) it runs, and a finalizer can extend an object's lifetime and increase GC work. Prefer try-with-resources and AutoCloseable.</p></aside>
+<p><em>Figure: Java object lifecycle — seven states</em></p>
+<h2 id="s3">Section 3: Exception Handling</h2>
+<h4 class="q">Q1. What is the difference between checked and unchecked exceptions, and between throw and throws?</h4>
+<p>Checked exceptions (subclasses of Exception that do not extend RuntimeException, e.g. IOException, SQLException) are verified at compile time: a method that might throw one must handle it or declare it, and they typically represent recoverable conditions. Unchecked exceptions (RuntimeException subclasses and Errors, e.g. NullPointerException, IllegalArgumentException) are not compiler-enforced and usually represent programming errors.</p>
+<p>throw is a statement that raises a Throwable instance at a specific point (throw new IllegalArgumentException("size must be a multiple of 2")). throws is part of a method signature, listing the checked exceptions the method may propagate so the caller knows what to handle.</p>
+<h4 class="q">Q2. Can there be multiple catch blocks? What is multi-catch?</h4>
+<p>Yes: multiple catch blocks are evaluated top-down, most specific first. Since Java 7, multi-catch — catch (IOException | SQLException exception) — handles unrelated types in one block (no superclass/subclass pairs; the variable is implicitly final), reducing duplicated handling logic.</p>
+<h4 class="q">Q3. What is try-with-resources, and what happens if exceptions occur in both try and finally?</h4>
+<p>Introduced in Java 7, try-with-resources automatically closes resources implementing AutoCloseable/Closeable after the block, even on exceptions, eliminating manual finally cleanup. Resources close in reverse declaration order, and exceptions thrown by close() are attached to the primary exception as suppressed exceptions (retrievable via getSuppressed()).</p>
+<p>With a plain try/finally, an exception thrown from the finally block replaces the one from try, and the original is lost unless captured — which is why finally blocks should avoid throwing exceptions or returning values.</p>
+<p><em>Problem statement: Read a file line by line and guarantee the reader is closed without writing a finally block.</em></p>
+<pre><button class="copy">Copy</button><code>import java.io.*;
+ 
+public class FileReadingDemo {
+    public static void readFileContents(String filePath) {
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(filePath))) {
+            String currentLine;
+            while ((currentLine = fileReader.readLine()) != null) {
+                System.out.println(currentLine);
+            }
+        } catch (IOException fileException) {
+            System.out.println("Error reading file: " + fileException.getMessage());
+        } // fileReader is auto-closed here, no finally needed
+    }
+}</code></pre>
+<h4 class="q">Q4. What is exception chaining, and how do you write a custom checked exception?</h4>
+<p>Exception chaining wraps a lower-level exception inside a higher-level one via the cause constructor (new ServiceException("msg", originalException)) or initCause(), preserving the original stack trace/root cause while letting each layer throw domain-appropriate exceptions.</p>
+<p><em>Problem statement: Reject a bank withdrawal that exceeds the balance by throwing a custom checked exception.</em></p>
+<pre><button class="copy">Copy</button><code>class InsufficientFundsException extends Exception {
+    public InsufficientFundsException(String errorMessage) {
+        super(errorMessage);
+    }
+}
+ 
+class BankAccount {
+    private double accountBalance;
+ 
+    public BankAccount(double initialBalance) {
+        this.accountBalance = initialBalance;
+    }
+ 
+    public void withdrawAmount(double requestedAmount) throws InsufficientFundsException {
+        if (requestedAmount &gt; accountBalance) {
+            // explicitly throw a custom exception carrying context
+            throw new InsufficientFundsException(
+                    "Requested $" + requestedAmount + " exceeds balance $" + accountBalance);
+        }
+        accountBalance -= requestedAmount;
+    }
+}
+ 
+public class BankDemo {
+    public static void main(String[] arguments) {
+        BankAccount savingsAccount = new BankAccount(500.0);
+        try {
+            savingsAccount.withdrawAmount(700.0); // triggers the custom exception
+        } catch (InsufficientFundsException exceptionDetails) {
+            System.out.println("Transaction failed: " + exceptionDetails.getMessage());
+        }
+    }
+}</code></pre>
+<h2 id="s4">Section 4: Generics</h2>
+<p>Type erasure (why List&lt;String&gt; and List&lt;Integer&gt; share the same runtime class, and the Class&lt;T&gt; token / TypeToken workarounds) is covered in Section 1, Q16.</p>
+<h4 class="q">Q1. What is the difference between ? extends T and ? super T (PECS)?</h4>
+<p>? extends T (upper-bounded wildcard) allows reading T or its subtypes — use it for producers (Producer Extends). ? super T (lower-bounded) allows writing T or its subtypes into the structure — use it for consumers (Consumer Super). Comparator&lt;? super T&gt; accepting comparators for T or its supertypes is a canonical example.</p>
+<p><em>Problem statement: Copy elements from a source list of a subtype into a destination list of a supertype.</em></p>
+<pre><button class="copy">Copy</button><code>import java.util.*;
+ 
+public class BoundedWildcardDemo {
+    // PECS: the source produces (extends), the destination consumes (super)
+    public static &lt;ElementType&gt; void copyElements(
+            List&lt;? extends ElementType&gt; sourceList,
+            List&lt;? super ElementType&gt; destinationList) {
+        for (ElementType currentElement : sourceList) {
+            destinationList.add(currentElement);
+        }
+    }
+ 
+    public static void main(String[] arguments) {
+        List&lt;Integer&gt; integerSource = Arrays.asList(1, 2, 3);
+        List&lt;Number&gt; numberDestination = new ArrayList&lt;&gt;();
+        copyElements(integerSource, numberDestination);
+        System.out.println(numberDestination); // [1, 2, 3]
+    }
+}</code></pre>
+<h4 class="q">Q2. Why can't you create generic arrays like new T[10]?</h4>
+<p>Because of type erasure the JVM doesn't know T's runtime type, and arrays are covariant with runtime type checks (ArrayStoreException), so a raw T[] could let incompatible elements in. The workaround is an unchecked cast, @SuppressWarnings("unchecked") T[] array = (T[]) new Object[10], or, better, using ArrayList&lt;T&gt;.</p>
+<h4 class="q">Q3. What are bounded type parameters?</h4>
+<p>They restrict acceptable types using extends, with multiple bounds allowed: &lt;T extends Comparable&lt;T&gt; &amp; Serializable&gt;. This lets the generic code call methods defined by the bound; for example &lt;T extends Number&gt; permits calling doubleValue() on T, which a plain &lt;T&gt; would not.</p>
+<h2 id="s5">Section 5: Java 7–21 Features &amp; Modern Java</h2>
+<h4 class="q">Q1. Name key features introduced in Java 7 and Java 8.</h4>
+<p><strong>Java 7:</strong></p>
+<ul>
+<li>try-with-resources for automatic resource closing.</li>
+<li>The Fork/Join framework for divide-and-conquer parallel algorithms that balance work across cores.</li>
+<li>Strings in switch statements (compiled to a hashCode()-based comparison plus an equals() check).</li>
+<li>The diamond operator &lt;&gt; for generic type inference.</li>
+<li>Multi-catch: catch (IOException | SQLException e).</li>
+</ul>
+<p><strong>Java 8:</strong></p>
+<ul>
+<li>Lambda expressions and method references.</li>
+<li>The Stream API, with optional parallel execution.</li>
+<li>The java.time package: an immutable, thread-safe replacement for Date/Calendar.</li>
+<li>Default and static methods on interfaces.</li>
+<li>Repeatable annotations, and Optional.</li>
+</ul>
+<h4 class="q">Q2. What is a lambda expression, and what are functional interfaces?</h4>
+<p>A lambda is a concise anonymous-function implementation of a functional interface — an interface with exactly one abstract method — e.g. (a, b) -&gt; a + b. @FunctionalInterface is optional but recommended for compile-time checking. Built-in examples: Runnable, Comparator&lt;T&gt;, Function&lt;T,R&gt;, Predicate&lt;T&gt;, Supplier&lt;T&gt;, Consumer&lt;T&gt;; they underpin the lambda and Stream APIs.</p>
+<h4 class="q">Q3. What is the Stream API, and how do intermediate and terminal operations differ?</h4>
+<p>A Stream is a sequence of elements supporting declarative, functional-style pipelines (map, filter, reduce) that can run sequentially or in parallel. Unlike collections, streams don't store data and are consumed once. Intermediate operations (filter, map, sorted) are lazy and return a new Stream; nothing executes until a terminal operation (collect, forEach, reduce, count) triggers processing and closes the stream.</p>
+<p><em>Problem statement: Given [1,2,3,4,5,6], filter the even numbers, square them, and sum the result in one pipeline (expected 4 + 16 + 36 = 56).</em></p>
+<pre><button class="copy">Copy</button><code>import java.util.*;
+ 
+public class SumOfSquaresDemo {
+    public static void main(String[] arguments) {
+        List&lt;Integer&gt; numberCollection = Arrays.asList(1, 2, 3, 4, 5, 6);
+ 
+        int sumOfEvenSquares = numberCollection.stream()
+                .filter(currentValue -&gt; currentValue % 2 == 0)  // intermediate: keep evens
+                .map(currentValue -&gt; currentValue * currentValue) // intermediate: square each
+                .reduce(0, Integer::sum);                         // terminal: accumulate the sum
+ 
+        System.out.println("Sum of squares of even numbers: " + sumOfEvenSquares); // 56
+    }
+}</code></pre>
+<h4 class="q">Q4. What is the difference between map() and flatMap()?</h4>
+<p>map() transforms each element into exactly one other element (one-to-one), potentially yielding nested structures like Stream&lt;List&lt;T&gt;&gt;. flatMap() transforms each element into a stream and flattens all of them into a single-level Stream&lt;T&gt; — useful when each element maps to multiple elements, e.g. flattening List&lt;List&lt;Integer&gt;&gt; into List&lt;Integer&gt;.</p>
+<h4 class="q">Q5. What is Optional, and why was it introduced?</h4>
+<p>Optional&lt;T&gt; is a container that may or may not hold a non-null value, introduced to make absence explicit in method signatures and reduce NullPointerException risk. Use orElse(), orElseGet(), map(), and ifPresent() rather than manual null checks, and avoid calling get() without checking presence.</p>
+<h4 class="q">Q6. What are method references, and what are their four types?</h4>
+<p>Method references are shorthand lambdas that name an existing method: (1) static method — ClassName::staticMethod; (2) instance method of a particular object — object::instanceMethod; (3) instance method of an arbitrary object of a type — ClassName::instanceMethod; (4) constructor reference — ClassName::new.</p>
+<h4 class="q">Q7. What is the difference between Collectors.toList()/toSet() and groupingBy()?</h4>
+<p>toList()/toSet() collect elements into a plain collection. groupingBy() partitions elements into a Map&lt;K, List&lt;V&gt;&gt; by a classifier function, optionally with downstream collectors (counting, summing, mapping) — the Java equivalent of SQL GROUP BY.</p>
+<p><em>Problem statement: Group employee names by department.</em></p>
+<pre><button class="copy">Copy</button><code>import java.util.*;
+import java.util.stream.*;
+ 
+public class EmployeeGroupingDemo {
+    public static void main(String[] arguments) {
+        List&lt;String[]&gt; employeeRecords = Arrays.asList(
+                new String[]{"Alice", "Engineering"},
+                new String[]{"Bob", "Sales"},
+                new String[]{"Charlie", "Engineering"});
+ 
+        Map&lt;String, List&lt;String&gt;&gt; employeesByDepartment = employeeRecords.stream()
+                .collect(Collectors.groupingBy(
+                        employeeRecord -&gt; employeeRecord[1],   // classifier: department
+                        Collectors.mapping(employeeRecord -&gt; employeeRecord[0], // extract name
+                                Collectors.toList())));
+ 
+        System.out.println(employeesByDepartment);
+        // {Engineering=[Alice, Charlie], Sales=[Bob]}
+    }
+}</code></pre>
+<h4 class="q">Q8. What are default and static interface methods, and what problem do they solve? What is the diamond problem?</h4>
+<p>Before Java 8, adding a method to an interface broke every implementer. Default methods carry a body so existing implementers keep compiling — essential for evolving APIs such as adding Collection.stream() without breaking millions of implementations. Static methods belong to the interface itself, are called via InterfaceName.method(), and can't be overridden.</p>
+<p>The diamond problem arises when a class inherits conflicting default implementations from two interfaces. Java forces the class to override the method explicitly, and it can call a specific version with InterfaceName.super.methodName(), avoiding the ambiguity multiple inheritance of state would cause.</p>
+<p><em>Problem statement: Show an interface with an abstract, a default, and a static method, used by an implementing class.</em></p>
+<pre><button class="copy">Copy</button><code>interface PaymentProcessor {
+    // abstract method: must be implemented
+    void processPayment(double transactionAmount);
+ 
+    // default method: shared behavior inherited for free
+    default void logTransaction(double transactionAmount) {
+        System.out.println("Logging transaction: " + transactionAmount);
+    }
+ 
+    // static method: utility bound to the interface itself
+    static boolean isValidAmount(double transactionAmount) {
+        return transactionAmount &gt; 0;
+    }
+}
+ 
+class CreditCardProcessor implements PaymentProcessor {
+    @Override
+    public void processPayment(double transactionAmount) {
+        if (PaymentProcessor.isValidAmount(transactionAmount)) {
+            logTransaction(transactionAmount);
+            System.out.println("Processed: " + transactionAmount);
+        }
+    }
+}</code></pre>
+<h4 class="q">Q9. What is var (Java 10) and what are Text Blocks (Java 15)?</h4>
+<p>var lets the compiler infer a local variable's type from its initializer at compile time (it is not dynamic typing; the type is fixed). It reduces verbosity for complex generics but requires an initializer and can't be used for fields, parameters, or return types.</p>
+<p>Text blocks (triple-quote """ delimiters) allow multi-line string literals without \n concatenation or escaping, preserving formatting for embedded SQL, JSON, or HTML. The compiler strips incidental leading whitespace based on the closing delimiter's indentation.</p>
+<h4 class="q">Q10. What are Records (Java 14+), Sealed classes (Java 17), and pattern matching for switch (Java 21)? Why do tech leads push for them?</h4>
+<p>Records are concise, immutable data carriers that auto-generate the constructor, equals(), hashCode(), toString(), and accessors, eliminating boilerplate and the bugs of hand-written equals/hashCode. Sealed types restrict which classes may extend or implement them via permits, giving a closed, compile-time-known hierarchy. Pattern matching for switch matches on types and deconstructs records directly; combined with sealed types the compiler enforces exhaustiveness, so no default branch is needed.</p>
+<p><em>Problem statement: Model payment events as a sealed hierarchy of records and handle each case exhaustively.</em></p>
+<pre><button class="copy">Copy</button><code>public record Money(BigDecimal amount, Currency currency) {
+    public Money {  // compact constructor: validation runs on every construction
+        if (amount.signum() &lt; 0) throw new IllegalArgumentException("Amount cannot be negative");
+    }
+}
+ 
+public sealed interface PaymentEvent permits PaymentInitiated, PaymentSettled, PaymentFailed { }
+public record PaymentInitiated(String transactionId) implements PaymentEvent { }
+public record PaymentSettled(String transactionId, Instant settledAt) implements PaymentEvent { }
+public record PaymentFailed(String transactionId, String reason) implements PaymentEvent { }
+ 
+String eventDescription = switch (paymentEvent) {
+    case PaymentInitiated initiated -&gt; "Initiated: " + initiated.transactionId();
+    case PaymentSettled settled     -&gt; "Settled at " + settled.settledAt();
+    case PaymentFailed failed       -&gt; "Failed: " + failed.reason();
+    // no default needed: the compiler knows every permitted type is covered
+};</code></pre>
+<p>If a new event type is added later, this switch fails to compile until updated, turning a class of runtime bugs into compile-time errors — especially valuable in event-driven financial systems.</p>
+<aside class="note"><p><strong>Note: </strong>Tech-lead takeaway: push for adoption of these features in new modules even inside legacy Java 8/11 codebases undergoing modernization; the reduction in boilerplate and “forgot to handle the new enum value” bugs pays for itself quickly. Virtual threads (Java 21) are covered in Part 2, Section 2.</p></aside>
+<h2 id="s6">Section 6: Core Java &amp; OO Design — Rapid-Fire</h2>
+<p>Already covered earlier and not repeated here: immutable objects and defensive copies (Section 1), the equals()/hashCode() contract and its failure modes (Section 1), int-to-byte casts (Section 1), volatile arrays (Section 1), String pool and intern() (Section 1), Singleton/Builder/Observer/Factory/DI/IoC (Section 9), and ThreadLocal (Part 2, Section 1).</p>
+<p><strong>Language basics</strong></p>
+<h4 class="q">Q1. What is the difference between a == b and a.equals(b)? And between final, finally, and finalize?</h4>
+<p>== compares references for objects (and values for primitives); equals() expresses logical equality and depends on the class overriding it — the inherited Object default is identical to ==, while String overrides it to compare characters.</p>
+<ul>
+<li>final — a modifier: a final variable can't be reassigned, a final method can't be overridden, a final class can't be subclassed (supporting immutability, security, and design intent).</li>
+<li>finally — a block paired with try/catch that always executes, whether or not an exception was thrown (short of System.exit() or a JVM crash).</li>
+<li>finalize() — a method called by the GC just before reclaiming an object; deprecated since Java 9 and never guaranteed to run, so don't use it for critical cleanup.</li>
+</ul>
+<h4 class="q">Q2. What is the difference between a = a + b and a += b for narrower primitive types?</h4>
+<p>+= implicitly casts the result back to the left-hand type. For byte/short, a + b promotes both operands to int, so assigning it back without a cast is a compile error, whereas a += b compiles because the compiler inserts the narrowing cast.</p>
+<pre><button class="copy">Copy</button><code>byte firstValue = 127;
+byte secondValue = 127;
+secondValue = firstValue + secondValue; // COMPILE ERROR: int cannot be assigned to byte
+secondValue += firstValue;              // OK: compiler implicitly casts back to byte</code></pre>
+<h4 class="q">Q3. Can you store a double in a long without casting? Does 3 * 0.1 == 0.3?</h4>
+<p>No, an explicit cast is required: double has a different representation and range, and the narrowing cast truncates the fraction. And 3 * 0.1 == 0.3 is false: many decimal fractions can't be represented exactly in IEEE 754 binary floating point, so the result is extremely close to, but not bit-identical to, 0.3. Never compare floating-point values for exact equality; check that the difference is within an epsilon, or use BigDecimal when exact decimal arithmetic matters (such as money).</p>
+<pre><button class="copy">Copy</button><code>double sourceValue = 123.456;
+long targetValue = (long) sourceValue; // 123 -- fraction truncated, cast is required
+ 
+boolean isExactlyEqual = (3 * 0.1 == 0.3); // false, due to floating-point representation</code></pre>
+<h4 class="q">Q4. Which uses more memory: int or Integer? What is the size of an int on a 64-bit JVM?</h4>
+<p>Integer uses more: int is 4 bytes of raw data, whereas Integer is a full object with header overhead (class pointer, lock state), typically 16 bytes or more. An int is still 32 bits on a 64-bit JVM — primitive sizes are fixed by the language specification, not the platform's word size, in keeping with “write once, run anywhere.”</p>
+<h4 class="q">Q5. Why is String immutable, and can you use a String in a switch?</h4>
+<p>Immutability enables safe sharing of the same underlying object (as with the String pool) with no risk that one piece of code corrupts a String another relies on. It also makes String safe as a HashMap key (its hash code can't change after insertion) and inherently thread-safe. Strings can be used in switch since Java 7 as syntactic sugar over hashCode() and equals(). StringBuilder is mutable and not thread-safe (best for single-threaded manipulation); StringBuffer is mutable and synchronized (thread-safe, but with synchronization overhead).</p>
+<h4 class="q">Q6. What is a compile-time constant, and what is its risk?</h4>
+<p>A public static final field whose value is known at compile time (e.g. public static final int MAX_RETRIES = 5;) is inlined by the compiler directly into calling code. The risk: if the constant lives in a separate library that later changes its value, code compiled against the old version keeps using the old inlined value even after the new JAR is deployed, until that calling code is recompiled.</p>
+<h4 class="q">Q7. What is constructor chaining?</h4>
+<p>One constructor calls another of the same class via this(...) or of its superclass via super(...), so shared initialization lives in one place instead of being duplicated across overloads.</p>
+<pre><button class="copy">Copy</button><code>public class Rectangle {
+    private final int width;
+    private final int height;
+ 
+    public Rectangle(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
+ 
+    public Rectangle(int side) {
+        this(side, side); // chains to the two-argument constructor above
+    }
+}</code></pre>
+<p><strong>Object-oriented design</strong></p>
+<h4 class="q">Q8. What are the four pillars of OOP? What is the difference between an abstract class and an interface, and between inheritance and composition?</h4>
+<p>The four pillars: Encapsulation (bundling data with methods and restricting access), Abstraction (hiding implementation behind interfaces), Inheritance (reusing/extending a parent's behavior), and Polymorphism (one interface, many implementations).</p>
+<p>Abstract class vs. interface: a class extends only one class but implements any number of interfaces. An abstract class can hold state, constructors, and both abstract and concrete methods, and suits shared code for a closely related family; an interface (with default/static methods since Java 8, but no instance state) defines a contract/type that unrelated classes can implement. An interface's purpose is abstraction: client code written against List works with ArrayList or LinkedList unchanged.</p>
+<p>Inheritance (“is-a”) is fixed at compile time and couples tightly to the parent's implementation; composition (“has-a”, holding a reference and delegating) can swap implementations at runtime, avoids fragile-base-class problems, and is easier to unit test — hence “favor composition over inheritance.”</p>
+<p><em>Problem statement: Process different payment types polymorphically through a common base class.</em></p>
+<pre><button class="copy">Copy</button><code>abstract class PaymentProcessor {
+    // each payment type supplies its own logic
+    abstract void processPayment(double transactionAmount);
+}
+ 
+class CreditCardProcessor extends PaymentProcessor {
+    @Override
+    void processPayment(double transactionAmount) {
+        System.out.println("Processing credit card payment: $" + transactionAmount);
+    }
+}
+ 
+class PayPalProcessor extends PaymentProcessor {
+    @Override
+    void processPayment(double transactionAmount) {
+        System.out.println("Processing PayPal payment: $" + transactionAmount);
+    }
+}
+ 
+public class PaymentDemo {
+    public static void main(String[] arguments) {
+        List&lt;PaymentProcessor&gt; paymentProcessors = new ArrayList&lt;&gt;();
+        paymentProcessors.add(new CreditCardProcessor());
+        paymentProcessors.add(new PayPalProcessor());
+ 
+        for (PaymentProcessor currentProcessor : paymentProcessors) {
+            currentProcessor.processPayment(250.00); // correct override chosen at runtime
+        }
+    }
+}</code></pre>
+<h4 class="q">Q9. What is the difference between method overloading and overriding? Any overloading best practices?</h4>
+<p>Overloading (same name, different parameters, same class) is resolved at compile time from the signature at the call site — compile-time polymorphism. Overriding (a subclass redefining a superclass method with the same signature) is resolved at runtime from the object's actual type — runtime polymorphism, and it requires inheritance.</p>
+<ul>
+<li>Avoid overloads that accept a primitive (int) in one variant and its wrapper (Integer) in another; auto-boxing makes it ambiguous which is called.</li>
+<li>Avoid overloads that differ only in the order of same-typed parameters.</li>
+<li>Beyond roughly 4–5 parameters, prefer varargs, a builder, or a parameter object over more overloads.</li>
+</ul>
+<h4 class="q">Q10. Explain the Liskov Substitution Principle, the Open/Closed Principle, and the Law of Demeter.</h4>
+<ul>
+<li>Liskov Substitution — subclass objects must be substitutable for superclass objects without breaking correctness: don't strengthen preconditions, weaken postconditions, or throw unexpected exceptions. Classic violation: a Square extending Rectangle and forcing width == height, breaking code that sets them independently.</li>
+<li>Open/Closed — open for extension, closed for modification. The Strategy pattern is a textbook case (add a new strategy by writing a new implementation), and Collections.sort() is an everyday instance: a new sort order means a new Comparator, never a change to sort().</li>
+<li>Law of Demeter (“only talk to your immediate friends”) — a method should call only methods on itself, its fields, its parameters, or objects it creates, not on objects those return; chains like a.getB().getC().doSomething() couple you to internal structure you don't own.</li>
+</ul>
+<h4 class="q">Q11. How do the Adapter, Decorator, and Proxy patterns differ?</h4>
+<p>All three wrap another object, but intent differs: Adapter converts one interface into another that a client expects; Decorator adds new behavior dynamically while keeping the same interface; Proxy adds a controlled layer of indirection (lazy initialization, access control, remote invocation, logging) while presenting the same interface as the wrapped object.</p>
+<h4 class="q">Q12. What are the Template Method, Visitor, Composite, Flyweight, Abstract Factory, and Prototype patterns used for?</h4>
+<ul>
+<li>Template Method — fixes the skeleton of an algorithm in a base class while subclasses override specific steps; e.g. Collections.sort() defines the algorithm and delegates comparison to your Comparable/Comparator.</li>
+<li>Visitor — adds new operations to a stable class hierarchy without modifying it, using double dispatch (the overload invoked depends on both the element's and the visitor's runtime types).</li>
+<li>Composite — arranges objects into tree part-whole hierarchies so clients treat a leaf and a group uniformly (filesystem of files/folders; the organizational chart in Part 4, Section 7).</li>
+<li>Flyweight — shares immutable objects to support many logical objects with few real ones; the String pool and the boxed Integer/Long cache (-128 to 127) are JDK examples.</li>
+<li>Abstract Factory vs. Prototype — Abstract Factory creates families of related objects through factory methods that each return a new instance; Prototype creates objects by cloning a pre-configured instance, useful when construction is expensive.</li>
+</ul>
+<h4 class="q">Q13. What is the difference between Association, Aggregation, and Composition? Nested static class vs. top-level class?</h4>
+<ul>
+<li>Association — any relationship connecting two objects.</li>
+<li>Aggregation (“has-a”, weak ownership) — the used object has an independent lifecycle: a University has Students, but a Student can exist without any particular University.</li>
+<li>Composition (“owns-a”, strong ownership) — lifecycles are bound: a Car is composed of an Engine that has no meaningful existence apart from that Car.</li>
+</ul>
+<p>A source file may contain only one top-level public class (matching the file name), but a top-level class can contain any number of nested static classes; Map.Entry (a nested static interface inside Map) is the JDK example.</p>
+<p><strong>Exceptions, XML, build tools &amp; collections trivia</strong></p>
+<h4 class="q">Q14. What is the difference between a DOM parser and a SAX parser? Maven vs. Ant?</h4>
+<p>DOM reads the entire XML document into an in-memory tree that can be freely navigated and modified: faster for repeated navigation of small-to-medium documents, but memory-hungry. SAX is event-based: it streams through once, firing callbacks (element start/end, text), holding only a small constant amount of memory regardless of document size — better for very large files, at the cost of a callback-driven style.</p>
+<p>Ant is a general-purpose, imperative build tool: you script every step in XML, with no conventions or dependency management. Maven is convention-over-configuration: it imposes a standard project layout and resolves and downloads dependency JARs (and their transitive dependencies) from a central repository based on a declarative pom.xml.</p>
+<h4 class="q">Q15. What is the difference between poll() and remove() on a Queue? LinkedHashMap vs. PriorityQueue?</h4>
+<p>Both remove and return the head, but on an empty queue poll() returns null while remove() throws NoSuchElementException; the same pattern holds for peek() (null) vs. element() (throws). LinkedHashMap is a Map that iterates in insertion order (or access order if configured, handy for an LRU cache); PriorityQueue is a Queue that always keeps the lowest-priority-value (or highest, with a Comparator) element at its head — iterating it directly guarantees no order, only repeated poll() does.</p>
+<h4 class="q">Q16. Hashtable vs. HashMap? How does HashSet work? Default capacities? Is LinkedList singly or doubly linked?</h4>
+<ul>
+<li>Hashtable is a legacy JDK 1.0 class that synchronizes every operation and forbids null keys and values; HashMap (Java 1.2) is unsynchronized, allows one null key and any number of null values — use ConcurrentHashMap when you need both speed and thread safety.</li>
+<li>HashSet is backed by a HashMap: each element is stored as a key paired with a shared dummy placeholder value, hence no duplicates and at most one null.</li>
+<li>Default initial capacities: ArrayList 10, HashMap 16 (always a power of two, to support bit-masking of the hash).</li>
+<li>LinkedList is doubly linked (each node references next and previous); TreeMap uses a red-black tree for guaranteed O(log n) operations.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// from ArrayList's source
+private static final int DEFAULT_CAPACITY = 10;
+// from HashMap's source
+static final int DEFAULT_INITIAL_CAPACITY = 1 &lt;&lt; 4; // 16</code></pre>
+<h4 class="q">Q17. Can two unequal objects share a hashCode()? Can two equal objects have different ones? Can hashCode() use random values?</h4>
+<ul>
+<li>Unequal objects with the same hashCode: yes — that's a hash collision, normal in any hash-based collection, and why equals() is still needed once keys land in the same bucket.</li>
+<li>Equal objects with different hashCode: no — it violates the contract; an object could be inserted into a HashMap and then become unfindable because it computes a different bucket.</li>
+<li>Random values inside hashCode(): no — it must be stable for as long as the object is unchanged; a fresh random value per call breaks the contract immediately.</li>
+</ul>
+<h4 class="q">Q18. What best practices apply to Collections, I/O, JDBC, and threads?</h4>
+<p><strong>I/O:</strong></p>
+<ul>
+<li>Prefer buffered classes (BufferedReader, BufferedOutputStream) over byte-at-a-time I/O.</li>
+<li>Prefer java.nio / NIO.2 for high-performance or non-blocking I/O; consider memory-mapped files (FileChannel.map()) for very large files.</li>
+<li>Use try-with-resources rather than closing in finally; keep I/O off latency-critical hot paths (batch, buffer, or move it off the path).</li>
+</ul>
+<p><strong>JDBC:</strong></p>
+<ul>
+<li>Use batch statements (addBatch()/executeBatch()) for many rows instead of one round trip per row.</li>
+<li>Always use PreparedStatement with bind parameters: it prevents SQL injection and lets the database cache the execution plan.</li>
+<li>Use a connection pool; read ResultSet columns by name rather than index; never concatenate raw user input into SQL.</li>
+</ul>
+<p><strong>Threads (in addition to Part 2, Sections 1–3):</strong></p>
+<ul>
+<li>Always name your threads explicitly; it makes thread dumps dramatically easier to read.</li>
+<li>Keep the task (Runnable/Callable) separate from the mechanism running it, and use a thread pool instead of ad-hoc thread creation.</li>
+<li>Prefer volatile over synchronized when you only need visibility for a simple flag, and higher-level utilities (BlockingQueue, CountDownLatch, Semaphore, CompletableFuture) over hand-rolled wait()/notify().</li>
+<li>Prefer concurrent collections over externally synchronized ones; use the non-synchronized ArrayList rather than legacy Vector unless synchronization is needed.</li>
+</ul>
+<h2 id="s7">Section 7: Java Serialization</h2>
+<h4 class="q">Q1. How do you exclude fields from serialization, and which kinds of fields are typically transient?</h4>
+<p>Declare them transient. The default serialization mechanism skips them, and on deserialization they revert to their type's default (null / 0 / false). Typical transient fields are those that cannot be meaningfully serialized or should not be persisted for security reasons:</p>
+<ul>
+<li>Logger references, file handles, and I/O streams (live runtime/OS resources).</li>
+<li>Auditing or exception-handling helper instances (runtime-context specific).</li>
+<li>Security-sensitive data such as passwords and raw cryptographic keys, to keep them out of a byte stream that might be logged, cached, or transmitted insecurely.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>public class UserSession implements Serializable {
+    private String username;                  // serialized normally
+    private transient Connection dbConnection; // NOT serialized: live resource
+}</code></pre>
+<h4 class="q">Q2. Are static variables serialized?</h4>
+<p>No. Static variables belong to the class, not to any instance, and serialization only captures instance state. To preserve a static value you must do so explicitly by writing/reading it yourself inside custom writeObject()/readObject() methods.</p>
+<h4 class="q">Q3. How do you implement custom serialization, and how does Serializable differ from Externalizable?</h4>
+<p>Serializable is a marker interface that opts a class into Java's built-in, reflection-based default serialization — convenient, but relatively expensive, fragile, and offering limited control over the byte format. There are two ways to customize:</p>
+<ul>
+<li>Implement Externalizable: you must write writeExternal(ObjectOutput) and readExternal(ObjectInput) yourself, giving complete control, generally better performance, and room for extra validation — nothing happens automatically.</li>
+<li>Keep Serializable but add private writeObject(ObjectOutputStream) and readObject(ObjectInputStream) methods; the default mechanism calls them if present, while you can still delegate to defaultWriteObject()/defaultReadObject() for the fields you don't customize.</li>
+</ul>
+<p><em>Problem statement: Serialize a record normally but rebuild a derived (transient) summary field on deserialization.</em></p>
+<pre><button class="copy">Copy</button><code>public class AuditableRecord implements Serializable {
+    private String recordId;
+    private transient String computedSummary; // recomputed on read, not stored
+ 
+    private void writeObject(java.io.ObjectOutputStream outputStream) throws IOException {
+        outputStream.defaultWriteObject(); // serializes all non-transient fields normally
+    }
+ 
+    private void readObject(java.io.ObjectInputStream inputStream)
+            throws IOException, ClassNotFoundException {
+        inputStream.defaultReadObject();            // restores non-transient fields
+        this.computedSummary = recomputeSummary();  // rebuild the transient field
+    }
+ 
+    private String recomputeSummary() {
+        return "Summary for " + recordId;
+    }
+}</code></pre>
+<h2 id="s8">Section 8: Date, Time &amp; Calendar</h2>
+<h4 class="q">Q1. Is SimpleDateFormat safe to use in a multithreaded program?</h4>
+<p>No. DateFormat and all its subclasses, including SimpleDateFormat, are NOT thread-safe. Sharing one instance across threads without external synchronization can produce silently wrong parse/format results (genuinely incorrect dates, not just exceptions), because its internal Calendar field is mutated during both parse() and format().</p>
+<p>If you must use it in a multithreaded context, confine each instance to one thread, for example with a ThreadLocal (remember to call remove() in pooled-thread environments; see Part 2, Section 1).</p>
+<pre><button class="copy">Copy</button><code>private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMATTER =
+        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat("dd-MM-yyyy"));
+ 
+String formattedDate = DATE_FORMATTER.get().format(new Date());</code></pre>
+<aside class="note"><p><strong>Note: </strong>The modern, strongly preferred fix is java.time (Java 8+): LocalDate, LocalDateTime, and DateTimeFormatter are immutable and inherently thread-safe, so a DateTimeFormatter can be shared freely across threads.</p></aside>
+<h4 class="q">Q2. How do you format a date in Java (e.g. in ddMMyyyy format)?</h4>
+<p><em>Problem statement: Print today's date as ddMMyyyy using the modern API, and using the legacy API for older code.</em></p>
+<pre><button class="copy">Copy</button><code>// Modern (preferred): java.time
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+ 
+LocalDate today = LocalDate.now();
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
+String formattedDate = today.format(formatter); // e.g. "28092026"
+ 
+// Legacy (only when maintaining older code): SimpleDateFormat
+import java.text.SimpleDateFormat;
+import java.util.Date;
+ 
+SimpleDateFormat legacyFormatter = new SimpleDateFormat("ddMMyyyy");
+String legacyFormattedDate = legacyFormatter.format(new Date());</code></pre>
+<h2 id="s9">Section 9: Design Patterns</h2>
+<h3 id="s10">Quick Reference</h3>
 <p><strong>Observer Pattern</strong></p>
 <p>Defines a one-to-many dependency between objects: when one object (the Subject) changes state, all its dependents (Observers) are notified and updated automatically. Advantages: loose coupling between subject and observer; supports broadcast-style communication to many listeners at once. Disadvantages: debugging can be difficult because control flow is indirect; can introduce memory leaks if observers are not properly unregistered.</p>
 <p><strong>Factory Pattern</strong></p>
@@ -262,7 +701,7 @@ System.out.println("Time taken (ns): " + (endTimeNanos - startTimeNanos));</code
 <li>Advantages: hides construction dependencies from client code; provides one well-known access point that's easy to maintain; supports both lazy and eager initialization; can be extended into a factory-style pattern.</li>
 <li>Disadvantages: makes unit testing harder by introducing global shared state; reduces potential for parallelism, since concurrent access to the shared instance typically requires locking.</li>
 </ul>
-<h3 id="s6">Design Pattern Interview Questions</h3>
+<h3 id="s11">Design Pattern Interview Questions</h3>
 <p><em>Figure: Shallow copy vs deep copy</em></p>
 <h4 class="q">Q1. What are design patterns, and have you used one in your own code?</h4>
 <p>Design patterns are proven, reusable solutions to commonly occurring design problems, distilled from the collective experience of many software engineers over time. They are not finished code you copy-paste — they are templates describing how to structure a solution to a class of problem. Using them is a form of design reuse: instead of solving a well-known problem from scratch, you apply a battle-tested approach and gain a shared vocabulary with other engineers (saying “we used a Factory here” instantly communicates intent).</p>
@@ -371,300 +810,7 @@ BufferedReader lineReader = new BufferedReader(adaptedCharacterReader);</code></
 <p>Builder constructs complex objects step by step via chained method calls, avoiding telescoping constructors with many parameters. It's useful when an object has many optional fields: it improves readability (e.g. Person.builder().name("Alice").age(30).build()) and allows the resulting object to be immutable, since it's only constructed once all properties are set.</p>
 <h4 class="q">Q12. What is Dependency Injection, and how does Spring implement Inversion of Control?</h4>
 <p>Dependency Injection (DI) supplies an object's dependencies externally — via constructor, setter, or field — rather than having the object create them itself, promoting loose coupling and easier testing (dependencies can be mocked). Inversion of Control (IoC) is the broader principle DI implements: control over object creation and wiring is inverted from application code to a container/framework. Spring implements IoC via the ApplicationContext, which reads bean definitions (via annotations like @Autowired/@Inject or Java/XML configuration) and manages object lifecycles, injecting dependencies automatically and reducing tight coupling and boilerplate `new` calls throughout the codebase.</p>
-<h2 id="s7">Section 3: Multithreading &amp; Concurrency</h2>
-<h3 id="s8">The Executor Framework</h3>
-<p>Before java.util.concurrent existed, developers managed threads manually by creating new Thread objects directly — which does not scale well and makes it hard to control the number of concurrently running threads. The Executor framework decouples task submission from the mechanics of how each task actually runs: how threads are created, scheduled, reused, and shut down.</p>
-<p><strong>Executor</strong></p>
-<p>The simplest interface in the framework, in java.util.concurrent. It exposes a single method, execute(Runnable), whose entire purpose is to separate “submitting a task” from “deciding how and when that task actually runs.”</p>
-<p><strong>Executors</strong></p>
-<p>A factory class, also in java.util.concurrent, providing static factory methods that return various kinds of ExecutorService, ScheduledExecutorService, and ThreadFactory instances, so you rarely need to implement Executor yourself.</p>
-<p><strong>newFixedThreadPool()</strong></p>
-<p>One of the most commonly used factory methods on Executors. It creates a thread pool with a fixed number of reusable threads. If a thread dies unexpectedly before its task completes, a fresh thread from the pool automatically takes over remaining work, keeping the pool size constant.</p>
-<p><em>Problem statement: Submit a recurring background task to a fixed-size thread pool without managing threads manually.</em></p>
-<pre><button class="copy">Copy</button><code>// RecurringCounterTask.java - prints an incrementing counter every second
-package com.interviewguide.concurrency;
- 
-public class RecurringCounterTask implements Runnable {
-    @Override
-    public void run() {
-        try {
-            for (int counterValue = 0; ; counterValue++) {
-                System.out.println(counterValue);
-                Thread.sleep(1000);
-            }
-        } catch (InterruptedException interruptedException) {
-            // restore the interrupt status so calling code can observe it
-            Thread.currentThread().interrupt();
-        }
-    }
-}
- 
-// TaskRunner.java - submits the task to a fixed-size thread pool
-package com.interviewguide.concurrency;
- 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
- 
-public class TaskRunner {
-    public static void main(String[] args) {
-        Executor threadPoolExecutor = Executors.newFixedThreadPool(10);
-        threadPoolExecutor.execute(new RecurringCounterTask());
-    }
-}</code></pre>
-<p><strong>Executor vs. ExecutorService</strong></p>
-<p>Both are interfaces in java.util.concurrent. ExecutorService extends Executor and adds significant lifecycle and coordination control:</p>
-<ul>
-<li>shutdown() / shutdownNow() — gracefully or forcibly stop accepting and running tasks.</li>
-<li>awaitTermination(timeout, unit) — block until all tasks complete or the timeout elapses.</li>
-<li>isShutdown() / isTerminated() — query the pool's lifecycle state.</li>
-<li>invokeAny(...) / invokeAll(...) — submit a batch of Callable tasks and either get the first successful result, or wait for all of them.</li>
-<li>submit(...) — unlike execute(), returns a Future so you can retrieve a result or exception.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>ExecutorService threadPoolExecutor = Executors.newFixedThreadPool(10);
-threadPoolExecutor.execute(new RecurringCounterTask());
-// attempts to interrupt all running tasks and stop the pool immediately
-threadPoolExecutor.shutdownNow();</code></pre>
-<aside class="note"><p><strong>Note: </strong>shutdownNow() attempts to stop all actively executing tasks by interrupting them. In the example above, the task is blocked inside Thread.sleep(), so the interrupt causes sleep() to throw an InterruptedException immediately, unwinding that task's run() method.</p></aside>
-<h3 id="s9">Thread Safety &amp; Synchronization Fundamentals</h3>
-<p><strong>Thread.sleep()</strong></p>
-<ul>
-<li>The static method Thread.sleep(long millis) forces the currently executing thread to pause for at least the given duration.</li>
-<li>sleep() declares a checked exception, InterruptedException, so every call must either be wrapped in a try/catch or the enclosing method must declare it in its own throws clause.</li>
-<li>Calling sleep() gives other threads a chance to run, but there is no guarantee about scheduling order afterward — sleep() is a simple (if crude) way to encourage fair thread switching, not a substitute for proper synchronization.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>try {
-    Thread.sleep(200); // pause this thread for ~200 milliseconds
-} catch (InterruptedException interruptedException) {
-    Thread.currentThread().interrupt(); // restore the interrupt flag
-}</code></pre>
-<p><strong>Why shared mutable state is dangerous</strong></p>
-<ul>
-<li>Serious problems arise when two or more threads have access to the same mutable object on the heap.</li>
-<li>If one thread is interrupted mid-way through modifying an object's internal state, another thread could observe or modify that object while it's only half-updated, corrupting data.</li>
-<li>To make a class thread-safe, you must decide which sequences of statements need to be treated as a single atomic operation — one that runs to completion, uninterrupted by any other thread, before another thread may touch the same object's state.</li>
-</ul>
-<p><strong>The synchronized keyword</strong></p>
-<ul>
-<li>Use synchronized on a method declaration to prevent more than one thread from entering that method (on the same object instance) at the same time.</li>
-<li>Every object has a single intrinsic lock (monitor). It only becomes relevant once an object has one or more synchronized methods.</li>
-<li>A thread attempting to enter a synchronized method must first acquire that object's lock; if another thread holds it, the requesting thread blocks until it becomes available.</li>
-<li>Even with multiple synchronized methods on a class, there is still only one lock per object instance — once any thread enters one synchronized method on an object, no other thread can enter any other synchronized method on that same object concurrently. This is precisely what protects an object's internal data.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>public class BankAccount {
-    private double currentBalance;
- 
-    // synchronized: only one thread at a time can execute THIS method
-    // on a given BankAccount instance
-    public synchronized void withdrawFunds(double withdrawalAmount) {
-        if (currentBalance &gt;= withdrawalAmount) {
-            currentBalance -= withdrawalAmount;
-        }
-    }
- 
-    // this method is ALSO locked out while withdrawFunds() is running,
-    // because they share the same object-level lock
-    public synchronized void depositFunds(double depositAmount) {
-        currentBalance += depositAmount;
-    }
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>Synchronizing an entire method is the simplest approach, but locks out ALL synchronized methods on that instance for the duration, even unrelated ones. For finer-grained control, synchronize only the specific block of code that touches shared state, as shown in Q1 below.</p></aside>
-<h3 id="s10">Multithreading Interview Questions</h3>
-<h4 class="q">Q1. What is the difference between a synchronized method and a synchronized block?</h4>
-<p>A synchronized method locks the entire method body using the intrinsic lock of the object it's called on (or the Class object, if the method is static). A synchronized block lets you lock on any explicit object you choose, and only for the specific statements inside the block. Synchronized blocks are generally preferred because they minimize the amount of code executed while holding the lock, reducing contention and improving throughput.</p>
-<p><em>Problem statement: Reduce inventory stock safely under concurrent access, locking only the critical section rather than the entire method.</em></p>
-<pre><button class="copy">Copy</button><code>public class InventoryManager {
-    private int stockCount;
-    private final Object stockLock = new Object();
- 
-    public void reduceStock(int quantity) {
-        // only this critical section is locked, not the whole method
-        synchronized (stockLock) {
-            if (stockCount &gt;= quantity) {
-                stockCount -= quantity;
-            }
-        }
-        // any non-shared-state work can happen here, outside the lock
-        logStockChange(quantity);
-    }
- 
-    private void logStockChange(int quantity) {
-        System.out.println("Reduced stock by " + quantity);
-    }
-}</code></pre>
-<h4 class="q">Q2. What is a deadlock, and how can you avoid it?</h4>
-<p>A deadlock occurs when two or more threads are each waiting for a lock held by one of the others, so none of them can ever proceed. The classic example is Thread A holding Lock 1 and waiting for Lock 2, while Thread B holds Lock 2 and waits for Lock 1.</p>
-<p><strong>Common ways to avoid deadlock:</strong></p>
-<ul>
-<li>Always acquire multiple locks in a consistent, global order across all threads.</li>
-<li>Use tryLock(timeout) from java.util.concurrent.locks.Lock instead of blocking indefinitely, so a thread can back off and retry if it cannot acquire a lock within a reasonable time.</li>
-<li>Minimize the scope and duration for which locks are held.</li>
-<li>Avoid calling out to unknown/overridable code while holding a lock.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>// Deadlock-prone: threads may acquire lockA and lockB in different orders
-synchronized (lockA) {
-    synchronized (lockB) {
-        // ...
-    }
-}
- 
-// Fix: always acquire locks in the same global order (e.g. by a consistent ID)
-Object firstLock  = accountA.getId() &lt; accountB.getId() ? lockA : lockB;
-Object secondLock = accountA.getId() &lt; accountB.getId() ? lockB : lockA;
-synchronized (firstLock) {
-    synchronized (secondLock) {
-        // safe: every thread acquires locks in the same order
-    }
-}</code></pre>
-<p><em>Figure: Deadlock — circular wait</em></p>
-<h4 class="q">Q3. What is the difference between wait()/notify() and sleep()?</h4>
-<p>wait() and notify() are methods on Object, used for inter-thread communication. A thread calling wait() must already hold the object's monitor lock; calling wait() releases that lock and suspends the thread until another thread calls notify() or notifyAll() on the same object. sleep(), by contrast, is a static Thread method that pauses the current thread for a fixed duration WITHOUT releasing any locks it holds.</p>
-<p><em>Problem statement: Implement a simple producer/consumer handoff using wait()/notify() on a shared buffer.</em></p>
-<pre><button class="copy">Copy</button><code>class SharedBuffer {
-    private final Object bufferLock = new Object();
-    private boolean dataReady = false;
- 
-    void produce() {
-        synchronized (bufferLock) {
-            dataReady = true;
-            bufferLock.notify(); // wake up a thread waiting on bufferLock
-        }
-    }
- 
-    void consume() throws InterruptedException {
-        synchronized (bufferLock) {
-            while (!dataReady) {
-                bufferLock.wait(); // releases the lock and waits to be notified
-            }
-            // process the data
-        }
-    }
-}</code></pre>
-<p><em>Figure: wait()/notify() vs sleep()</em></p>
-<h4 class="q">Q4. What is a race condition? Give an example.</h4>
-<p>A race condition occurs when the correctness of a program depends on the relative timing of multiple threads, and the outcome varies depending on which thread happens to execute first. A classic example is two threads incrementing a shared counter without synchronization: the increment (read, add one, write back) is not atomic, so both threads can read the same initial value before either writes back, and one increment is silently lost.</p>
-<pre><button class="copy">Copy</button><code>public class UnsafeCounter {
-    private int count = 0;
- 
-    public void increment() {
-        count++; // NOT atomic: read, add 1, write back - three separate steps
-    }
-}
-// If two threads call increment() concurrently on the same instance without
-// synchronization, one of the increments can be lost due to interleaving.
- 
-public class SafeCounter {
-    private int count = 0;
- 
-    public synchronized void increment() {
-        count++; // now atomic with respect to other synchronized calls
-    }
-}</code></pre>
-<h4 class="q">Q5. What is the volatile keyword, and when should you use it?</h4>
-<p>volatile guarantees two things for a field: (1) every read of the field always sees the most recently written value from any thread (visibility), and (2) the compiler and CPU will not reorder instructions around accesses to that field. It does NOT make compound operations like count++ atomic. volatile is appropriate for simple flags or references that are written by one thread and read by others, such as a shutdown flag or the double-checked-locking Singleton pattern shown in Section 2.</p>
-<pre><button class="copy">Copy</button><code>public class Worker implements Runnable {
-    private volatile boolean shutdownRequested = false;
- 
-    public void requestShutdown() {
-        shutdownRequested = true; // visible to the worker thread immediately
-    }
- 
-    @Override
-    public void run() {
-        while (!shutdownRequested) {
-            // do work
-        }
-    }
-}</code></pre>
-<h4 class="q">Q6. What is the difference between Callable and Runnable?</h4>
-<p>Runnable's run() method returns void and cannot throw checked exceptions. Callable&lt;V&gt;'s call() method returns a value of type V and can throw a checked exception. Callable is designed to be used with ExecutorService.submit(), which returns a Future&lt;V&gt; that lets you retrieve the result once the task finishes.</p>
-<pre><button class="copy">Copy</button><code>Callable&lt;Integer&gt; computeSquareTask = () -&gt; {
-    int inputValue = 7;
-    return inputValue * inputValue;
-};
- 
-ExecutorService threadPoolExecutor = Executors.newSingleThreadExecutor();
-Future&lt;Integer&gt; resultFuture = threadPoolExecutor.submit(computeSquareTask);
-Integer squareResult = resultFuture.get(); // blocks until the result is ready
-System.out.println(squareResult); // 49
-threadPoolExecutor.shutdown();</code></pre>
-<h4 class="q">Q7. What is the difference between Executor.submit() and Executor.execute()?</h4>
-<p>Both methods schedule a task for execution on a thread pool, but they differ in what they return and how they handle exceptions:</p>
-<ul>
-<li>execute(Runnable) returns void. There is no way to retrieve a result or check whether the task completed successfully from the call itself.</li>
-<li>submit(Callable) or submit(Runnable) returns a Future object, which lets you call get() to retrieve the task's result (blocking until it's done) or check isDone()/cancel().</li>
-</ul>
-<p>The exception handling behavior also differs. If a task submitted with execute() throws an uncaught exception, it propagates to the thread's UncaughtExceptionHandler (by default this just prints a stack trace to System.err). If a task is submitted with submit(), any exception — checked or unchecked — is instead captured and stored inside the returned Future, surfacing only when you call future.get(), which re-throws it wrapped in an ExecutionException.</p>
-<pre><button class="copy">Copy</button><code>ExecutorService threadPool = Executors.newFixedThreadPool(4);
- 
-// execute(): fire-and-forget, exceptions go to the uncaught exception handler
-threadPool.execute(() -&gt; { throw new RuntimeException("boom"); });
- 
-// submit(): exception is captured inside the Future
-Future&lt;Integer&gt; resultFuture = threadPool.submit(() -&gt; {
-    throw new RuntimeException("boom");
-});
-try {
-    resultFuture.get(); // throws ExecutionException wrapping the RuntimeException
-} catch (ExecutionException wrappedException) {
-    System.out.println("Caught: " + wrappedException.getCause());
-} catch (InterruptedException interruptedException) {
-    Thread.currentThread().interrupt();
-}</code></pre>
-<h4 class="q">Q8. What is ConcurrentHashMap, and how is it different from a synchronized HashMap?</h4>
-<p>ConcurrentHashMap (java.util.concurrent) is a thread-safe map designed for high concurrency. Unlike Collections.synchronizedMap(new HashMap&lt;&gt;()), which uses a single lock for the entire map (so only one thread can access it at a time, even for unrelated keys), ConcurrentHashMap internally partitions its data so that multiple threads can read and write concurrently with minimal contention. In modern JDKs (Java 8+) it uses a combination of CAS (compare-and-swap) operations and fine-grained locking per bin, rather than locking the whole map.</p>
-<ul>
-<li>Read operations in ConcurrentHashMap generally do not block at all.</li>
-<li>Iterators returned by ConcurrentHashMap are weakly consistent: they never throw ConcurrentModificationException, and reflect the state of the map at some point at or after the iterator was created.</li>
-<li>A synchronized HashMap's iterator, by contrast, throws ConcurrentModificationException if the map is structurally modified by another thread during iteration.</li>
-</ul>
-<p>Internally (JDK 8+), ConcurrentHashMap achieves this without locking the entire map by using CAS-based updates for the common case of inserting into an empty bin, and synchronizing only on the head node of a single bin when a collision chain must be modified — so writes to different bins never contend with each other.</p>
-<p><em>Figure: ConcurrentHashMap bucket-level locking</em></p>
-<h4 class="q">Q9. What is a ThreadLocal, and what memory-leak risk does it carry in application-server or thread-pool environments?</h4>
-<p>ThreadLocal&lt;T&gt; gives each thread its own independent copy of a variable, invisible to other threads — useful for per-thread context such as a database connection, a user session, or a SimpleDateFormat instance (which is not itself thread-safe). Internally, each Thread object holds a small map from ThreadLocal instance to value.</p>
-<p>The memory-leak risk arises specifically in thread-pool environments (application servers, ExecutorService pools) because pooled threads are long-lived and reused across many logical tasks. If a task sets a ThreadLocal value and never calls remove() when it finishes, the value (and anything it references) stays attached to that pooled thread indefinitely, since the thread itself is never garbage collected. Over time and many task executions, this silently accumulates memory — and can also leak stale/incorrect context into a later, unrelated task reusing the same pooled thread. The fix is to always clear a ThreadLocal in a finally block once the task using it completes.</p>
-<pre><button class="copy">Copy</button><code>private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMAT_HOLDER =
-        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat("yyyy-MM-dd"));
- 
-public String formatOrderDate(Date orderDate) {
-    try {
-        return DATE_FORMAT_HOLDER.get().format(orderDate);
-    } finally {
-        // essential in a pooled-thread environment: prevents the value (and
-        // anything it references) from leaking into the next task on this thread
-        DATE_FORMAT_HOLDER.remove();
-    }
-}</code></pre>
-<h4 class="q">Q10. Explain the Java Memory Model (JMM) and why volatile alone doesn't make compound operations atomic.</h4>
-<p>The Java Memory Model defines the rules for how and when writes made by one thread become visible to reads made by another thread, in the presence of compiler, JIT, and CPU-level instruction reordering. Without any synchronization, the JMM makes almost no visibility guarantees — one thread can run indefinitely without ever observing another thread's write to a shared, non-volatile field, because the reader may be working from a cached or reordered view of memory. Synchronization primitives (synchronized, volatile, java.util.concurrent locks) establish happens-before relationships, which are the JMM's formal guarantee that everything a thread did before a given point is visible to another thread after it reaches a corresponding point.</p>
-<p>volatile establishes happens-before ordering for reads and writes of that single field, and prevents reordering around it — but a compound operation like count++ is actually three separate steps (read, increment, write). Even with count declared volatile, another thread can interleave between those steps: Thread A reads the current value, Thread B reads the same (still-old) value, both increment locally, and both write back, so one increment is lost. volatile guarantees visibility of the field, not atomicity of multi-step operations performed on it. True atomicity requires either synchronized around the whole read-modify-write sequence, or an atomic class from java.util.concurrent.atomic (e.g. AtomicInteger.incrementAndGet(), which performs the operation as a single CAS-based primitive).</p>
-<p><em>Figure: Java Memory Model and volatile</em></p>
-<h4 class="q">Q11. ConcurrentHashMap internals — how does it achieve thread safety without locking the entire map?</h4>
-<p>Modern ConcurrentHashMap (Java 8+) is backed by the same array-of-buckets structure as HashMap, but synchronizes at the level of an individual bin (bucket) rather than the whole table. Inserting into an empty bin is done with a CAS (compare-and-swap) operation — lock-free. Only when a collision occurs and the bin's linked list (or, for large bins, its red-black tree) must be modified does the implementation synchronize, and it synchronizes only on that bin's head node, not on the map as a whole. This means writes targeting different bins never contend with each other, and reads are largely lock-free throughout, giving far higher throughput under concurrent access than a single coarse-grained lock over the entire map would.</p>
-<h4 class="q">Q12. What are the differences between synchronized, ReentrantLock, and StampedLock? When would you choose each?</h4>
-<p>synchronized is the built-in intrinsic lock: simplest to use, automatically released even if an exception is thrown, but strictly block-structured (you can't try to acquire it with a timeout, can't interrupt a thread waiting on it, and can't inspect whether it's currently held).</p>
-<p>ReentrantLock (java.util.concurrent.locks) offers everything synchronized does, plus: tryLock() and tryLock(timeout, unit) for non-blocking or bounded-wait acquisition; lockInterruptibly() so a waiting thread can respond to interruption; fairness ordering (an optional constructor flag that grants the lock in the order threads requested it, avoiding thread starvation); and multiple associated Condition objects (in place of a single implicit wait/notify per object). The cost is that you must remember to unlock() in a finally block yourself — the JVM won't do it for you on an exception.</p>
-<p>StampedLock (Java 8+) adds a third mode beyond simple read/write locking: an optimistic read, which doesn't block writers at all and instead returns a stamp that the reader later validates; if a write occurred in the meantime, the optimistic read is discarded and retried under a full read lock. This makes StampedLock significantly faster than ReentrantReadWriteLock for read-heavy workloads, at the cost of a more error-prone API (it is not reentrant, and forgetting to validate the optimistic stamp silently reads torn/stale data).</p>
-<p>Choice: use synchronized for simple cases where its block-structured nature is sufficient; use ReentrantLock when you need tryLock/timeouts, interruptible waiting, fairness, or multiple wait conditions; use StampedLock for very read-heavy hot paths where the optimistic-read fast path's extra throughput is worth the added complexity and care.</p>
-<h4 class="q">Q13. Explain the difference between CompletableFuture and traditional Future. Design an async pipeline with error handling.</h4>
-<p>A plain Future only supports blocking retrieval of a result via get() (optionally with a timeout) — there is no way to register a callback, chain further work onto its completion, or combine it with another Future without a separate thread blocking on get(). CompletableFuture (java.util.concurrent, Java 8+) implements both Future and CompletionStage, adding a rich set of composition methods: thenApply() to transform a result, thenCompose() to chain a dependent async operation, thenCombine() to join two independent futures, and exceptionally()/handle() for error handling — all without blocking a thread to wait for the prior stage.</p>
-<p><em>Problem statement: Build an asynchronous pipeline that fetches a customer's profile, then fetches their order history, combines both into a summary, and falls back to a default summary if any stage fails.</em></p>
-<pre><button class="copy">Copy</button><code>public CompletableFuture&lt;CustomerSummary&gt; buildCustomerSummaryAsync(String customerId) {
-    CompletableFuture&lt;CustomerProfile&gt; profileFuture =
-            CompletableFuture.supplyAsync(() -&gt; customerService.fetchProfile(customerId));
- 
-    CompletableFuture&lt;List&lt;Order&gt;&gt; orderHistoryFuture =
-            CompletableFuture.supplyAsync(() -&gt; orderService.fetchOrderHistory(customerId));
- 
-    return profileFuture
-            // thenCombine: merge two independent async results once both complete
-            .thenCombine(orderHistoryFuture, CustomerSummary::new)
-            // exceptionally: fall back to a safe default if any prior stage failed
-            .exceptionally(pipelineError -&gt; {
-                logger.warn("Falling back to default summary for " + customerId, pipelineError);
-                return CustomerSummary.defaultFor(customerId);
-            });
-}</code></pre>
-<p><em>Figure: CompletableFuture async pipeline</em></p></main></div>
+</main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
 document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};

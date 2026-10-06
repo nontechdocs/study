@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en"><head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Java Interview Guide – Part 2</title>
@@ -31,707 +32,303 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 .hide{display:none!important}
 @media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
 </style></head><body>
-<header><button id="menu">☰</button><h1>Java Interview Guide — Part 2: Collections, Data Structures, Big-O &amp; Additional Concurrency</h1><button id="theme">◐</button></header>
-<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s2">Section 1: Core Data Structures</a><a class="l2" href="#s3">Section 2: Big-O Notation</a><a class="l2" href="#s4">Section 3: Collections Framework — Practical Q&amp;A</a><a class="l2" href="#s5">Section 4: Stack / Deque Deep Dive</a><a class="l2" href="#s6">Section 5: Storing Hierarchical (Tree) Data in a Relational Database</a><a class="l2" href="#s7">Section 6: Comparing and Sorting Objects</a><a class="l2" href="#s8">Section 7: Coding Exercise — A Generic, Predicate-Based List Filter</a><a class="l2" href="#s9">Section 8: Additional Concurrency Topics</a></nav>
-<main id="main"><h2 id="s2">Section 1: Core Data Structures</h2>
-<p>Interviewers often ask you to explain (or even implement) basic data structures, not because you should reinvent the wheel in production code, but to test your understanding of how the built-in collections actually work underneath. Below is a tour of the data structures most commonly discussed.</p>
-<p><strong>Arrays</strong></p>
-<p>Arrays are the most fundamental data structure: fixed-size, indexed, and homogeneous (all elements share the same type). Typical uses include storing a fixed batch of records just read from a database, or converting a String into a byte array for further processing. It's good practice to wrap a raw array inside a class to prevent it from being accidentally modified or exposed — this applies to other mutable data structures too.</p>
-<p><strong>Lists</strong></p>
-<p>A List is essentially “an array that can grow.” Most List implementations are backed by a fixed-size array internally, and they resize themselves automatically as needed. Lists permit duplicate elements. If you know roughly how large a list will grow, initialize it with an appropriate initial capacity to minimize the number of internal resize operations.</p>
-<p><strong>Sets</strong></p>
-<p>A Set behaves like a List but does not allow duplicate elements. Use a Set whenever your requirement is to store a collection of unique elements, such as a set of distinct user IDs currently logged in.</p>
-<p><strong>Stacks</strong></p>
-<p>A Stack only allows access to the single most-recently-inserted element — Last In, First Out (LIFO), enforced via peek() (look at the top without removing), push() (add to the top), and pop() (remove and return the top). Stacks are the natural fit for: evaluating mathematical expressions like (4+2) * 3; storing method call frames and exception propagation; checking whether brackets/braces in source code are balanced; implementing undo history in a text editor; and tracking page-visit history in a web browser's back button.</p>
-<p><strong>Queues</strong></p>
-<p>A Queue is similar to a Stack, except the first item inserted is the first one removed — First In, First Out (FIFO), via peek(), offer() (add to the back), and poll() (remove and return the front). In multithreaded programming, a BlockingQueue is commonly used to hand off work items from producer threads to consumer threads safely (see the Concurrency section below).</p>
-<p><strong>LinkedLists</strong></p>
-<p>A LinkedList is built from individual nodes, each holding some data and a reference to the next node (and, for a doubly-linked list, a reference to the previous node too). Because insertion and deletion at either end (or in the middle, given a reference to the relevant node) is cheap, LinkedList is a reasonable backing structure for implementing a Stack or Queue.</p>
-<pre><button class="copy">Copy</button><code>class LinkedListNode {
-    private int nodeId;              // data
-    private String nodeName;          // data
-    private LinkedListNode nextNode;  // reference to the next node
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>The Apache Commons library provides a TreeList implementation which performs much better than a LinkedList for arbitrary insertions and removals, at the cost of somewhat higher memory usage. In practice, plain LinkedList is rarely the best choice — ArrayList is usually faster for most operations except inserting/removing in the middle of a large list, and TreeList outperforms both when there are frequent insertions/removals throughout the list.</p></aside>
-<p><strong>HashMaps</strong></p>
-<p>A HashMap maps keys to values with amortized constant-time O(1) access, backed internally by an array of “buckets.” A hashing function determines which bucket a given key belongs to, and some collision-resolution strategy (in modern Java, chaining — a linked list or, for large buckets, a red-black tree) handles multiple keys that hash to the same bucket.</p>
-<p><strong>Trees</strong></p>
-<p>A Tree is made of nodes, each optionally holding data and pointing to one or more child nodes (often with a reference back to the parent as well), representing a hierarchical or ordered structure. If every node has at most two children, it's called a binary tree — a shape that makes searching and inserting particularly efficient. Java's standard library does not provide a general-purpose Tree implementation, but one is easy to build.</p>
-<p><em>Problem statement: Implement a generic tree node that supports adding/removing children and tracking its parent.</em></p>
-<pre><button class="copy">Copy</button><code>package com.interviewguide.datastructures;
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 2: Concurrency, Memory Model &amp; JVM Internals</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s1">Section 1: Multithreading &amp; Concurrency</a><a class="l3" href="#s2">The Executor Framework</a><a class="l3" href="#s3">Thread Safety &amp; Synchronization Fundamentals</a><a class="l3" href="#s4">Multithreading Interview Questions</a><a class="l2" href="#s5">Section 2: Additional Concurrency Topics</a><a class="l2" href="#s6">Section 3: Advanced Concurrency &amp; Memory Model (Rapid-Fire)</a><a class="l2" href="#s7">Section 4: JVM Internals &amp; Garbage Collection</a></nav>
+<main id="main"><h2 id="s1">Section 1: Multithreading &amp; Concurrency</h2>
+<h3 id="s2">The Executor Framework</h3>
+<p>Before java.util.concurrent existed, developers managed threads manually by creating new Thread objects directly — which does not scale well and makes it hard to control the number of concurrently running threads. The Executor framework decouples task submission from the mechanics of how each task actually runs: how threads are created, scheduled, reused, and shut down.</p>
+<p><strong>Executor</strong></p>
+<p>The simplest interface in the framework, in java.util.concurrent. It exposes a single method, execute(Runnable), whose entire purpose is to separate “submitting a task” from “deciding how and when that task actually runs.”</p>
+<p><strong>Executors</strong></p>
+<p>A factory class, also in java.util.concurrent, providing static factory methods that return various kinds of ExecutorService, ScheduledExecutorService, and ThreadFactory instances, so you rarely need to implement Executor yourself.</p>
+<p><strong>newFixedThreadPool()</strong></p>
+<p>One of the most commonly used factory methods on Executors. It creates a thread pool with a fixed number of reusable threads. If a thread dies unexpectedly before its task completes, a fresh thread from the pool automatically takes over remaining work, keeping the pool size constant.</p>
+<p><em>Problem statement: Submit a recurring background task to a fixed-size thread pool without managing threads manually.</em></p>
+<pre><button class="copy">Copy</button><code>// RecurringCounterTask.java - prints an incrementing counter every second
+package com.interviewguide.concurrency;
  
-import java.util.ArrayList;
-import java.util.List;
- 
-public class TreeNode {
-    private String nodeName;
-    private List&lt;TreeNode&gt; childNodes = new ArrayList&lt;&gt;();
-    private TreeNode parentNode;
- 
-    public TreeNode(String nodeName) {
-        this.nodeName = nodeName;
-    }
- 
-    public TreeNode getParentNode() {
-        return parentNode;
-    }
- 
-    public void setParentNode(TreeNode parentNode) {
-        this.parentNode = parentNode;
-    }
- 
-    public void addChildNode(TreeNode childNode) {
-        childNodes.add(childNode);
-        childNode.setParentNode(this);
-    }
- 
-    public void removeChildNode(TreeNode childNode) {
-        childNodes.remove(childNode);
-    }
- 
+public class RecurringCounterTask implements Runnable {
     @Override
-    public String toString() {
-        return nodeName;
-    }
-}</code></pre>
-<p><strong>Graphs</strong></p>
-<p>A Graph represents arbitrary relationships between elements, modeled as a network of nodes (vertices) and edges. A tree is really just a more constrained/organized graph, where each node has exactly one parent. The Java standard library does not provide a built-in Graph implementation; building one requires deciding how to store adjacency information (an adjacency list or adjacency matrix). Third-party libraries like JUNG and JGraphT provide production-ready graph implementations if you need one.</p>
-<h2 id="s3">Section 2: Big-O Notation</h2>
-<h4 class="q">Q1. What do you know about Big-O notation? Give some examples with respect to different data structures.</h4>
-<p>Big-O notation describes how well an algorithm scales — specifically, how its running time (or memory usage) grows in the worst case as the number of elements n increases. It is not a measure of absolute speed; two algorithms with the same Big-O complexity can have very different real-world performance depending on constant factors, hardware, and typical input size.</p>
-<p><strong>Complexity classes, from best to worst as n grows large:</strong></p>
-<ul>
-<li>O(1) — constant time: performance does not depend on the size of the data structure at all.</li>
-<li>O(log n) — logarithmic: performance grows very slowly as n increases.</li>
-<li>O(n) — linear: performance grows proportionally to n.</li>
-<li>O(n log n) — “linearithmic”: typical of efficient comparison-based sorting algorithms.</li>
-<li>O(n²) — quadratic: typical of simple nested-loop algorithms.</li>
-<li>O(cⁿ) — exponential: typically only feasible for very small n.</li>
-<li>O(n!) — factorial: typically only feasible for tiny n (e.g. brute-force permutation problems).</li>
-</ul>
-<p><strong>Concrete examples:</strong></p>
-<ul>
-<li>HashMap lookup — O(1): the hash function computes a bucket location directly, independent of how many elements the map currently holds.</li>
-<li>Linear search — O(n): searching an unsorted array, List, or LinkedList requires scanning every element in the worst case.</li>
-<li>Nested comparisons — O(n²): comparing every element against every other element (bubble sort, insertion sort).</li>
-<li>Binary search — O(log n): notably better than the O(n) linear search a LinkedList requires, since a LinkedList doesn't support efficient random access. If 10 items take at most some time x, 100 items take roughly 2x, and 10,000 items take roughly 4x.</li>
-</ul>
-<p><em>Figure: Big-O growth rate comparison</em></p>
-<h4 class="q">Q2. How does HashMap's performance compare to TreeMap? Which should you choose?</h4>
-<p>TreeMap maintains its key/value pairs in sorted order internally using a red-black tree (a self-balancing binary search tree), giving O(log n) performance for insertion, removal, and lookup — slower than HashMap's O(1) average case, but with the major advantage that keys are always available in sorted order, enabling firstKey(), lastKey(), and range queries (headMap(), tailMap(), subMap()) that HashMap cannot offer.</p>
-<p>If you need sorted data on nearly every read, TreeMap/TreeSet is often the right call. If sorted output is only occasionally needed — say, just before generating a report — it can be more efficient to keep an unordered HashMap/HashSet for fast everyday inserts and lookups, and sort on demand with Collections.sort(...) only when a report actually needs to be produced. Big-O describes asymptotic behavior as n grows arbitrarily large; for small-to-moderate data sizes, an O(n) algorithm can easily outperform an O(log n) one due to constant factors or cache locality — the only reliable way to decide is to benchmark both on realistic data volumes.</p>
-<h4 class="q">Q3. What is the tradeoff between an unordered array and a sorted array?</h4>
-<p>A sorted array supports much faster search — O(log n) via binary search — compared to an unsorted array's O(n) linear search. The tradeoff is insertion cost: inserting into a sorted array requires shifting every element with a higher value to make room, which is O(n). Inserting into an unsorted array is O(1) — simply append at the end.</p>
-<p><em>Problem statement: Insert a value into an unsorted array (O(1) append) versus a sorted array (O(n) shift), and print the results.</em></p>
-<pre><button class="copy">Copy</button><code>package com.interviewguide.bigo;
- 
-import java.util.Arrays;
- 
-public class ArrayInsertionExamples {
- 
-    public static void insertIntoUnsortedArray(String valueToInsert) {
-        String[] unsortedArray = { "A", "D", "C" };
-        // arrays are fixed size, so we must allocate a new, larger array
-        String[] expandedArray = new String[unsortedArray.length + 1];
-        System.arraycopy(unsortedArray, 0, expandedArray, 0, unsortedArray.length);
-        // O(1): the new value is simply appended at the end, no shifting needed
-        expandedArray[expandedArray.length - 1] = valueToInsert;
-        System.out.println(Arrays.toString(expandedArray));
-    }
- 
-    public static void insertIntoSortedArray(String valueToInsert) {
-        String[] sortedArray = { "A", "C", "D" };
-        // binarySearch returns the index if found, otherwise (-insertionPoint - 1)
-        int searchResult = Arrays.binarySearch(sortedArray, valueToInsert);
-        if (searchResult &lt; 0) { // not found -- searchResult tells us where it belongs
-            int insertionIndex = -searchResult - 1;
-            String[] expandedArray = new String[sortedArray.length + 1];
-            // O(n): copy elements before the insertion point...
-            System.arraycopy(sortedArray, 0, expandedArray, 0, insertionIndex);
-            // ...then copy the elements from the insertion point onward, shifted right by one
-            System.arraycopy(sortedArray, insertionIndex,
-                    expandedArray, insertionIndex + 1, sortedArray.length - insertionIndex);
-            expandedArray[insertionIndex] = valueToInsert;
-            System.out.println(Arrays.toString(expandedArray));
-        }
-    }
- 
-    public static void main(String[] args) {
-        insertIntoUnsortedArray("B"); // prints: [A, D, C, B]
-        insertIntoSortedArray("B");   // prints: [A, B, C, D]
-    }
-}</code></pre>
-<p>The decision between ordered and unordered collections ultimately comes down to: Do you have more inserts/deletes, or more searches? What is the expected maximum size? How frequently do you actually need the data in sorted order? And what does an actual performance benchmark on your real data show?</p>
-<p><em>Figure: Unordered array vs sorted array tradeoff</em></p>
-<h2 id="s4">Section 3: Collections Framework — Practical Q&amp;A</h2>
-<h4 class="q">Q1. What is the difference between ArrayList and LinkedList?</h4>
-<p>ArrayList uses a dynamic (resizable) array internally: O(1) random access via get(index), but O(n) insertion/deletion in the middle, since later elements must shift. LinkedList uses doubly-linked nodes: O(n) random access (must walk from an end), but O(1) insertion/deletion once you're positioned at the relevant node — it also implements Deque, so it can serve as a stack or queue. Prefer ArrayList for frequent reads; prefer LinkedList (or, more often in practice, ArrayDeque) for frequent inserts/removals at the ends.</p>
-<p><em>Figure: ArrayList vs LinkedList internal structure</em></p>
-<h4 class="q">Q2. How does HashMap work internally, and how does that relate to HashSet, LinkedHashMap/Set, and TreeMap/Set?</h4>
-<p>HashMap stores entries in buckets (an array of nodes), and the key's hashCode() modulo the array size determines the bucket index. Collisions are handled via a linked list per bucket, converted to a balanced red-black tree once a bucket exceeds 8 entries (Java 8+), giving O(log n) worst-case lookup in a heavily-collided bucket instead of O(n). Resizing (rehashing) occurs automatically once the load factor (default 0.75) is exceeded.</p>
-<ul>
-<li>HashSet is backed internally by a HashMap (elements are stored as keys with a dummy value); no ordering guarantee, O(1) average operations.</li>
-<li>LinkedHashMap / LinkedHashSet additionally maintain insertion order (or, optionally, access order) via an internal doubly-linked list threaded through the entries, at slightly more memory/time overhead.</li>
-<li>TreeMap / TreeSet maintain sorted key order via a red-black tree, giving O(log n) operations and implementing NavigableMap/NavigableSet for range queries like floorKey(), ceilingKey(), higher(), lower().</li>
-</ul>
-<h4 class="q">Q3. What is the fail-fast vs. fail-safe iterator distinction, and what is ConcurrentModificationException?</h4>
-<p>Fail-fast iterators (ArrayList, HashMap, and most standard collections) detect structural modification during iteration using an internal modification counter (modCount), and throw ConcurrentModificationException as soon as they notice the collection changed underneath them — this is a best-effort safety check, not a guarantee. Fail-safe iterators (CopyOnWriteArrayList, ConcurrentHashMap) instead operate over a stable snapshot or use structurally safe internal updates, so no exception is thrown, but the iterator may not reflect changes made during iteration.</p>
-<p>You can avoid ConcurrentModificationException by using Iterator.remove() (or List's removeIf()) instead of modifying the backing collection directly, by switching to a concurrent/copy-on-write collection, or by collecting the changes you want to make into a separate list and applying them only after iteration completes.</p>
-<p><em>Problem statement: Remove all even numbers from a list while iterating over it, without triggering ConcurrentModificationException.</em></p>
-<pre><button class="copy">Copy</button><code>package com.interviewguide.collections;
- 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
- 
-public class SafeIterationDemo {
- 
-    public static void removeEvenNumbers(List&lt;Integer&gt; numberList) {
-        Iterator&lt;Integer&gt; listIterator = numberList.iterator();
-        while (listIterator.hasNext()) {
-            int currentValue = listIterator.next();
-            if (currentValue % 2 == 0) {
-                listIterator.remove(); // safe removal via the iterator itself
+    public void run() {
+        try {
+            for (int counterValue = 0; ; counterValue++) {
+                System.out.println(counterValue);
+                Thread.sleep(1000);
             }
+        } catch (InterruptedException interruptedException) {
+            // restore the interrupt status so calling code can observe it
+            Thread.currentThread().interrupt();
         }
-    }
- 
-    public static void main(String[] arguments) {
-        List&lt;Integer&gt; numberList = new ArrayList&lt;&gt;(Arrays.asList(1, 2, 3, 4, 5, 6));
-        removeEvenNumbers(numberList);
-        System.out.println(numberList); // [1, 3, 5]
-    }
-}</code></pre>
-<p><em>Figure: Fail-fast vs fail-safe iterators</em></p>
-<h4 class="q">Q4. What is the difference between Iterator and ListIterator?</h4>
-<p>Iterator traverses a collection forward-only and supports remove(). ListIterator (available only for List types) additionally supports bidirectional traversal (hasPrevious()/previous()), set() to replace the last-returned element, add() to insert a new element at the current position, and nextIndex()/previousIndex() to report the iterator's current position.</p>
-<h4 class="q">Q5. What is the difference between Comparable and Comparator?</h4>
-<p>Comparable (via compareTo()) defines a class's own natural ordering, implemented inside the class itself — a class can only have one natural ordering. Comparator (via compare()) defines external, custom ordering logic that lives outside the class, so you can have as many different Comparator implementations as you need different sort orders, without modifying the class at all. Java 8 added fluent, lambda-friendly chaining via Comparator.comparing(...).thenComparing(...).</p>
-<h4 class="q">Q6. How does TreeSet maintain sorted order, and what's its time complexity?</h4>
-<p>TreeSet is backed internally by a TreeMap (a red-black tree), maintaining its elements in sorted order based on their natural ordering (Comparable) or a supplied Comparator. add(), remove(), and contains() all run in O(log n). It disallows duplicates, and disallows null elements when relying on natural ordering (since comparing against null would throw). It supports navigation methods like higher() and lower() for finding the nearest element above/below a given value.</p>
-<h4 class="q">Q7. What is CopyOnWriteArrayList, and when should it be used?</h4>
-<p>CopyOnWriteArrayList (java.util.concurrent) is a thread-safe List variant where every mutating operation (add/remove/set) creates an entirely new copy of the underlying array, then swaps the reference atomically. Reads never block and never throw ConcurrentModificationException, since they always operate against a stable, immutable snapshot array. It's ideal for read-heavy, write-rare scenarios — the classic example is a list of event listeners that's read constantly but modified only occasionally — but is costly for frequent writes, since every single mutation copies the entire backing array.</p>
-<h4 class="q">Q8. How do you get an immutable (read-only) collection view?</h4>
-<p>The Collections utility class provides wrapper methods — unmodifiableList(), unmodifiableSet(), unmodifiableMap(), etc. — implemented using the Decorator design pattern. Each wraps an existing mutable collection in a read-only view that throws UnsupportedOperationException on any attempted modification.</p>
-<pre><button class="copy">Copy</button><code>import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
- 
-public class ReadOnlyCollectionExample {
-    public static void main(String[] args) {
-        Set&lt;String&gt; technologySet = new HashSet&lt;&gt;();
-        technologySet.add("Java");
-        technologySet.add("JEE");
-        technologySet.add("Spring");
-        technologySet.add("Hibernate");
- 
-        Set&lt;String&gt; readOnlyTechnologySet = Collections.unmodifiableSet(technologySet);
-        readOnlyTechnologySet.add("Ajax"); // throws UnsupportedOperationException
-    }
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>The underlying set (technologySet) is still mutable. If code elsewhere holds a reference to the original mutable set and modifies it, those changes ARE visible through the read-only view, since the view simply wraps the same backing data. True immutability requires that no mutable reference to the backing collection ever escapes.</p></aside>
-<h4 class="q">Q9. How would you remove duplicates from a list while preserving order? Could LinkedHashSet be replaced with HashSet here?</h4>
-<pre><button class="copy">Copy</button><code>import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
- 
-public class DuplicateRemover {
-    public &lt;ElementType&gt; List&lt;ElementType&gt; removeDuplicates(List&lt;ElementType&gt; sourceList) {
-        return new ArrayList&lt;&gt;(new LinkedHashSet&lt;&gt;(sourceList));
-    }
-}</code></pre>
-<p>This code removes duplicate elements from a list by funneling it through a Set implementation (Sets cannot contain duplicates by definition), then wrapping the result back into a List. LinkedHashSet is used specifically because it preserves insertion order, so the de-duplicated list retains the same relative ordering as the original. If preserving order is not a requirement, LinkedHashSet can be replaced with a plain HashSet — slightly more memory- and time-efficient, at the cost of the resulting list's order being unspecified.</p>
-<h4 class="q">Q10. What are some best practices relating to the Java Collections Framework?</h4>
-<ul>
-<li>Choose the right data structure for your actual usage pattern: fixed size vs. growable, duplicates allowed or not, ordering requirements, forward-only vs. bi-directional traversal, insert-at-end-only vs. arbitrary-position insertion, read-heavy vs. write-heavy, concurrent access or not.</li>
-<li>Don't assume a collection will always stay small — design for it to scale, since data volumes tend to grow over an application's lifetime.</li>
-<li>Program to the interface, not the implementation, so you can swap implementations later without changing calling code.</li>
-<li>Return empty collections, not null, when a fetched list is legitimately empty (Collections.emptyList(), Collections.emptySet()). Returning null forces every caller to remember a null-check.</li>
-<li>Use generics for type safety, readability, and to catch type errors at compile time rather than at runtime.</li>
-<li>Encapsulate collections held as fields — return a defensive copy or an unmodifiable view rather than a raw reference, so external code can't bypass your class's own validation.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>// Avoid -- tightly couples calling code to a specific implementation
-ArrayList&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
- 
-// Prefer -- program to the interface; the implementation can change freely later
-List&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
-List&lt;String&gt; orderHistory = new LinkedList&lt;&gt;();</code></pre>
-<h2 id="s5">Section 4: Stack / Deque Deep Dive</h2>
-<p>The Java Collection library's LIFO mechanism has many practical real-world uses: evaluating expressions and parsing syntax, validating/parsing XML, implementing undo in a text editor, and tracking page-visit history in a web browser.</p>
-<h4 class="q">Q1. What LIFO implementation would you use in modern Java?</h4>
-<p>The old Vector-based Stack class is a legacy holdover, and its own Javadoc recommends using Deque instead, since Deque implementations generally perform better and offer a fuller LIFO API. “Deque” is pronounced “deck” and is unrelated to the verb “dequeue.” A double-ended queue supports adding/removing elements from either end, so a single Deque implementation can serve as either a FIFO queue or a LIFO stack.</p>
-<aside class="note"><p><strong>Note: </strong>The legacy Vector class synchronizes internally on every operation, which is rarely the right level of consistency for real applications and slows things down when synchronization isn't actually needed. java.util.concurrent (e.g. ConcurrentLinkedDeque) offers far more efficient thread-safety options when concurrency is genuinely required.</p></aside>
-<h4 class="q">Q2. Write a program to check whether a string has properly balanced brackets/parentheses.</h4>
-<p><em>Problem statement: Given an arbitrary string (e.g. a snippet of source code), determine whether every opening bracket — (, {, [ — has a correctly matching, correctly nested closing counterpart.</em></p>
-<p><strong>Pseudocode:</strong></p>
-<ul>
-<li>1. Store every opening bracket encountered in a stack (this naturally gives LIFO behavior).</li>
-<li>2. When a closing bracket is encountered, pop the most recent entry — it should be the matching opening bracket.</li>
-<li>3. If the stack is empty, or the popped bracket doesn't match, the brackets are not balanced.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>public enum BracketType {
-    LEFT_PAREN('('), RIGHT_PAREN(')'),
-    LEFT_BRACE('{'), RIGHT_BRACE('}'),
-    LEFT_SQUARE_BRACKET('['), RIGHT_SQUARE_BRACKET(']');
- 
-    private final char symbol;
- 
-    BracketType(char symbol) {
-        this.symbol = symbol;
-    }
- 
-    char getSymbol() {
-        return symbol;
     }
 }
  
-import java.util.ArrayDeque;
-import java.util.Deque;
+// TaskRunner.java - submits the task to a fixed-size thread pool
+package com.interviewguide.concurrency;
  
-public class BracketBalanceChecker {
-    // stores opening brackets as they are encountered
-    private final Deque&lt;Character&gt; openBracketStack = new ArrayDeque&lt;&gt;();
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
  
-    public boolean isBalanced(String inputText) {
-        for (int index = 0; index &lt; inputText.length(); index++) {
-            char currentChar = inputText.charAt(index);
-            if (currentChar == BracketType.LEFT_PAREN.getSymbol()
-                    || currentChar == BracketType.LEFT_BRACE.getSymbol()
-                    || currentChar == BracketType.LEFT_SQUARE_BRACKET.getSymbol()) {
-                openBracketStack.push(currentChar); // push the opening bracket
-            } else if (currentChar == BracketType.RIGHT_PAREN.getSymbol()) {
-                if (openBracketStack.isEmpty()
-                        || openBracketStack.pop() != BracketType.LEFT_PAREN.getSymbol()) {
-                    return false; // no matching opening bracket
-                }
-            } else if (currentChar == BracketType.RIGHT_BRACE.getSymbol()) {
-                if (openBracketStack.isEmpty()
-                        || openBracketStack.pop() != BracketType.LEFT_BRACE.getSymbol()) {
-                    return false;
-                }
-            } else if (currentChar == BracketType.RIGHT_SQUARE_BRACKET.getSymbol()) {
-                if (openBracketStack.isEmpty()
-                        || openBracketStack.pop() != BracketType.LEFT_SQUARE_BRACKET.getSymbol()) {
-                    return false;
-                }
+public class TaskRunner {
+    public static void main(String[] args) {
+        Executor threadPoolExecutor = Executors.newFixedThreadPool(10);
+        threadPoolExecutor.execute(new RecurringCounterTask());
+    }
+}</code></pre>
+<p><strong>Executor vs. ExecutorService</strong></p>
+<p>Both are interfaces in java.util.concurrent. ExecutorService extends Executor and adds significant lifecycle and coordination control:</p>
+<ul>
+<li>shutdown() / shutdownNow() — gracefully or forcibly stop accepting and running tasks.</li>
+<li>awaitTermination(timeout, unit) — block until all tasks complete or the timeout elapses.</li>
+<li>isShutdown() / isTerminated() — query the pool's lifecycle state.</li>
+<li>invokeAny(...) / invokeAll(...) — submit a batch of Callable tasks and either get the first successful result, or wait for all of them.</li>
+<li>submit(...) — unlike execute(), returns a Future so you can retrieve a result or exception.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>ExecutorService threadPoolExecutor = Executors.newFixedThreadPool(10);
+threadPoolExecutor.execute(new RecurringCounterTask());
+// attempts to interrupt all running tasks and stop the pool immediately
+threadPoolExecutor.shutdownNow();</code></pre>
+<aside class="note"><p><strong>Note: </strong>shutdownNow() attempts to stop all actively executing tasks by interrupting them. In the example above, the task is blocked inside Thread.sleep(), so the interrupt causes sleep() to throw an InterruptedException immediately, unwinding that task's run() method.</p></aside>
+<h3 id="s3">Thread Safety &amp; Synchronization Fundamentals</h3>
+<p><strong>Thread.sleep()</strong></p>
+<ul>
+<li>The static method Thread.sleep(long millis) forces the currently executing thread to pause for at least the given duration.</li>
+<li>sleep() declares a checked exception, InterruptedException, so every call must either be wrapped in a try/catch or the enclosing method must declare it in its own throws clause.</li>
+<li>Calling sleep() gives other threads a chance to run, but there is no guarantee about scheduling order afterward — sleep() is a simple (if crude) way to encourage fair thread switching, not a substitute for proper synchronization.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>try {
+    Thread.sleep(200); // pause this thread for ~200 milliseconds
+} catch (InterruptedException interruptedException) {
+    Thread.currentThread().interrupt(); // restore the interrupt flag
+}</code></pre>
+<p><strong>Why shared mutable state is dangerous</strong></p>
+<ul>
+<li>Serious problems arise when two or more threads have access to the same mutable object on the heap.</li>
+<li>If one thread is interrupted mid-way through modifying an object's internal state, another thread could observe or modify that object while it's only half-updated, corrupting data.</li>
+<li>To make a class thread-safe, you must decide which sequences of statements need to be treated as a single atomic operation — one that runs to completion, uninterrupted by any other thread, before another thread may touch the same object's state.</li>
+</ul>
+<p><strong>The synchronized keyword</strong></p>
+<ul>
+<li>Use synchronized on a method declaration to prevent more than one thread from entering that method (on the same object instance) at the same time.</li>
+<li>Every object has a single intrinsic lock (monitor). It only becomes relevant once an object has one or more synchronized methods.</li>
+<li>A thread attempting to enter a synchronized method must first acquire that object's lock; if another thread holds it, the requesting thread blocks until it becomes available.</li>
+<li>Even with multiple synchronized methods on a class, there is still only one lock per object instance — once any thread enters one synchronized method on an object, no other thread can enter any other synchronized method on that same object concurrently. This is precisely what protects an object's internal data.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>public class BankAccount {
+    private double currentBalance;
+ 
+    // synchronized: only one thread at a time can execute THIS method
+    // on a given BankAccount instance
+    public synchronized void withdrawFunds(double withdrawalAmount) {
+        if (currentBalance &gt;= withdrawalAmount) {
+            currentBalance -= withdrawalAmount;
+        }
+    }
+ 
+    // this method is ALSO locked out while withdrawFunds() is running,
+    // because they share the same object-level lock
+    public synchronized void depositFunds(double depositAmount) {
+        currentBalance += depositAmount;
+    }
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>Synchronizing an entire method is the simplest approach, but locks out ALL synchronized methods on that instance for the duration, even unrelated ones. For finer-grained control, synchronize only the specific block of code that touches shared state, as shown in Q1 below.</p></aside>
+<h3 id="s4">Multithreading Interview Questions</h3>
+<h4 class="q">Q1. What is the difference between a synchronized method and a synchronized block?</h4>
+<p>A synchronized method locks the entire method body using the intrinsic lock of the object it's called on (or the Class object, if the method is static). A synchronized block lets you lock on any explicit object you choose, and only for the specific statements inside the block. Synchronized blocks are generally preferred because they minimize the amount of code executed while holding the lock, reducing contention and improving throughput.</p>
+<p><em>Problem statement: Reduce inventory stock safely under concurrent access, locking only the critical section rather than the entire method.</em></p>
+<pre><button class="copy">Copy</button><code>public class InventoryManager {
+    private int stockCount;
+    private final Object stockLock = new Object();
+ 
+    public void reduceStock(int quantity) {
+        // only this critical section is locked, not the whole method
+        synchronized (stockLock) {
+            if (stockCount &gt;= quantity) {
+                stockCount -= quantity;
             }
         }
-        // if the stack is empty, every opening bracket found its match
-        return openBracketStack.isEmpty();
-    }
-}</code></pre>
-<pre><button class="copy">Copy</button><code>import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
- 
-public class BracketBalanceCheckerTest {
-    private BracketBalanceChecker checker;
- 
-    @Before
-    public void setUp() {
-        checker = new BracketBalanceChecker();
+        // any non-shared-state work can happen here, outside the lock
+        logStockChange(quantity);
     }
  
-    @Test
-    public void testBalancedBracketsReturnTrue() {
-        boolean result = checker.isBalanced("public static void main(String[] args) {}");
-        assertTrue(result);
-    }
- 
-    @Test
-    public void testUnbalancedBracketsReturnFalse() {
-        assertFalse(checker.isBalanced("public static void main(String[ args) {}")); // missing ']'
-        assertFalse(checker.isBalanced("public static void main(String[] args) }"));  // missing '{'
-        assertFalse(checker.isBalanced("public static void main String[] args) {}")); // missing '('
+    private void logStockChange(int quantity) {
+        System.out.println("Reduced stock by " + quantity);
     }
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>Test both positive and negative scenarios. Also note: this implementation favors clarity over elegance. Any time you find yourself writing a long chain of if/else-if or a large switch statement like this, it's worth considering a more object-oriented design — for example, a Map&lt;Character, Character&gt; pairing each closing bracket to its opening counterpart, collapsing the three near-identical branches into one.</p></aside>
-<p><em>Figure: Balanced-bracket checking using a stack</em></p>
-<h4 class="q">Q3. Why is the Deque interface different from other collection interfaces?</h4>
-<p>Deque allows insertion and removal of elements from BOTH ends of the collection (addFirst/removeFirst and addLast/removeLast), whereas most other collections only support adding/removing at one end. This dual-ended access is what allows a single Deque implementation to function as either a stack or a queue.</p>
-<h4 class="q">Q4. What are the different ways to inspect a program's execution trace?</h4>
-<p><strong>1. Understanding the call stack.</strong></p>
-<p>Java is a stack-based language: method invocations are pushed onto a call stack, and popped off in LIFO order as each method completes. When an exception is thrown, a stack trace is printed showing exactly this call chain.</p>
-<p><strong>2. Programmatically accessing a stack trace.</strong></p>
-<pre><button class="copy">Copy</button><code>StackTraceElement[] currentStackTrace = Thread.currentThread().getStackTrace(); // handy for tracing</code></pre>
-<p>For a full thread dump across all threads: OS-level tools like jstack or JConsole, a kill -QUIT signal on POSIX systems (or Ctrl+Break on Windows), or the JMX API programmatically via ThreadMXBean:</p>
-<pre><button class="copy">Copy</button><code>import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
- 
-ThreadMXBean threadManagementBean = ManagementFactory.getThreadMXBean();
-ThreadInfo[] allThreadInfos = threadManagementBean.dumpAllThreads(true, true);
-for (ThreadInfo threadInfo : allThreadInfos) {
-    StackTraceElement[] threadStackTrace = threadInfo.getStackTrace();
-    // inspect each thread's current call stack
-}</code></pre>
-<p>Thread dumps are invaluable for diagnosing concurrency issues like deadlocks, lock contention, and thread starvation.</p>
-<p><strong>3. Reading a stack trace correctly.</strong></p>
-<p>A stack trace lists the execution path in reverse chronological order — most recent call first. With chained “Caused by” sections, look at the bottom-most “Caused by” to find the true root cause. When many third-party libraries (Spring, Hibernate, etc.) are involved, focus on the bottom-most entry whose package belongs to your own application code, skipping over library-internal exceptions.</p>
-<h4 class="q">Q5. Write a program to reverse the numbers {1, 4, 6, 7, 8, 9} using a stack.</h4>
-<pre><button class="copy">Copy</button><code>import java.util.ArrayDeque;
-import java.util.Arrays;
-import java.util.Deque;
- 
-public class NumberReverser {
-    public static void main(String[] args) {
-        Integer[] originalValues = {1, 4, 6, 7, 8, 9};
-        Deque&lt;Integer&gt; numberStack = new ArrayDeque&lt;&gt;(originalValues.length);
- 
-        // push everything in original order
-        for (int index = 0; index &lt; originalValues.length; index++) {
-            numberStack.push(originalValues[index]);
-        }
- 
-        Integer[] reversedValues = new Integer[originalValues.length];
-        int resultIndex = 0;
-        // popping naturally returns elements in reverse order (LIFO)
-        while (!numberStack.isEmpty()) {
-            reversedValues[resultIndex++] = numberStack.pop();
-        }
-        System.out.println(Arrays.toString(reversedValues)); // [9, 8, 7, 6, 4, 1]
-    }
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>ArrayDeque is not thread-safe, and it does not permit null elements. If you need a thread-safe double-ended queue, java.util.concurrent provides BlockingDeque and LinkedBlockingDeque.</p></aside>
-<h2 id="s6">Section 5: Storing Hierarchical (Tree) Data in a Relational Database</h2>
-<h4 class="q">Q1. How would you represent a hierarchical structure like an organizational chart in a relational database?</h4>
-<p>This is a real-world instance of the Composite design pattern. The standard relational approach maintains adjacency information directly in the table: each row stores a foreign key pointing back to its own parent row within the same table.</p>
-<pre><button class="copy">Copy</button><code>CREATE TABLE employee (
-    emp_id           NUMBER(4)   CONSTRAINT emp_pk PRIMARY KEY,
-    emp_name         VARCHAR2(40) NOT NULL,
-    title            VARCHAR2(40),
-    dept_id          NUMBER(2)   NOT NULL,
-    superior_emp_id  NUMBER(4)   CONSTRAINT emp_fk REFERENCES employee(emp_id)
-);</code></pre>
-<p>superior_emp_id is a foreign key referencing emp_id in the same employee table. This maps naturally onto a Java object model:</p>
-<pre><button class="copy">Copy</button><code>public class Employee {
-    private Long employeeId;
-    private String employeeName;
-    private String jobTitle;
-    private Employee superiorEmployee;
-    private Set&lt;Employee&gt; subordinateEmployees;
-    // getters and setters omitted for brevity
-}</code></pre>
-<p><em>Figure: Hierarchical data as a self-referencing table</em></p>
-<h4 class="q">Q2. How would you find the superior (manager) of a given employee?</h4>
-<p>Use a self-join — join the table to itself, matching each employee's superior_emp_id against the emp_id of a second copy of the same table:</p>
-<pre><button class="copy">Copy</button><code>SELECT e.emp_id, e.emp_name, s.title
-FROM employee e, employee s
-WHERE e.superior_emp_id = s.emp_id
-  AND e.emp_id = 3;</code></pre>
-<h4 class="q">Q3. Is there another way to store a tree structure in a relational database?</h4>
-<p>Yes — the Modified Preorder Tree Traversal (MPTT) technique. Each node is annotated with a left and right numeric value, assigned by walking the tree in a specific traversal order. These left/right values encode the entire hierarchy without needing recursive queries to walk up or down the tree: any row whose left_val and right_val both fall strictly between another row's left_val and right_val is a descendant of that row.</p>
-<pre><button class="copy">Copy</button><code>-- Fetch Amanda's entire subtree (herself plus all descendants), given Amanda = (6, 11)
-SELECT * FROM employee
-WHERE left_val BETWEEN 6 AND 11
-ORDER BY left_val ASC;
--- returns: Amanda, Ralph, Jeanne
- 
--- Fetch all ancestors of Ralph = (7, 8)
-SELECT * FROM employee
-WHERE left_val &lt; 7 AND right_val &gt; 8
-ORDER BY left_val ASC;
--- returns: Peter, Amanda</code></pre>
-<p>To count the number of descendants of a node: number_of_descendants = (right_val − left_val − 1) / 2. For example, Amanda (6–11) has (11−6−1)/2 = 2 descendants (Ralph and Jeanne); Peter (1–12) has (12−1−1)/2 = 5 descendants (everyone else in the tree); Mary (3–4) has (4−3−1)/2 = 0 descendants (a leaf node).</p>
-<aside class="note"><p><strong>Note: </strong>The adjacency-list approach (superior_emp_id) is simpler to understand and update, but requires recursive queries (or application-level recursion) to walk multiple levels up or down the tree. MPTT makes subtree and ancestor queries a single, fast, non-recursive SQL statement — but updates (inserting or moving a node) are more expensive, since they can require renumbering many other rows' left/right values.</p></aside>
-<h2 id="s7">Section 6: Comparing and Sorting Objects</h2>
-<p>Comparing and sorting objects in a collection is extremely common in real-world code — for example, retrieving records from a database and letting the user sort a report by different columns. Java provides the Collections utility class along with the Comparable and Comparator interfaces to support this.</p>
-<h4 class="q">Q1. Write a reusable method to compare two objects for equality, useful for implementing your own equals() method.</h4>
-<p>This kind of helper is useful in a common abstract base class for domain/value objects, so individual field comparisons in an equals() implementation don't need to repeat null-checking logic every time.</p>
-<pre><button class="copy">Copy</button><code>public abstract class AbstractDomainObject {
-    // protected: only subclasses building their own equals() should use this
-    protected boolean isFieldEqual(Object firstValue, Object secondValue) {
-        if (firstValue == null) {
-            // both null -&gt; equal; only one null -&gt; not equal
-            return secondValue == null;
-        }
-        return firstValue.equals(secondValue);
+<h4 class="q">Q2. What is a deadlock, and how can you avoid it?</h4>
+<p>A deadlock occurs when two or more threads are each waiting for a lock held by one of the others, so none of them can ever proceed. The classic example is Thread A holding Lock 1 and waiting for Lock 2, while Thread B holds Lock 2 and waits for Lock 1.</p>
+<p><strong>Common ways to avoid deadlock:</strong></p>
+<ul>
+<li>Always acquire multiple locks in a consistent, global order across all threads.</li>
+<li>Use tryLock(timeout) from java.util.concurrent.locks.Lock instead of blocking indefinitely, so a thread can back off and retry if it cannot acquire a lock within a reasonable time.</li>
+<li>Minimize the scope and duration for which locks are held.</li>
+<li>Avoid calling out to unknown/overridable code while holding a lock.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Deadlock-prone: threads may acquire lockA and lockB in different orders
+synchronized (lockA) {
+    synchronized (lockB) {
+        // ...
     }
 }
  
-public class SecurityHolding extends AbstractDomainObject implements Serializable {
-    private String securityId;
-    // getters, setters, toString, etc. omitted for brevity
- 
-    @Override
-    public boolean equals(Object otherObject) {
-        if (this == otherObject) {
-            return true;
-        }
-        if (!(otherObject instanceof SecurityHolding)) {
-            return false;
-        }
-        // reuse the null-safe comparison helper from the abstract base class
-        return isFieldEqual(this.securityId, ((SecurityHolding) otherObject).getSecurityId());
-    }
- 
-    @Override
-    public int hashCode() {
-        return securityId == null ? 0 : securityId.hashCode();
-    }
- 
-    public String getSecurityId() {
-        return securityId;
+// Fix: always acquire locks in the same global order (e.g. by a consistent ID)
+Object firstLock  = accountA.getId() &lt; accountB.getId() ? lockA : lockB;
+Object secondLock = accountA.getId() &lt; accountB.getId() ? lockB : lockA;
+synchronized (firstLock) {
+    synchronized (secondLock) {
+        // safe: every thread acquires locks in the same order
     }
 }</code></pre>
-<h4 class="q">Q2. Write code to sort a list of strings naturally (alphabetically), and identify what's wrong with a naive natural sort.</h4>
-<p>String already implements Comparable&lt;String&gt;, so Collections.sort(...) can sort a List&lt;String&gt; directly using String's natural ordering. Internally, Collections.sort() uses an efficient, stable merge-sort-based algorithm (TimSort, since Java 7).</p>
-<pre><button class="copy">Copy</button><code>List&lt;String&gt; technologyNames = Arrays.asList(
-        "JEE", "Java", "Servlets", "JMS", "JNDI", "JDBC", "JSP", "EJB");
-Collections.sort(technologyNames); // uses String's own compareTo()
-System.out.println(technologyNames);
-// [EJB, JDBC, JEE, JMS, JNDI, JSP, Java, Servlets]</code></pre>
-<p><strong>Two problems with this naive sort:</strong></p>
-<ul>
-<li>It is case-sensitive: String's natural ordering sorts all uppercase letters before all lowercase letters (Unicode code points), which is why “Java” ends up after “JSP” even though a case-insensitive alphabetical sort would put it earlier.</li>
-<li>If the list contains any null values, Collections.sort() throws a NullPointerException, since it calls compareTo() on each element.</li>
-</ul>
-<p>Both issues are fixed by supplying a custom Comparator instead of relying on natural ordering:</p>
-<pre><button class="copy">Copy</button><code>List&lt;String&gt; technologyNames = Arrays.asList(
-        "JEE", "Java", "Servlets", "JMS", null, "JNDI", "JDBC", "JSP", "EJB");
+<p><em>Figure: Deadlock — circular wait</em></p>
+<h4 class="q">Q3. What is the difference between wait()/notify() and sleep()?</h4>
+<p>wait() and notify() are methods on Object, used for inter-thread communication. A thread calling wait() must already hold the object's monitor lock; calling wait() releases that lock and suspends the thread until another thread calls notify() or notifyAll() on the same object. sleep(), by contrast, is a static Thread method that pauses the current thread for a fixed duration WITHOUT releasing any locks it holds.</p>
+<p><em>Problem statement: Implement a simple producer/consumer handoff using wait()/notify() on a shared buffer.</em></p>
+<pre><button class="copy">Copy</button><code>class SharedBuffer {
+    private final Object bufferLock = new Object();
+    private boolean dataReady = false;
  
-Collections.sort(technologyNames, new Comparator&lt;String&gt;() {
-    @Override
-    public int compare(String firstValue, String secondValue) {
-        // push nulls to the end, regardless of comparison direction
-        if (firstValue == null) return (secondValue == null) ? 0 : 1;
-        if (secondValue == null) return -1;
-        return firstValue.compareToIgnoreCase(secondValue);
+    void produce() {
+        synchronized (bufferLock) {
+            dataReady = true;
+            bufferLock.notify(); // wake up a thread waiting on bufferLock
+        }
     }
+ 
+    void consume() throws InterruptedException {
+        synchronized (bufferLock) {
+            while (!dataReady) {
+                bufferLock.wait(); // releases the lock and waits to be notified
+            }
+            // process the data
+        }
+    }
+}</code></pre>
+<p><em>Figure: wait()/notify() vs sleep()</em></p>
+<h4 class="q">Q4. What is a race condition? Give an example.</h4>
+<p>A race condition occurs when the correctness of a program depends on the relative timing of multiple threads, and the outcome varies depending on which thread happens to execute first. A classic example is two threads incrementing a shared counter without synchronization: the increment (read, add one, write back) is not atomic, so both threads can read the same initial value before either writes back, and one increment is silently lost.</p>
+<pre><button class="copy">Copy</button><code>public class UnsafeCounter {
+    private int count = 0;
+ 
+    public void increment() {
+        count++; // NOT atomic: read, add 1, write back - three separate steps
+    }
+}
+// If two threads call increment() concurrently on the same instance without
+// synchronization, one of the increments can be lost due to interleaving.
+ 
+public class SafeCounter {
+    private int count = 0;
+ 
+    public synchronized void increment() {
+        count++; // now atomic with respect to other synchronized calls
+    }
+}</code></pre>
+<h4 class="q">Q5. What is the volatile keyword, and when should you use it?</h4>
+<p>volatile guarantees two things for a field: (1) every read of the field always sees the most recently written value from any thread (visibility), and (2) the compiler and CPU will not reorder instructions around accesses to that field. It does NOT make compound operations like count++ atomic. volatile is appropriate for simple flags or references that are written by one thread and read by others, such as a shutdown flag or the double-checked-locking Singleton pattern shown in Section 2.</p>
+<pre><button class="copy">Copy</button><code>public class Worker implements Runnable {
+    private volatile boolean shutdownRequested = false;
+ 
+    public void requestShutdown() {
+        shutdownRequested = true; // visible to the worker thread immediately
+    }
+ 
+    @Override
+    public void run() {
+        while (!shutdownRequested) {
+            // do work
+        }
+    }
+}</code></pre>
+<h4 class="q">Q6. What is the difference between Callable and Runnable?</h4>
+<p>Runnable's run() method returns void and cannot throw checked exceptions. Callable&lt;V&gt;'s call() method returns a value of type V and can throw a checked exception. Callable is designed to be used with ExecutorService.submit(), which returns a Future&lt;V&gt; that lets you retrieve the result once the task finishes.</p>
+<pre><button class="copy">Copy</button><code>Callable&lt;Integer&gt; computeSquareTask = () -&gt; {
+    int inputValue = 7;
+    return inputValue * inputValue;
+};
+ 
+ExecutorService threadPoolExecutor = Executors.newSingleThreadExecutor();
+Future&lt;Integer&gt; resultFuture = threadPoolExecutor.submit(computeSquareTask);
+Integer squareResult = resultFuture.get(); // blocks until the result is ready
+System.out.println(squareResult); // 49
+threadPoolExecutor.shutdown();</code></pre>
+<h4 class="q">Q7. What is the difference between Executor.submit() and Executor.execute()?</h4>
+<p>Both methods schedule a task for execution on a thread pool, but they differ in what they return and how they handle exceptions:</p>
+<ul>
+<li>execute(Runnable) returns void. There is no way to retrieve a result or check whether the task completed successfully from the call itself.</li>
+<li>submit(Callable) or submit(Runnable) returns a Future object, which lets you call get() to retrieve the task's result (blocking until it's done) or check isDone()/cancel().</li>
+</ul>
+<p>The exception handling behavior also differs. If a task submitted with execute() throws an uncaught exception, it propagates to the thread's UncaughtExceptionHandler (by default this just prints a stack trace to System.err). If a task is submitted with submit(), any exception — checked or unchecked — is instead captured and stored inside the returned Future, surfacing only when you call future.get(), which re-throws it wrapped in an ExecutionException.</p>
+<pre><button class="copy">Copy</button><code>ExecutorService threadPool = Executors.newFixedThreadPool(4);
+ 
+// execute(): fire-and-forget, exceptions go to the uncaught exception handler
+threadPool.execute(() -&gt; { throw new RuntimeException("boom"); });
+ 
+// submit(): exception is captured inside the Future
+Future&lt;Integer&gt; resultFuture = threadPool.submit(() -&gt; {
+    throw new RuntimeException("boom");
 });
-System.out.println(technologyNames);
-// [EJB, JDBC, JEE, Java, JMS, JNDI, JSP, Servlets, null]
- 
-// From Java 8 onward, written far more concisely with a lambda and Comparator's built-in null handling:
-Collections.sort(technologyNames, Comparator.nullsLast(String::compareToIgnoreCase));</code></pre>
-<h4 class="q">Q3. How do you sort a custom class by its own natural ordering?</h4>
-<p>Implement Comparable&lt;T&gt; on your own class, and define compareTo(...) to encode the class's “natural” ordering.</p>
-<p><em>Problem statement: Sort a list of technologies by their popularity rank, using each technology's natural ordering.</em></p>
-<pre><button class="copy">Copy</button><code>public class JavaTechnology implements Comparable&lt;JavaTechnology&gt; {
-    private String technologyName;
-    private int popularityRank; // lower value means more popular
- 
-    public JavaTechnology(String technologyName, int popularityRank) {
-        this.technologyName = technologyName;
-        this.popularityRank = popularityRank;
-    }
- 
-    public String getTechnologyName() {
-        return technologyName;
-    }
- 
-    public int getPopularityRank() {
-        return popularityRank;
-    }
- 
-    @Override
-    public int compareTo(JavaTechnology otherTechnology) {
-        // natural ordering: sort by popularity rank, ascending
-        return Integer.compare(this.popularityRank, otherTechnology.popularityRank);
-    }
- 
-    @Override
-    public String toString() {
-        return "(" + technologyName + ", " + popularityRank + ")";
-    }
-}
- 
-List&lt;JavaTechnology&gt; technologies = new ArrayList&lt;&gt;();
-technologies.add(new JavaTechnology("JMS", 5));
-technologies.add(new JavaTechnology("EJB", 4));
-technologies.add(new JavaTechnology("JNDI", 3));
-technologies.add(new JavaTechnology("Servlets", 2));
-technologies.add(new JavaTechnology("JSP", 2));
-technologies.add(new JavaTechnology("Java", 1));
-technologies.add(new JavaTechnology("JEE", 1));
-Collections.sort(technologies); // invokes compareTo() repeatedly
-System.out.println(technologies);
-// [(JEE, 1), (Java, 1), (Servlets, 2), (JSP, 2), (JNDI, 3), (EJB, 4), (JMS, 5)]</code></pre>
-<h4 class="q">Q4. How do you apply a specific external sort order — say, by rank first, then alphabetically for ties?</h4>
-<p>Create a separate Comparator implementation encoding the desired sort order, without touching the class itself. This keeps sorting logic decoupled from the class's own “natural” ordering, and you can have as many Comparators as you need different sort orders.</p>
-<pre><button class="copy">Copy</button><code>import java.util.Comparator;
- 
-public class TechnologyRankThenNameComparator implements Comparator&lt;JavaTechnology&gt; {
-    @Override
-    public int compare(JavaTechnology firstTechnology, JavaTechnology secondTechnology) {
-        Integer firstRank = firstTechnology.getPopularityRank();
-        Integer secondRank = secondTechnology.getPopularityRank();
-        int rankComparison = firstRank.compareTo(secondRank);
-        if (rankComparison != 0) {
-            return rankComparison; // ranks differ -- that's enough to decide order
-        }
-        // ranks are tied -- break the tie alphabetically by name
-        return firstTechnology.getTechnologyName().compareToIgnoreCase(
-                secondTechnology.getTechnologyName());
-    }
-}
- 
-Collections.sort(technologies, new TechnologyRankThenNameComparator());
-// [(JEE, 1), (Java, 1), (JSP, 2), (Servlets, 2), (JNDI, 3), (EJB, 4), (JMS, 5)]
- 
-// From Java 8 onward, the same chained comparator can be built fluently:
-Collections.sort(technologies,
-        Comparator.comparing(JavaTechnology::getPopularityRank)
-                  .thenComparing(JavaTechnology::getTechnologyName, String.CASE_INSENSITIVE_ORDER));</code></pre>
-<h2 id="s8">Section 7: Coding Exercise — A Generic, Predicate-Based List Filter</h2>
-<p><em>Problem statement: Given a source list, produce a filtered sub-list based on a supplied condition (a “predicate”). For example, given the source list [1,2,3,4,5,6,7,8,9,10]: predicate “even numbers” should yield [2, 4, 6, 8, 10], and predicate “multiples of 5” should yield [5, 10]. The interviewer wants clean, extensible, well-tested code, not just a correct answer.</em></p>
-<p><strong>The design below hits four goals:</strong></p>
+try {
+    resultFuture.get(); // throws ExecutionException wrapping the RuntimeException
+} catch (ExecutionException wrappedException) {
+    System.out.println("Caught: " + wrappedException.getCause());
+} catch (InterruptedException interruptedException) {
+    Thread.currentThread().interrupt();
+}</code></pre>
+<h4 class="q">Q8. What is ConcurrentHashMap, and how is it different from a synchronized HashMap?</h4>
+<p>ConcurrentHashMap (java.util.concurrent) is a thread-safe map designed for high concurrency. Unlike Collections.synchronizedMap(new HashMap&lt;&gt;()), which uses a single lock for the entire map (so only one thread can access it at a time, even for unrelated keys), ConcurrentHashMap internally partitions its data so that multiple threads can read and write concurrently with minimal contention. In modern JDKs (Java 8+) it uses a combination of CAS (compare-and-swap) operations and fine-grained locking per bin, rather than locking the whole map.</p>
 <ul>
-<li>Use generics, so the filter works for any element type, not just Integer.</li>
-<li>Code to an interface (a Predicate contract), so new filtering rules can be added later without modifying existing code — an application of the Open/Closed Principle.</li>
-<li>Keep it extensible: new predicate implementations can be added freely; the filtering class itself never needs to change.</li>
-<li>Make it easy to test: JUnit tests cover both the predicates and the filtering class, including edge cases.</li>
+<li>Read operations in ConcurrentHashMap generally do not block at all.</li>
+<li>Iterators returned by ConcurrentHashMap are weakly consistent: they never throw ConcurrentModificationException, and reflect the state of the map at some point at or after the iterator was created.</li>
+<li>A synchronized HashMap's iterator, by contrast, throws ConcurrentModificationException if the map is structurally modified by another thread during iteration.</li>
 </ul>
-<p><strong>Step 1: Define the predicate contract</strong></p>
-<pre><button class="copy">Copy</button><code>package com.interviewguide.filtering;
+<p>Internally (JDK 8+), ConcurrentHashMap achieves this without locking the entire map by using CAS-based updates for the common case of inserting into an empty bin, and synchronizing only on the head node of a single bin when a collision chain must be modified — so writes to different bins never contend with each other.</p>
+<p><em>Figure: ConcurrentHashMap bucket-level locking</em></p>
+<h4 class="q">Q9. What is a ThreadLocal, and what memory-leak risk does it carry in application-server or thread-pool environments?</h4>
+<p>ThreadLocal&lt;T&gt; gives each thread its own independent copy of a variable, invisible to other threads — useful for per-thread context such as a database connection, a user session, or a SimpleDateFormat instance (which is not itself thread-safe). Internally, each Thread object holds a small map from ThreadLocal instance to value.</p>
+<p>The memory-leak risk arises specifically in thread-pool environments (application servers, ExecutorService pools) because pooled threads are long-lived and reused across many logical tasks. If a task sets a ThreadLocal value and never calls remove() when it finishes, the value (and anything it references) stays attached to that pooled thread indefinitely, since the thread itself is never garbage collected. Over time and many task executions, this silently accumulates memory — and can also leak stale/incorrect context into a later, unrelated task reusing the same pooled thread. The fix is to always clear a ThreadLocal in a finally block once the task using it completes.</p>
+<pre><button class="copy">Copy</button><code>private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMAT_HOLDER =
+        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat("yyyy-MM-dd"));
  
-/**
- * A generic condition that can be evaluated against an element of type T.
- * New filtering rules are added by writing new implementations of this
- * interface -- no existing code needs to change.
- */
-public interface ElementPredicate&lt;T&gt; {
-    boolean isSatisfiedBy(T candidateElement);
-}</code></pre>
-<p><strong>Step 2: Implement a couple of concrete predicates</strong></p>
-<pre><button class="copy">Copy</button><code>package com.interviewguide.filtering;
- 
-public class EvenNumberPredicate implements ElementPredicate&lt;Integer&gt; {
-    @Override
-    public boolean isSatisfiedBy(Integer candidateNumber) {
-        if (candidateNumber == null) {
-            return false;
-        }
-        return candidateNumber % 2 == 0;
-    }
-}
- 
-package com.interviewguide.filtering;
- 
-public class FactorOfPredicate implements ElementPredicate&lt;Integer&gt; {
-    private final int divisor;
- 
-    public FactorOfPredicate(int divisor) {
-        if (divisor == 0) {
-            throw new IllegalArgumentException("divisor must not be zero");
-        }
-        this.divisor = divisor;
-    }
- 
-    @Override
-    public boolean isSatisfiedBy(Integer candidateNumber) {
-        if (candidateNumber == null) {
-            return false;
-        }
-        return candidateNumber % divisor == 0;
+public String formatOrderDate(Date orderDate) {
+    try {
+        return DATE_FORMAT_HOLDER.get().format(orderDate);
+    } finally {
+        // essential in a pooled-thread environment: prevents the value (and
+        // anything it references) from leaking into the next task on this thread
+        DATE_FORMAT_HOLDER.remove();
     }
 }</code></pre>
-<p><strong>Step 3: The generic FilteredList class</strong></p>
-<pre><button class="copy">Copy</button><code>package com.interviewguide.filtering;
+<h4 class="q">Q10. Explain the Java Memory Model (JMM) and why volatile alone doesn't make compound operations atomic.</h4>
+<p>The Java Memory Model defines the rules for how and when writes made by one thread become visible to reads made by another thread, in the presence of compiler, JIT, and CPU-level instruction reordering. Without any synchronization, the JMM makes almost no visibility guarantees — one thread can run indefinitely without ever observing another thread's write to a shared, non-volatile field, because the reader may be working from a cached or reordered view of memory. Synchronization primitives (synchronized, volatile, java.util.concurrent locks) establish happens-before relationships, which are the JMM's formal guarantee that everything a thread did before a given point is visible to another thread after it reaches a corresponding point.</p>
+<p>volatile establishes happens-before ordering for reads and writes of that single field, and prevents reordering around it — but a compound operation like count++ is actually three separate steps (read, increment, write). Even with count declared volatile, another thread can interleave between those steps: Thread A reads the current value, Thread B reads the same (still-old) value, both increment locally, and both write back, so one increment is lost. volatile guarantees visibility of the field, not atomicity of multi-step operations performed on it. True atomicity requires either synchronized around the whole read-modify-write sequence, or an atomic class from java.util.concurrent.atomic (e.g. AtomicInteger.incrementAndGet(), which performs the operation as a single CAS-based primitive).</p>
+<p><em>Figure: Java Memory Model and volatile</em></p>
+<h4 class="q">Q11. ConcurrentHashMap internals — how does it achieve thread safety without locking the entire map?</h4>
+<p>Modern ConcurrentHashMap (Java 8+) is backed by the same array-of-buckets structure as HashMap, but synchronizes at the level of an individual bin (bucket) rather than the whole table. Inserting into an empty bin is done with a CAS (compare-and-swap) operation — lock-free. Only when a collision occurs and the bin's linked list (or, for large bins, its red-black tree) must be modified does the implementation synchronize, and it synchronizes only on that bin's head node, not on the map as a whole. This means writes targeting different bins never contend with each other, and reads are largely lock-free throughout, giving far higher throughput under concurrent access than a single coarse-grained lock over the entire map would.</p>
+<h4 class="q">Q12. What are the differences between synchronized, ReentrantLock, and StampedLock? When would you choose each?</h4>
+<p>synchronized is the built-in intrinsic lock: simplest to use, automatically released even if an exception is thrown, but strictly block-structured (you can't try to acquire it with a timeout, can't interrupt a thread waiting on it, and can't inspect whether it's currently held).</p>
+<p>ReentrantLock (java.util.concurrent.locks) offers everything synchronized does, plus: tryLock() and tryLock(timeout, unit) for non-blocking or bounded-wait acquisition; lockInterruptibly() so a waiting thread can respond to interruption; fairness ordering (an optional constructor flag that grants the lock in the order threads requested it, avoiding thread starvation); and multiple associated Condition objects (in place of a single implicit wait/notify per object). The cost is that you must remember to unlock() in a finally block yourself — the JVM won't do it for you on an exception.</p>
+<p>StampedLock (Java 8+) adds a third mode beyond simple read/write locking: an optimistic read, which doesn't block writers at all and instead returns a stamp that the reader later validates; if a write occurred in the meantime, the optimistic read is discarded and retried under a full read lock. This makes StampedLock significantly faster than ReentrantReadWriteLock for read-heavy workloads, at the cost of a more error-prone API (it is not reentrant, and forgetting to validate the optimistic stamp silently reads torn/stale data).</p>
+<p>Choice: use synchronized for simple cases where its block-structured nature is sufficient; use ReentrantLock when you need tryLock/timeouts, interruptible waiting, fairness, or multiple wait conditions; use StampedLock for very read-heavy hot paths where the optimistic-read fast path's extra throughput is worth the added complexity and care.</p>
+<h4 class="q">Q13. Explain the difference between CompletableFuture and traditional Future. Design an async pipeline with error handling.</h4>
+<p>A plain Future only supports blocking retrieval of a result via get() (optionally with a timeout) — there is no way to register a callback, chain further work onto its completion, or combine it with another Future without a separate thread blocking on get(). CompletableFuture (java.util.concurrent, Java 8+) implements both Future and CompletionStage, adding a rich set of composition methods: thenApply() to transform a result, thenCompose() to chain a dependent async operation, thenCombine() to join two independent futures, and exceptionally()/handle() for error handling — all without blocking a thread to wait for the prior stage.</p>
+<p><em>Problem statement: Build an asynchronous pipeline that fetches a customer's profile, then fetches their order history, combines both into a summary, and falls back to a default summary if any stage fails.</em></p>
+<pre><button class="copy">Copy</button><code>public CompletableFuture&lt;CustomerSummary&gt; buildCustomerSummaryAsync(String customerId) {
+    CompletableFuture&lt;CustomerProfile&gt; profileFuture =
+            CompletableFuture.supplyAsync(() -&gt; customerService.fetchProfile(customerId));
  
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+    CompletableFuture&lt;List&lt;Order&gt;&gt; orderHistoryFuture =
+            CompletableFuture.supplyAsync(() -&gt; orderService.fetchOrderHistory(customerId));
  
-/**
- * Produces a filtered view of a source list based on a supplied predicate.
- * This class never needs to change when new predicates are introduced --
- * it depends only on the ElementPredicate&lt;T&gt; interface.
- */
-public class FilteredList&lt;T&gt; {
-    private final List&lt;T&gt; sourceList;
-    private final ElementPredicate&lt;T&gt; filterPredicate;
- 
-    public FilteredList(List&lt;T&gt; sourceList, ElementPredicate&lt;T&gt; filterPredicate) {
-        this.sourceList = Objects.requireNonNull(sourceList, "sourceList must not be null");
-        this.filterPredicate = Objects.requireNonNull(filterPredicate, "filterPredicate must not be null");
-    }
- 
-    public List&lt;T&gt; apply() {
-        List&lt;T&gt; filteredResults = new ArrayList&lt;&gt;();
-        for (T candidateElement : sourceList) {
-            if (filterPredicate.isSatisfiedBy(candidateElement)) {
-                filteredResults.add(candidateElement);
-            }
-        }
-        return filteredResults;
-    }
+    return profileFuture
+            // thenCombine: merge two independent async results once both complete
+            .thenCombine(orderHistoryFuture, CustomerSummary::new)
+            // exceptionally: fall back to a safe default if any prior stage failed
+            .exceptionally(pipelineError -&gt; {
+                logger.warn("Falling back to default summary for " + customerId, pipelineError);
+                return CustomerSummary.defaultFor(customerId);
+            });
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>If you need to build a hierarchy of sub-lists (e.g. filtering the results of a previous filter further), you can add a parent field to FilteredList referencing the FilteredList it was derived from, letting you trace the full chain of filters that produced a given result.</p></aside>
-<p><strong>Step 4: Using FilteredList</strong></p>
-<pre><button class="copy">Copy</button><code>import java.util.Arrays;
-import java.util.List;
- 
-public class FilteredListDemo {
-    public static void main(String[] args) {
-        List&lt;Integer&gt; sourceNumbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
- 
-        List&lt;Integer&gt; evenNumbers =
-                new FilteredList&lt;&gt;(sourceNumbers, new EvenNumberPredicate()).apply();
-        System.out.println(evenNumbers); // [2, 4, 6, 8, 10]
- 
-        List&lt;Integer&gt; multiplesOfFive =
-                new FilteredList&lt;&gt;(sourceNumbers, new FactorOfPredicate(5)).apply();
-        System.out.println(multiplesOfFive); // [5, 10]
-    }
-}</code></pre>
-<p><strong>Step 5: JUnit tests</strong></p>
-<pre><button class="copy">Copy</button><code>import org.junit.Before;
-import org.junit.Test;
-import java.util.Arrays;
-import java.util.List;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
- 
-public class FilteredListTest {
-    private List&lt;Integer&gt; sourceNumbers;
- 
-    @Before
-    public void setUp() {
-        sourceNumbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-    }
- 
-    @Test
-    public void testEvenNumberPredicateReturnsOnlyEvens() {
-        List&lt;Integer&gt; result = new FilteredList&lt;&gt;(sourceNumbers, new EvenNumberPredicate()).apply();
-        assertEquals(Arrays.asList(2, 4, 6, 8, 10), result);
-    }
- 
-    @Test
-    public void testFactorOfPredicateReturnsOnlyMultiples() {
-        List&lt;Integer&gt; result = new FilteredList&lt;&gt;(sourceNumbers, new FactorOfPredicate(5)).apply();
-        assertEquals(Arrays.asList(5, 10), result);
-    }
- 
-    @Test
-    public void testEmptySourceListReturnsEmptyResult() {
-        List&lt;Integer&gt; result = new FilteredList&lt;&gt;(
-                java.util.Collections.emptyList(), new EvenNumberPredicate()).apply();
-        assertTrue(result.isEmpty());
-    }
- 
-    @Test(expected = NullPointerException.class)
-    public void testNullSourceListThrowsException() {
-        new FilteredList&lt;&gt;(null, new EvenNumberPredicate());
-    }
- 
-    @Test(expected = IllegalArgumentException.class)
-    public void testZeroDivisorThrowsException() {
-        new FactorOfPredicate(0);
-    }
-}</code></pre>
-<aside class="note"><p><strong>Note: </strong>Test both the “happy path” and exceptional/edge cases: an empty source list, a null argument, and invalid predicate construction. This is exactly the kind of test coverage an interviewer is looking for.</p></aside>
-<p><strong>Why this design scores well in an interview:</strong></p>
-<ul>
-<li>Adding a brand-new filtering rule (e.g. PrimeNumberPredicate) requires writing one new class — zero changes to FilteredList or any existing predicate.</li>
-<li>The class is generic (FilteredList&lt;T&gt;), so it works identically for List&lt;String&gt;, List&lt;Employee&gt;, or any other element type.</li>
-<li>Dependencies are expressed through interfaces (ElementPredicate&lt;T&gt;), which also makes the class trivially mockable in unit tests.</li>
-<li>Defensive checks (Objects.requireNonNull, the zero-divisor guard) fail fast with a clear exception rather than allowing silently incorrect behavior.</li>
-</ul>
-<h2 id="s9">Section 8: Additional Concurrency Topics</h2>
-<p>The following concurrency questions were not covered in Part 1 and add further depth on thread creation, producer-consumer coordination, lock-free algorithms, and modern virtual threads.</p>
+<p><em>Figure: CompletableFuture async pipeline</em></p><h2 id="s5">Section 2: Additional Concurrency Topics</h2>
+<p>The following concurrency questions were not covered in Section 1 and add further depth on thread creation, producer-consumer coordination, lock-free algorithms, and modern virtual threads.</p>
 <h4 class="q">Q1. What is the difference between a Process and a Thread, and what are the ways to create a thread in Java?</h4>
 <p>A process is an independent, isolated program with its own memory space; a thread is a lightweight sub-unit of a process, sharing the process's memory (heap, static fields) but with its own private stack and program counter. Threads are far cheaper to create than processes and enable concurrent execution within a single program.</p>
 <p><strong>Three ways to create a thread in Java:</strong></p>
@@ -867,7 +464,202 @@ public class ExpiringCache&lt;KeyType, ValueType&gt; {
         }
     }
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>Note: getEntry() must take the write lock (not a read lock) because LinkedHashMap's access-order mode mutates its internal linked-list ordering on every get(), so a concurrent "read" is not actually read-only here.</p></aside></main></div>
+<aside class="note"><p><strong>Note: </strong>Note: getEntry() must take the write lock (not a read lock) because LinkedHashMap's access-order mode mutates its internal linked-list ordering on every get(), so a concurrent "read" is not actually read-only here.</p></aside><h2 id="s6">Section 3: Advanced Concurrency &amp; Memory Model (Rapid-Fire)</h2>
+<p>Building on Section 1 (JMM, volatile, ConcurrentHashMap internals, locks, ThreadLocal, CompletableFuture) and Section 2 (CAS/ABA, virtual threads, BlockingQueue), the following questions add the remaining nuances.</p>
+<h4 class="q">Q1. Can volatile make a non-atomic operation atomic? What guarantees does volatile actually provide?</h4>
+<p>In one specific case, yes: reads and writes of long and double. These 64-bit primitives may, per the JVM specification, be split into two 32-bit operations when non-volatile, so a thread could observe a “torn” value (half old, half new). Declaring the field volatile guarantees each 64-bit read or write is a single atomic operation.</p>
+<p>More broadly, volatile provides visibility and ordering. A write is immediately visible to every thread that subsequently reads the field (the happens-before relationship), and the compiler, JVM, and CPU may not reorder the volatile access relative to surrounding statements. The JMM effectively inserts a write barrier after a volatile write and a read barrier before a volatile read, so a reader also sees every write the writer made before the volatile write. Practical uses: atomic long/double access, simple shared flags such as a shutdown signal, and safe publication in double-checked locking.</p>
+<h4 class="q">Q2. Should wait() be called inside an if or a loop? Why?</h4>
+<p>Always a loop. Between being notified and actually reacquiring the lock, the condition may no longer hold because another thread got there first (and spurious wakeups can also occur). Re-testing the condition on every wake-up protects against this.</p>
+<pre><button class="copy">Copy</button><code>synchronized (sharedLockObject) {
+    while (!conditionHolds()) {
+        sharedLockObject.wait(); // releases the lock; reacquires it automatically on wakeup
+    }
+    // the condition is now guaranteed true -- safe to proceed
+}</code></pre>
+<h4 class="q">Q3. Is synchronization fundamentally harder for 10 threads than for 2?</h4>
+<p>Not in code mechanics — synchronized, wait(), and notify() work identically. What changes is the strategy: more threads means more lock contention, which can push you toward techniques such as lock striping (splitting one lock into several, each guarding a partition of the data).</p>
+<h4 class="q">Q4. What is false sharing, and how do you avoid it?</h4>
+<p>On multi-core CPUs, each core has its own cache. False sharing occurs when threads on different cores modify separate variables that happen to sit on the same cache line (typically 64 bytes). The coherency protocol treats the whole line as a unit, so one core's write invalidates the line for the other core, forcing costly reloads despite no real data dependency. It is notoriously hard to detect. Mitigate by padding or aligning heavily contended fields onto separate cache lines, or with the JDK-internal @Contended annotation.</p>
+<p><em>Problem statement: Keep two threads' counters from invalidating each other's cache lines by padding each counter.</em></p>
+<pre><button class="copy">Copy</button><code>public class PaddedCounter {
+    // 7 long padding fields isolate the counter on its own cache line
+    private long padding1, padding2, padding3, padding4, padding5, padding6, padding7;
+    private volatile long counterValue;
+ 
+    public void incrementCounter() {
+        counterValue++;
+    }
+ 
+    public long getCounterValue() {
+        return counterValue;
+    }
+}
+// Two threads updating separate PaddedCounter instances no longer invalidate
+// each other's CPU cache lines, improving throughput.</code></pre>
+<p><em>Figure: False sharing and cache-line padding</em></p>
+<h4 class="q">Q5. What is busy-spinning, and when should you use it?</h4>
+<p>Busy-spinning waits for an event by looping on a condition without releasing the CPU or sleeping, avoiding the loss of CPU cache state that occurs when a paused thread resumes (possibly on another core). It only pays off for very short expected waits (microseconds to low milliseconds); otherwise the wasted cycles outweigh the benefit. Low-latency trading systems are the classic use — the LMAX Disruptor's BusySpinWaitStrategy is built on this idea.</p>
+<h4 class="q">Q6. Explain happens-before, memory fences, and why double-checked locking fails without volatile.</h4>
+<p>Happens-before is a partial ordering guaranteeing that writes before a point are visible after it; without it the JMM permits arbitrary reordering under the as-if-serial rule. Key sources: program order within a thread; a volatile write happens-before a subsequent volatile read of the same field; a monitor unlock happens-before the next lock of that monitor; Thread.start() happens-before the started thread's actions; and a thread's actions happen-before another thread's join() returns.</p>
+<p>A memory fence prevents reordering across it. The four reordering types are LoadLoad, StoreStore, LoadStore, and StoreLoad (the most expensive to prevent). A volatile write inserts StoreStore and LoadStore barriers before it and a StoreLoad barrier after.</p>
+<p>Double-checked locking fails without volatile because object construction is not atomic from the JVM's view: the JIT or CPU can publish the reference before the constructor finishes, so a second thread can read a non-null reference to a half-initialized object. volatile's barrier forces the object to be fully constructed before the reference becomes visible (see Part 1, Section 9, Q4).</p>
+<h4 class="q">Q7. Why is Thread.stop() deprecated, and how do you cancel a thread safely?</h4>
+<p>Thread.stop() kills a thread at an arbitrary point, releasing monitors mid-update and leaving shared objects in an inconsistent, corrupted state with no guarantee of cleanup. The safe alternative is cooperative cancellation: set a volatile boolean flag or call Thread.interrupt(); the task checks periodically (or is unblocked from a blocking call by an InterruptedException) and exits cleanly on its own terms.</p>
+<h4 class="q">Q8. What is a livelock, and how does it differ from a deadlock? What is reentrancy?</h4>
+<p>In a deadlock, threads are blocked and make no progress. In a livelock, threads stay active and keep changing state in response to each other (for example, both repeatedly backing off and retrying) but never make forward progress, burning CPU. Prevent it with randomized backoff or a strict resource-acquisition ordering/priority scheme that breaks the symmetric retry.</p>
+<p>Java's intrinsic locks (synchronized) and ReentrantLock are reentrant: a thread already holding a lock can re-acquire it (e.g. calling another synchronized method on the same object) without blocking, tracked by a per-thread hold count decremented on each exit. A naive non-reentrant lock would deadlock a thread against itself in that scenario.</p>
+<h4 class="q">Q9. How does the fork/join framework achieve work stealing?</h4>
+<p>ForkJoinPool gives each worker thread its own double-ended work queue. A thread pushes and pops tasks from the head of its own queue (LIFO, cache-friendly), but when idle it steals from the tail of another thread's queue (FIFO, minimizing contention with the owner). This suits recursive divide-and-conquer workloads with uneven task sizes, since idle threads rebalance load automatically without a central coordinator.</p>
+<p><em>Figure: Fork/Join work stealing</em></p>
+<h4 class="q">Q10. How do CompletableFuture's handle(), exceptionally(), and whenComplete() differ? What production practices apply?</h4>
+<ul>
+<li>exceptionally() runs only on failure, supplies a recovery value, and is skipped entirely on success.</li>
+<li>handle() always runs, receiving either the result or the exception (one is null), and can transform either path into a new result.</li>
+<li>whenComplete() always runs but cannot alter the result; it only observes (useful for logging) and passes the original outcome through unless it itself throws.</li>
+</ul>
+<p>Production practices: always supply a custom Executor (the default ForkJoinPool.commonPool() is shared JVM-wide and can starve under load); always set timeouts (orTimeout / completeOnTimeout) so pipelines can't hang indefinitely; and propagate correlation/trace IDs through the chain with structured logging, since async code is harder to debug.</p>
+<pre><button class="copy">Copy</button><code>CompletableFuture&lt;UserProfile&gt; userProfilePipeline =
+        CompletableFuture.supplyAsync(() -&gt; fetchUser(userId), customExecutor)
+                // thenCompose chains a dependent async call, avoiding nested futures
+                .thenCompose(user -&gt; fetchOrdersAsync(user.getId())
+                        .thenApply(orders -&gt; enrich(user, orders)))
+                .exceptionally(pipelineError -&gt; {
+                    log.error("Pipeline failed for user {}", userId, pipelineError);
+                    return UserProfile.fallback(userId);
+                })
+                .orTimeout(2, TimeUnit.SECONDS); // never hang indefinitely
+ 
+userProfilePipeline.thenAccept(profile -&gt; render(profile));</code></pre>
+<h4 class="q">Q11. How does biased locking work, and why was it removed?</h4>
+<p>Biased locking (pre-Java 15) optimistically assumes a monitor will be locked repeatedly by the same thread, storing that thread's ID in the object header so re-entry needs only a fast ID comparison rather than a CAS. It was disabled by default in Java 15+ because modern JIT lock elision (via escape analysis) and cheap hardware CAS instructions made the header-state complexity and expensive revocation (when the bias assumption is violated) no longer worthwhile.</p>
+<h4 class="q">Q12. Why can HashMap's resize cause an infinite loop or lost data in multithreaded code?</h4>
+<p>Pre-Java 8 HashMap rebuilt each bucket's linked list by re-inserting nodes during resize; concurrent structural modification could reverse a bucket's node order across two racing threads, creating a circular reference (an infinite loop on the next traversal) or silently dropping entries. Java 8 preserves relative order and splits buckets in place, reducing but not eliminating the risk: HashMap remains fundamentally not thread-safe, and ConcurrentHashMap must be used for concurrent access.</p><h2 id="s7">Section 4: JVM Internals &amp; Garbage Collection</h2>
+<h4 class="q">Q1. What are the JVM memory areas (heap, stack, metaspace), and what is the difference between stack and heap?</h4>
+<ul>
+<li>Heap — stores all objects (created via new) and instance variables; shared across all threads; the area garbage collection manages. Divided into Young Generation (Eden + Survivor spaces) and Old (Tenured) Generation.</li>
+<li>Stack — stores method frames, local variables, and partial results; one per thread, so never shared between threads and inherently thread-safe; typically much smaller than the heap; space is reclaimed automatically as each method returns.</li>
+<li>Metaspace (Java 8+, replacing PermGen) — stores class metadata, static variables, and the runtime constant pool, using native memory rather than the heap.</li>
+</ul>
+<p><em>Figure: JVM memory areas</em></p>
+<h4 class="q">Q2. What is garbage collection, and how do generations work?</h4>
+<p>Garbage collection is the JVM's automatic reclamation of heap memory for objects no longer reachable from any GC root. Production collectors use a generational strategy based on the observation that most objects die young: new objects are allocated in the Young Generation and collected frequently via cheap minor GCs (copying algorithms); objects that survive enough minor collections are promoted to the Old Generation, which is collected less often by more expensive major/full GCs. Focusing effort on the young generation avoids scanning the entire heap.</p>
+<p><em>Figure: Generational garbage collection flow</em></p>
+<h4 class="q">Q3. What are GC roots?</h4>
+<p>GC roots are the starting points the collector uses to decide reachability; any object not reachable from a root (directly or through a chain of references) is eligible for collection. Kinds of roots:</p>
+<ul>
+<li>Class — classes loaded by the system class loader; never unloaded and can hold objects alive via static fields.</li>
+<li>Thread — currently live threads.</li>
+<li>Stack Local — local variables and parameters on a Java method's call stack.</li>
+<li>JNI Local / JNI Global — references held by native code.</li>
+<li>Monitor Used — objects currently used as a synchronization monitor.</li>
+<li>Held by JVM — objects the JVM itself keeps alive (system class loader, certain built-in exception classes); the exact set is implementation-specific.</li>
+</ul>
+<p><em>Figure: GC roots and reachability</em></p>
+<h4 class="q">Q4. Compare the Serial, Parallel, G1, ZGC, and Shenandoah collectors. How would you choose one for a low-latency banking system?</h4>
+<ul>
+<li>Serial — single GC thread, stop-the-world; suits small heaps or single-CPU environments.</li>
+<li>Parallel — multiple GC threads, stop-the-world; maximizes throughput with longer pauses, good for batch jobs.</li>
+<li>G1 (Garbage First) — default since Java 9; region-based heap that collects the regions with the most garbage first; configurable pause target (-XX:MaxGCPauseMillis); a good general-purpose choice, though very large heaps can still see pauses of tens of milliseconds.</li>
+<li>ZGC (production-ready since Java 15) — targets sub-millisecond pauses regardless of heap size (tested to multi-terabyte) using colored pointers and load barriers to do nearly all work concurrently.</li>
+<li>Shenandoah — similar goal to ZGC (concurrent compaction) with different mechanics (Brooks pointers).</li>
+</ul>
+<p>For a latency-sensitive banking or trading system with strict pause SLAs (e.g. sub-5ms p99), choose ZGC (for example -XX:+UseZGC -Xmx16g -XX:+ZGenerational), accepting a modest throughput cost. For typical microservices where 50–100ms pauses are acceptable and throughput matters slightly more, G1 is the better fit. Before switching in production: baseline with GC logs (-Xlog:gc*), load test with production-like traffic, and roll out via canary rather than big-bang.</p>
+<p><strong>Design discussion: tuning GC for a low-latency service (sub-5ms pauses, 16GB heap, high allocation rate)</strong></p>
+<ul>
+<li>Choose ZGC or Shenandoah for concurrent, pause-predictable collection.</li>
+<li>Set -Xms equal to -Xmx to avoid resize pauses; pre-size the heap from load testing, not defaults.</li>
+<li>Reduce the allocation rate: pool high-frequency short-lived objects, avoid autoboxing in hot paths, use primitive collections.</li>
+<li>Enable Java Flight Recorder (JFR) continuously to capture allocation profiles and pause histograms.</li>
+<li>Validate under realistic load and track p99/p999 pause times as the key SLO, not average throughput.</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>For a tech-lead answer, add: document the GC decision and rationale in an ADR so the next engineer doesn't “helpfully” revert it during an unrelated incident.</p></aside>
+<h4 class="q">Q5. Can you force garbage collection? How do you find memory usage from inside a program?</h4>
+<p>No. System.gc() or Runtime.gc() is only a hint; the JVM may ignore it. Runtime exposes basic statistics:</p>
+<pre><button class="copy">Copy</button><code>Runtime jvmRuntime = Runtime.getRuntime();
+long freeMemoryBytes  = jvmRuntime.freeMemory();   // currently free memory
+long totalMemoryBytes = jvmRuntime.totalMemory();  // total currently allocated to the JVM
+long maxMemoryBytes   = jvmRuntime.maxMemory();    // maximum the JVM will attempt to use
+long usedMemoryBytes  = totalMemoryBytes - freeMemoryBytes;
+double percentHeapUsed = (usedMemoryBytes * 100.0) / maxMemoryBytes;</code></pre>
+<h4 class="q">Q6. Compare strong, soft, weak, and phantom references. How does WeakHashMap work?</h4>
+<ul>
+<li>Strong — the default; prevents GC while reachable.</li>
+<li>Soft — not reclaimed while memory is not under pressure, but may be reclaimed before an OutOfMemoryError; ideal for memory-sensitive caches.</li>
+<li>Weak — eligible for collection as soon as no strong references remain, regardless of memory pressure.</li>
+<li>Phantom — enqueued after finalization; used for cleanup actions after the object is finalized but before memory is reclaimed.</li>
+</ul>
+<p>WeakHashMap behaves like a HashMap but holds its keys via WeakReference: if a key has no other strong references, that entry is automatically removed — useful for caches keyed by objects whose lifecycle the cache shouldn't control.</p>
+<h4 class="q">Q7. What is -XX:+UseCompressedOops, and what are the heap limits of 32-bit vs. 64-bit JVMs?</h4>
+<p>Moving from a 32-bit to a 64-bit JVM doubles the size of object pointers, inflating heap usage and reducing how much useful data fits in CPU cache. -XX:+UseCompressedOops lets the JVM represent references with a compressed 32-bit encoding (valid for heaps up to roughly 32GB), recovering most of that efficiency. A 32-bit JVM can theoretically address 4GB but practically much less (historically ~1.5GB on Windows, ~3GB on some Solaris setups); a 64-bit JVM practically supports 100GB+ heaps, and specialized JVMs (e.g. Azul's) have supported terabyte-scale heaps. To check the architecture at runtime, read the sun.arch.data.model (or os.arch) system property.</p>
+<h4 class="q">Q8. What is the difference between JRE, JDK, JVM, and JIT? How does tiered compilation (C1 vs. C2) work?</h4>
+<ul>
+<li>JRE — everything needed to run a Java application (JVM + core libraries), without development tools.</li>
+<li>JDK — a superset of the JRE adding development tools, chiefly the javac compiler.</li>
+<li>JVM — the engine that executes compiled bytecode and provides platform independence.</li>
+<li>JIT — the JVM component that compiles frequently executed (“hot”) bytecode into native code at runtime.</li>
+</ul>
+<p>Tiered compilation combines two compilers: C1 (the client compiler) compiles quickly with light optimization and lightweight profiling instrumentation; C2 (the server compiler) compiles slower but applies aggressive optimizations (inlining, loop unrolling, escape analysis). Methods start interpreted, are promoted to C1 once warm, and are recompiled by C2 once invocation/loop counters cross a threshold — balancing fast startup with peak throughput.</p>
+<h4 class="q">Q9. What happens when you run “java MyApp”, from class loading to execution? What are the three built-in class loaders?</h4>
+<p>Class loading follows a parent-first delegation model, which stops core classes from being overridden and prevents security issues. The Bootstrap ClassLoader loads core JDK classes (java.lang.*); the Extension/Platform ClassLoader loads classes from extension directories; the Application/System ClassLoader loads classes from the application classpath.</p>
+<p>Loading proceeds in three phases: Loading (read the bytecode), Linking (verify the bytecode, prepare static fields with defaults, resolve symbolic references), and Initialization (run static initializers). The JVM then interprets main(), and the JIT compiles hot paths identified by invocation counters.</p>
+<p><em>Figure: Class loading process</em></p>
+<h4 class="q">Q10. What causes a StackOverflowError vs. an OutOfMemoryError?</h4>
+<p>StackOverflowError occurs when the call stack exceeds its size limit, typically from unbounded or infinitely deep recursion. OutOfMemoryError occurs when the heap (or metaspace) cannot allocate more objects/classes even after GC attempts — caused by memory leaks, an undersized heap, or genuinely excessive object retention.</p>
+<h4 class="q">Q11. What is escape analysis, and how does it enable stack allocation, scalar replacement, and lock elision?</h4>
+<p>Escape analysis is a JIT optimization that determines whether an object's reference escapes the method or thread that created it. If it provably doesn't, the JIT can allocate the object on the stack, or apply scalar replacement (decomposing it into individual primitive fields held in registers), eliminating heap allocation and GC pressure entirely. It also enables lock elision: unnecessary synchronized locks on a non-escaping object can be removed, since no other thread could ever observe or contend for that lock.</p>
+<h4 class="q">Q12. What is a safepoint, and why can it cause unpredictable GC pause delays?</h4>
+<p>A safepoint is a point where all threads have a consistent, known state, required for stop-the-world operations such as GC. The JVM inserts safepoint polls at loop back-edges and method returns; a thread stuck in a tight loop without a poll (for example, a counted loop the JIT over-optimized) can delay the whole JVM from reaching a global safepoint, producing unexpectedly long pauses.</p>
+<h4 class="q">Q13. What are G1's remembered sets and card tables, and why are they needed?</h4>
+<p>G1 divides the heap into regions and must track cross-region references (e.g. an old-region object pointing to a young-region object) without scanning the whole heap during a young collection. Each region keeps a remembered set of incoming references from other regions. These are populated incrementally via a card table — a byte array marking 512-byte heap chunks as “dirty” when a reference inside them is mutated — using a write barrier on every reference store.</p>
+<h4 class="q">Q14. How do you diagnose a production memory leak in a live JVM without restarting it? What is the difference between a heap dump and a thread dump?</h4>
+<p>Take a heap dump with jcmd &lt;pid&gt; GC.heap_dump and analyze it in Eclipse MAT, looking at the dominator tree for retained-size hotspots and GC-root reference paths. Cross-check jstat -gcutil to see whether Old Gen keeps climbing despite full GCs, and compare heap histograms over time (jmap -histo:live). For continuous production monitoring prefer low-overhead tools such as async-profiler and JFR, since heap dumps pause the JVM.</p>
+<p>A heap dump is a snapshot of all live objects and their reference graph, used for memory leaks and excessive retention. A thread dump captures every thread's stack trace and state (RUNNABLE, BLOCKED, WAITING), used to diagnose deadlocks, contention, or hung threads — taken via jstack &lt;pid&gt;, kill -3 &lt;pid&gt; on Linux/Unix, or Ctrl+Break on Windows.</p>
+<p>Java VisualVM (jvisualvm, bundled in the JDK's bin directory) consolidates JConsole, jstat, jinfo, jstack, and jmap into one GUI: heap dumps, MBeans, live GC monitoring per memory pool (via the Visual GC plugin), and CPU/memory profiling. A healthy heap graph shows a regular sawtooth (climbing as objects are allocated, dropping sharply after GC); a baseline that keeps rising and never falls after a full GC strongly suggests a leak.</p>
+<h4 class="q">Q15. What are common JVM tuning flags?</h4>
+<ul>
+<li>-Xms / -Xmx — initial and maximum heap size; setting them equal avoids resize overhead.</li>
+<li>-XX:+UseG1GC — selects the G1 collector.</li>
+<li>-XX:MaxGCPauseMillis — sets a target pause-time goal.</li>
+<li>-Xss — per-thread stack size.</li>
+<li>-XX:MetaspaceSize — initial metaspace sizing.</li>
+</ul>
+<h4 class="q">Q16. What causes memory leaks in Java despite garbage collection?</h4>
+<p>A leak occurs whenever an object stays reachable from a GC root longer than intended. Common patterns:</p>
+<ul>
+<li>Static fields holding references — static fields are GC roots (via the Class root), so anything reachable through them lives as long as the class is loaded.</li>
+<li>Calling String.intern() on many distinct, large strings, bloating the string pool in a way that's hard to reverse.</li>
+<li>Unclosed streams, connections, and sockets — fix with try-with-resources.</li>
+<li>Native/JNI allocations invisible to the garbage collector: the heap looks healthy while the process footprint grows.</li>
+<li>Objects stored in long-lived application scope (e.g. ServletContext attributes) and never removed.</li>
+<li>Listener/callback registrations never removed, and ThreadLocal misuse in pooled threads (see Section 1).</li>
+<li>Non-static inner classes, which implicitly hold their enclosing instance: a long-lived inner-class listener keeps the outer object alive. Lambdas capture only the variables they use (and this only if instance members are referenced), which often reduces accidental retention.</li>
+<li>Inappropriate JVM options that disable class unloading (a historical example: noclassgc on some old IBM JDKs), problematic for application servers loading many classes.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Leak: this static list lives for the whole application lifetime,
+// and anything added to it is never eligible for garbage collection
+class ConfigurationCache {
+    static final ArrayList&lt;Object&gt; cachedItems = new ArrayList&lt;&gt;(100);
+}
+ 
+// Fix for unclosed resources: try-with-resources closes the reader even on exceptions
+try (BufferedReader fileReader = new BufferedReader(new FileReader(inputFile))) {
+    // ... use fileReader ...
+} catch (Exception readException) {
+    readException.printStackTrace();
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>Rule of thumb: use static final for true constants or thread-safe immutable shared objects; for per-instance state prefer a plain final instance field, and minimize mutable state generally.</p></aside>
+<h4 class="q">Q17. How does a JDBC connection pool work?</h4>
+<p>A pool front-loads the expensive work of establishing database connections so application code never pays that cost on the request path:</p>
+<ul>
+<li>1. At startup the pool creates a predetermined number of physical Connection objects and holds them.</li>
+<li>2. Application code looks up a DataSource (often via JNDI in Java EE) and calls getConnection() — exactly the same code as with a non-pooled DataSource.</li>
+<li>3. The pool returns a lightweight Connection handle wrapping an underlying PooledConnection.</li>
+<li>4. When code calls close() on the handle, the pool intercepts the event (PooledConnection supports event listeners) and performs a “pseudo-close”: the physical connection returns to the pool for reuse after housekeeping such as resetting state.</li>
+<li>5. The real connection is only closed when the pool retires it — at orderly shutdown or when it is found broken.</li>
+</ul>
+<p>This is transparent to application code. Many pools also pool PreparedStatement objects through an analogous StatementEventListener mechanism, avoiding repeated re-preparation of the same SQL.</p>
+</main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
 document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};

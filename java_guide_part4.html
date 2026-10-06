@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en"><head><meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Java Interview Guide – Part 4</title>
@@ -31,34 +32,38 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 .hide{display:none!important}
 @media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
 </style></head><body>
-<header><button id="menu">☰</button><h1>Java Interview Guide — Part 4: Databases, Web Services &amp; Operations</h1><button id="theme">◐</button></header>
-<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s2">Section 1: Date, Time &amp; Calendar</a><a class="l2" href="#s3">Section 2: SQL Joins, Views &amp; Database Design</a><a class="l2" href="#s4">Section 3: Stored Procedures, Triggers, Transactions &amp; Isolation</a><a class="l2" href="#s5">Section 4: JDBC</a><a class="l2" href="#s6">Section 5: SQL Tuning, Indexing &amp; Database Scalability</a><a class="l2" href="#s7">Section 6: MongoDB</a><a class="l2" href="#s8">Section 7: Web Services — REST</a><a class="l2" href="#s10">Section 9: Unix / Linux Command Line</a></nav>
-<main id="main"><h2 id="s2">Section 1: Date, Time &amp; Calendar</h2>
-<h4 class="q">Q1. Is SimpleDateFormat safe to use in a multithreaded program?</h4>
-<p>No. DateFormat and all its subclasses, including SimpleDateFormat, are NOT thread-safe. Sharing one instance across threads without external synchronization can produce silently wrong parse/format results (genuinely incorrect dates, not just exceptions), because its internal Calendar field is mutated during both parse() and format().</p>
-<p>If you must use it in a multithreaded context, confine each instance to one thread, for example with a ThreadLocal (remember to call remove() in pooled-thread environments; see Part 1).</p>
-<pre><button class="copy">Copy</button><code>private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMATTER =
-        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat("dd-MM-yyyy"));
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 4: Databases, SQL, JDBC &amp; Hibernate</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s1">Section 1: Hibernate &amp; SQL Basics</a><a class="l2" href="#s2">Section 2: SQL Joins, Views &amp; Database Design</a><a class="l2" href="#s3">Section 3: Stored Procedures, Triggers, Transactions &amp; Isolation</a><a class="l2" href="#s4">Section 4: JDBC</a><a class="l2" href="#s5">Section 5: SQL Tuning, Indexing &amp; Database Scalability</a><a class="l2" href="#s6">Section 6: MongoDB</a><a class="l2" href="#s7">Section 7: Storing Hierarchical (Tree) Data in a Relational Database</a></nav>
+<main id="main"><h2 id="s1">Section 1: Hibernate &amp; SQL Basics</h2>
+<h4 class="q">Q1. How do you generate a primary key (auto-generated ID) in Hibernate?</h4>
+<p>Use the @GeneratedValue annotation's strategy attribute:</p>
+<ul>
+<li>GenerationType.AUTO — Hibernate picks a strategy based on the database dialect.</li>
+<li>GenerationType.IDENTITY — relies on the database's auto-increment/identity column (e.g. MySQL AUTO_INCREMENT).</li>
+<li>GenerationType.SEQUENCE — uses a database sequence object (common on Oracle, PostgreSQL).</li>
+<li>GenerationType.TABLE — emulates a sequence using a dedicated table; portable but slower.</li>
+<li>hilo — a Hibernate-specific “high/low” algorithm that reserves blocks of IDs in memory to minimize database round trips.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>@Entity
+public class Employee {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long employeeId;
+    // other fields...
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>Letting Hibernate assign IDs suits simple cases and testing. For performance-sensitive or portable systems, prefer an explicitly managed sequence or an application-assigned UUID; AUTO's behavior can vary between Hibernate versions and dialects.</p></aside>
+<h4 class="q">Q2. How do you select columns from two tables that share a common field?</h4>
+<p>Use a SQL join. An INNER JOIN returns only rows with a match in both tables; a LEFT JOIN also returns employees with no matching department row.</p>
+<pre><button class="copy">Copy</button><code>-- INNER JOIN: only employees whose dept_id exists in department
+SELECT e.emp_name, e.dept_id, d.dept_name
+FROM employee e
+INNER JOIN department d ON e.dept_id = d.dept_id;
  
-String formattedDate = DATE_FORMATTER.get().format(new Date());</code></pre>
-<aside class="note"><p><strong>Note: </strong>The modern, strongly preferred fix is java.time (Java 8+): LocalDate, LocalDateTime, and DateTimeFormatter are immutable and inherently thread-safe, so a DateTimeFormatter can be shared freely across threads.</p></aside>
-<h4 class="q">Q2. How do you format a date in Java (e.g. in ddMMyyyy format)?</h4>
-<p><em>Problem statement: Print today's date as ddMMyyyy using the modern API, and using the legacy API for older code.</em></p>
-<pre><button class="copy">Copy</button><code>// Modern (preferred): java.time
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
- 
-LocalDate today = LocalDate.now();
-DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
-String formattedDate = today.format(formatter); // e.g. "28092026"
- 
-// Legacy (only when maintaining older code): SimpleDateFormat
-import java.text.SimpleDateFormat;
-import java.util.Date;
- 
-SimpleDateFormat legacyFormatter = new SimpleDateFormat("ddMMyyyy");
-String legacyFormattedDate = legacyFormatter.format(new Date());</code></pre>
-<h2 id="s3">Section 2: SQL Joins, Views &amp; Database Design</h2>
+-- LEFT JOIN: also keeps employees with a null/unknown dept_id
+SELECT e.emp_name, e.dept_id, d.dept_name
+FROM employee e
+LEFT JOIN department d ON e.dept_id = d.dept_id;</code></pre>
+<h2 id="s2">Section 2: SQL Joins, Views &amp; Database Design</h2>
 <h4 class="q">Q1. What are INNER, LEFT, RIGHT, and CROSS joins?</h4>
 <ul>
 <li>INNER JOIN — returns only rows with a match in both tables.</li>
@@ -110,7 +115,7 @@ employee(employee_id, employee_name, department_id)
 department(department_id, department_name)</code></pre>
 <p>In one sentence: normalization optimizes for integrity and minimal redundancy (favoring write-heavy transactional systems); denormalization optimizes for read performance (reporting, analytics, read-heavy systems, or a measured join bottleneck) at the cost of redundancy and extra care to keep copies consistent.</p>
 <h4 class="q">Q4. How do you query a table to traverse a parent-child hierarchy?</h4>
-<p>Storing the hierarchy (adjacency list with a self-referencing foreign key, or the Modified Preorder Tree Traversal) is covered in Part 2, Section 5. For querying an adjacency list, a self-join retrieves one level at a time; for an unknown depth, use a recursive common table expression (supported by PostgreSQL, SQL Server, Oracle, and MySQL 8+).</p>
+<p>Storing the hierarchy (adjacency list with a self-referencing foreign key, or the Modified Preorder Tree Traversal) is covered in Section 7. For querying an adjacency list, a self-join retrieves one level at a time; for an unknown depth, use a recursive common table expression (supported by PostgreSQL, SQL Server, Oracle, and MySQL 8+).</p>
 <pre><button class="copy">Copy</button><code>-- One level up: each employee's direct manager (self-join)
 SELECT e.emp_name AS employee_name, m.emp_name AS manager_name
 FROM employee e
@@ -143,7 +148,7 @@ FROM (
     GROUP BY department_id, department_name
 ) AS department_summary
 WHERE department_summary.total_salary &gt; 500000;</code></pre>
-<h2 id="s4">Section 3: Stored Procedures, Triggers, Transactions &amp; Isolation</h2>
+<h2 id="s3">Section 3: Stored Procedures, Triggers, Transactions &amp; Isolation</h2>
 <h4 class="q">Q1. What is the difference between a function and a stored procedure?</h4>
 <ul>
 <li>Return value — a function must return exactly one value (or a table) and is designed to be called inside a SQL expression (SELECT calculate_tax(order_total) FROM orders); a procedure need not return anything (many databases allow OUT parameters) and is invoked as a standalone statement (CALL / EXEC).</li>
@@ -214,8 +219,8 @@ public void transfer(String fromAccountId, String toAccountId, BigDecimal amount
     toAccount.credit(amount);
 }</code></pre>
 <aside class="note"><p><strong>Note: </strong>The right answer is almost never “raise the global isolation level.” Identify the specific critical section needing stronger guarantees and scope the fix precisely: row-level locking, optimistic locking with a version column, or a narrowly scoped SERIALIZABLE transaction. Most applications keep the database default (commonly READ COMMITTED) for the vast majority of operations.</p></aside>
-<h2 id="s5">Section 4: JDBC</h2>
-<p>Connection pooling internals (pseudo-close via PooledConnection) were explained in Part 3, Section 5, Q17; pool sizing appears in Section 5 below.</p>
+<h2 id="s4">Section 4: JDBC</h2>
+<p>Connection pooling internals (pseudo-close via PooledConnection) were explained in Part 2, Section 4, Q17; pool sizing appears in Section 5 below.</p>
 <h4 class="q">Q1. How do you connect to a database from Java using drivers?</h4>
 <p>You need a JDBC driver: a vendor-specific JAR implementing java.sql.Driver that translates JDBC calls into the database's network protocol. Steps:</p>
 <ul>
@@ -284,7 +289,7 @@ public class UserAccountRepository {
     }
 }</code></pre>
 <aside class="note"><p><strong>Note: </strong>For real credentials, store a salted hash (e.g. bcrypt) and compare hashes rather than storing or comparing plaintext passwords; the query above demonstrates only the injection-safe parameter binding.</p></aside>
-<h2 id="s6">Section 5: SQL Tuning, Indexing &amp; Database Scalability</h2>
+<h2 id="s5">Section 5: SQL Tuning, Indexing &amp; Database Scalability</h2>
 <p><em>Figure: JDBC — from driver to result set</em></p>
 <h4 class="q">Q1. How do you approach optimizing a slow query? Explain B-Tree vs. Hash indexes.</h4>
 <p>A B-Tree index (the default for most RDBMSs) keeps keys sorted, efficiently supporting equality, range queries (&gt;, &lt;, BETWEEN), and prefix matching (LIKE 'abc%') in O(log n). A Hash index supports only exact-match equality in O(1) average time and cannot do range queries or ordering; it is rarely the right default unless the access pattern is purely equality-based.</p>
@@ -399,7 +404,7 @@ WHERE id BETWEEN ? AND ?          -- chunked ranges, run repeatedly with small s
 CREATE TABLE transactions_2026_01 PARTITION OF transactions
     FOR VALUES FROM ('2026-01-01') TO ('2026-02-01');</code></pre>
 <aside class="note"><p><strong>Note: </strong>Pull compliance and legal in early: a technically elegant pipeline that doesn't satisfy the bank's specific retention-proof requirements is the wrong thing built. Ask “what does the compliance team actually need to be able to prove?” before writing code.</p></aside>
-<h2 id="s7">Section 6: MongoDB</h2>
+<h2 id="s6">Section 6: MongoDB</h2>
 <h4 class="q">Q1. How can you improve and fix performance issues with documents in MongoDB?</h4>
 <p>MongoDB is a document-oriented NoSQL database. Many tuning principles echo relational tuning (indexing, query analysis), with some document-specific considerations:</p>
 <ul>
@@ -422,143 +427,48 @@ db.orders.aggregate([
     { $group: { _id: "$customerId", total: { $sum: "$orderTotal" } } },
     { $sort: { total: -1 } }
 ]);</code></pre>
-<h2 id="s8">Section 7: Web Services — REST</h2>
-<h4 class="q">Q2. What HTTP methods do RESTful services support, and what do safe and idempotent mean?</h4>
-<ul>
-<li>GET — retrieve a representation; safe (no side effects) and idempotent.</li>
-<li>POST — typically create a resource or trigger a non-idempotent action; calling it twice is expected to create two resources.</li>
-<li>PUT — replace a resource entirely with the supplied representation (or create it at that client-specified URL); idempotent.</li>
-<li>PATCH — partial update of only the fields supplied; not necessarily idempotent, though many implementations are designed to be.</li>
-<li>DELETE — remove a resource; conventionally idempotent (deleting an already-deleted resource shouldn't be treated as a failure).</li>
-<li>HEAD — like GET but returns headers only, with no body; cheap for checking size or last-modified metadata.</li>
-<li>OPTIONS — asks which methods a resource supports; browsers use it for the CORS preflight check before a cross-origin request.</li>
-</ul>
-<aside class="note"><p><strong>Note: </strong>PUT vs. PATCH is a common follow-up: PUT requires the complete updated representation, and any omitted field is typically reset or cleared; PATCH sends only the fields that should change and leaves everything else untouched.</p></aside>
-<h4 class="q">Q4. Why can't you send arbitrary data in a web service header?</h4>
-<ul>
-<li>Purpose — headers carry metadata (auth tokens, content type, caching directives, correlation/trace IDs), not business payload; mixing them blurs “how to process this message” and “what it contains.”</li>
-<li>Size limits — servers, proxies, and load balancers typically cap total header size (commonly 4KB–16KB), so large data risks silent, mysterious request failures; bodies are built for large payloads.</li>
-<li>Encoding — header values are restricted to a limited (essentially ASCII) character set, making them a poor fit for structured or binary data without awkward Base64 overhead.</li>
-<li>Caching, logging, and security — headers are far more likely to be logged, cached, or inspected by intermediaries (proxies, API gateways, monitoring), so placing sensitive business data there is a genuine security risk.</li>
-</ul>
-<p>Convention in both SOAP and REST: headers for metadata, body for business data.</p>
-<h4 class="q">Q6. How do you test web services?</h4>
-<ul>
-<li>Manual, exploratory testing — Postman (mainly REST/JSON) or SoapUI (built for SOAP, also supports REST) for interactive requests and saved collections.</li>
-<li>Automated unit tests — test controller/service logic with dependencies mocked; Spring's MockMvc simulates an HTTP request without a running server.</li>
-<li>Automated integration tests — exercise the real endpoint end to end (routing, serialization, business logic, persistence), typically with a real or embedded test database.</li>
-<li>Contract testing — tools like Pact let a consumer define the request/response contract it expects and verify the provider satisfies it, catching breaking API changes early.</li>
-<li>Load/performance testing — JMeter or Gatling simulate many concurrent users to verify response time and error rate under realistic or peak load.</li>
-</ul>
-<p><em>Problem statement: Test a REST endpoint's JSON response without starting a real server.</em></p>
-<pre><button class="copy">Copy</button><code>@WebMvcTest(EmployeeController.class)
-public class EmployeeControllerTest {
- 
-    @Autowired
-    private MockMvc mockMvc;
- 
-    @MockBean
-    private EmployeeService employeeService; // dependency mocked out
- 
-    @Test
-    public void shouldReturnEmployeeDetailsAsJson() throws Exception {
-        when(employeeService.findById(42L)).thenReturn(new Employee(42L, "Alice"));
- 
-        mockMvc.perform(get("/api/employees/42"))
-               .andExpect(status().isOk())
-               .andExpect(jsonPath("$.employeeName").value("Alice"));
-    }
+<h2 id="s7">Section 7: Storing Hierarchical (Tree) Data in a Relational Database</h2>
+<h4 class="q">Q1. How would you represent a hierarchical structure like an organizational chart in a relational database?</h4>
+<p>This is a real-world instance of the Composite design pattern. The standard relational approach maintains adjacency information directly in the table: each row stores a foreign key pointing back to its own parent row within the same table.</p>
+<pre><button class="copy">Copy</button><code>CREATE TABLE employee (
+    emp_id           NUMBER(4)   CONSTRAINT emp_pk PRIMARY KEY,
+    emp_name         VARCHAR2(40) NOT NULL,
+    title            VARCHAR2(40),
+    dept_id          NUMBER(2)   NOT NULL,
+    superior_emp_id  NUMBER(4)   CONSTRAINT emp_fk REFERENCES employee(emp_id)
+);</code></pre>
+<p>superior_emp_id is a foreign key referencing emp_id in the same employee table. This maps naturally onto a Java object model:</p>
+<pre><button class="copy">Copy</button><code>public class Employee {
+    private Long employeeId;
+    private String employeeName;
+    private String jobTitle;
+    private Employee superiorEmployee;
+    private Set&lt;Employee&gt; subordinateEmployees;
+    // getters and setters omitted for brevity
 }</code></pre>
-<h2 id="s10">Section 9: Unix / Linux Command Line</h2>
-<h4 class="q">Q1. How do you find a file recursively in Unix?</h4>
-<p>find searches recursively by default (unlike ls, which lists only a directory's immediate contents). To search inside file contents instead of by name, use grep -r.</p>
-<pre><button class="copy">Copy</button><code># Find a file by exact name, searching recursively from the current directory downward
-find . -name "application.properties"
+<p><em>Figure: Hierarchical data as a self-referencing table</em></p>
+<h4 class="q">Q2. How would you find the superior (manager) of a given employee?</h4>
+<p>Use a self-join — join the table to itself, matching each employee's superior_emp_id against the emp_id of a second copy of the same table:</p>
+<pre><button class="copy">Copy</button><code>SELECT e.emp_id, e.emp_name, s.title
+FROM employee e, employee s
+WHERE e.superior_emp_id = s.emp_id
+  AND e.emp_id = 3;</code></pre>
+<h4 class="q">Q3. Is there another way to store a tree structure in a relational database?</h4>
+<p>Yes — the Modified Preorder Tree Traversal (MPTT) technique. Each node is annotated with a left and right numeric value, assigned by walking the tree in a specific traversal order. These left/right values encode the entire hierarchy without needing recursive queries to walk up or down the tree: any row whose left_val and right_val both fall strictly between another row's left_val and right_val is a descendant of that row.</p>
+<pre><button class="copy">Copy</button><code>-- Fetch Amanda's entire subtree (herself plus all descendants), given Amanda = (6, 11)
+SELECT * FROM employee
+WHERE left_val BETWEEN 6 AND 11
+ORDER BY left_val ASC;
+-- returns: Amanda, Ralph, Jeanne
  
-# Case-insensitive name search
-find . -iname "readme*"
- 
-# Only regular files (excluding directories) matching a pattern
-find /var/log -type f -name "*.log"
- 
-# Combine criteria, e.g. files modified in the last 7 days
-find . -name "*.tmp" -mtime -7
- 
-# Search WITHIN file contents, recursively
-grep -r "TODO" /path/to/project</code></pre>
-<h4 class="q">Q2. How do you see CPU and memory utilization in Unix?</h4>
-<ul>
-<li>top — the classic interactive, continuously refreshing view of processes (sorted by CPU by default) with a system-wide summary.</li>
-<li>htop — a friendlier, colorized alternative with easier sorting, filtering, and a process tree (often must be installed separately).</li>
-<li>free -h — a one-shot summary of total, used, and free RAM and swap in human-readable units.</li>
-<li>vmstat — virtual-memory, CPU, and I/O statistics, useful for spotting system-level problems like heavy swapping.</li>
-<li>ps aux — a one-shot snapshot of all processes with CPU and memory use, good for scripting and piping.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>top                                # interactive, continuously refreshing view
-free -h                            # quick memory summary in human-readable units
-ps aux --sort=-%cpu | head -10     # top 10 processes by CPU usage, as a one-shot list</code></pre>
-<h4 class="q">Q3. How can you run the last command without using the up arrow?</h4>
-<ul>
-<li>!! — repeats the immediately preceding command exactly; sudo !! re-runs it prefixed with sudo, handy after a permission failure.</li>
-<li>!n — repeats a specific command by its number in the history list (shown by history).</li>
-<li>!string — repeats the most recent command that started with the string (e.g. !git).</li>
-<li>Ctrl+R — an interactive, incremental reverse search through history: type a few characters and jump to the matching past command.</li>
-</ul>
-<pre><button class="copy">Copy</button><code>ls -la /some/directory
-!!        # re-runs "ls -la /some/directory" exactly
-sudo !!   # re-runs the previous command again, prefixed with sudo</code></pre>
-<h4 class="q">Q4. How does the Unix shell work at a high level?</h4>
-<p>A shell (bash, zsh, sh) is the command-line interpreter between the user and the kernel. When you press Enter it:</p>
-<ul>
-<li>1. Reads the input line.</li>
-<li>2. Parses it into tokens (command and arguments) and identifies shell syntax: pipes (|), redirection (&gt;, &gt;&gt;, &lt;), background execution (&amp;), and command substitution ($(...)).</li>
-<li>3. Performs expansions: variables (like $HOME), wildcard/glob patterns (*.txt expanded to matching filenames), and tilde (~).</li>
-<li>4. Decides whether the command is a built-in (cd, echo, export, implemented by the shell itself with no new process) or an external program.</li>
-<li>5. For an external program, searches the directories in the PATH variable, in order, for a matching executable.</li>
-<li>6. Forks a child process and, in it, execs the program, replacing the child's memory image — the classic fork-then-exec mechanism.</li>
-<li>7. Waits for the process to finish, unless it was started in the background with a trailing &amp;.</li>
-<li>8. Makes the exit status available (via $?), used by scripts for control flow such as an if statement.</li>
-</ul>
-<h4 class="q">Q5. What does grep do, and how does grep "word" filename execute?</h4>
-<p>grep (“Global Regular Expression Print”) searches input (files, or data piped from another command) for lines matching a literal string or regular expression and prints the matching lines.</p>
-<ul>
-<li>grep "pattern" file.txt — print matching lines.</li>
-<li>-i — case-insensitive; -r — search recursively through a directory tree; -v — invert (print lines that do NOT match); -c — print only a count; -n — prefix line numbers; -E — extended regex, enabling alternation (pattern1|pattern2).</li>
-</ul>
-<p>For grep "word" filename: it reads the file line by line and checks whether the literal text “word” appears anywhere in each line. By default this is a substring match, so it also matches “password” and “wordsmith”. Matching lines are printed in file order and non-matching lines are skipped. If nothing matches, grep prints nothing and its exit status is 1 (0 means at least one match), which is what lets it drive shell if conditions.</p>
-<pre><button class="copy">Copy</button><code># Match "word" as a whole, separate word (not a substring of "password"):
-grep -w "word" filename
- 
-# Using grep's exit status directly in a shell script's control flow:
-if grep -q "ERROR" application.log; then
-    echo "Errors were found in the log file"
-fi</code></pre>
-<h4 class="q">Q6. What are nohup and &amp; used for, and how do you run a process in the background?</h4>
-<p>They solve two different, complementary problems. A trailing &amp; runs the command in the background so the shell returns control immediately. nohup (“no hang up”) makes the command immune to SIGHUP, the signal sent to a session's processes when its controlling terminal closes (for example, closing an SSH connection); without it the process is normally killed with the terminal. Used together, they launch a long-running job that neither ties up your terminal nor dies when you log out.</p>
-<pre><button class="copy">Copy</button><code>nohup ./long_running_script.sh &amp;
-# Runs in the background AND survives closing this SSH session.
-# By default nohup writes the output to nohup.out in the current directory:
-cat nohup.out
- 
-./my_script.sh &amp;   # runs immediately in the background
-jobs               # lists background jobs in THIS shell session
-fg %1              # brings background job 1 back to the foreground
-bg %1              # resumes a STOPPED job (e.g. paused with Ctrl+Z) in the background
- 
-# Move an already-running foreground process to the background:
-# press Ctrl+Z to pause it, then run: bg</code></pre>
-<aside class="note"><p><strong>Note: </strong>Better options for genuinely long-running work: tmux or screen (terminal multiplexers that let you detach and later re-attach to view live output), or for a real production service a process supervisor/init system such as systemd or supervisord rather than nohup.</p></aside>
-<h4 class="q">Q7. How do you see the first and last 10 lines of a file, and how do you delete files recursively?</h4>
-<pre><button class="copy">Copy</button><code>head -10 filename.txt   # first 10 lines (10 is also the default)
-tail -10 filename.txt   # last 10 lines (10 is also the default)
-tail -f application.log # follow a growing log file live, printing new lines as they are appended
- 
-rm -r some_directory    # recursively remove a directory and everything in it
-rm -rf some_directory   # same, but FORCE: no confirmation, ignore missing files/errors
- 
-# Delete only files matching a pattern, recursively:
-find . -name "*.tmp" -type f -delete</code></pre>
-<aside class="note"><p><strong>Note: </strong>rm -rf is genuinely dangerous: it deletes recursively and silently with no confirmation and no recycle bin. A typo, an unexpectedly expanded wildcard, or (worst) running it as root against / or a variable that evaluated to empty has caused countless data-loss incidents. Double- and triple-check the exact target, especially in automated scripts.</p></aside></main></div>
+-- Fetch all ancestors of Ralph = (7, 8)
+SELECT * FROM employee
+WHERE left_val &lt; 7 AND right_val &gt; 8
+ORDER BY left_val ASC;
+-- returns: Peter, Amanda</code></pre>
+<p>To count the number of descendants of a node: number_of_descendants = (right_val − left_val − 1) / 2. For example, Amanda (6–11) has (11−6−1)/2 = 2 descendants (Ralph and Jeanne); Peter (1–12) has (12−1−1)/2 = 5 descendants (everyone else in the tree); Mary (3–4) has (4−3−1)/2 = 0 descendants (a leaf node).</p>
+<aside class="note"><p><strong>Note: </strong>The adjacency-list approach (superior_emp_id) is simpler to understand and update, but requires recursive queries (or application-level recursion) to walk multiple levels up or down the tree. MPTT makes subtree and ancestor queries a single, fast, non-recursive SQL statement — but updates (inserting or moving a node) are more expensive, since they can require renumbering many other rows' left/right values.</p></aside>
+</main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
 document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};
