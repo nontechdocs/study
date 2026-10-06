@@ -1,5 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
 <title>Java Interview Guide – Part 2</title>
 <style>
 :root{--bg:#fff;--fg:#1f2430;--mut:#667085;--side:#f5f6f8;--bd:#e2e5ea;--ac:#c2410c;--code:#0f172a;--codefg:#e2e8f0;--note:#fff7ed;--noteb:#fb923c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -31,21 +32,17 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 @media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
 </style></head><body>
 <header><button id="menu">☰</button><h1>Java Interview Guide — Part 2: Collections, Data Structures, Big-O &amp; Additional Concurrency</h1><button id="theme">◐</button></header>
-<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"><a class="l2" href="#s2">Section 1: Core Data Structures</a><a class="l2" href="#s3">Section 2: Big-O Notation</a><a class="l2" href="#s4">Section 3: Collections Framework — Practical Q&amp;A</a><a class="l2" href="#s5">Section 4: Stack / Deque Deep Dive</a><a class="l2" href="#s6">Section 5: Storing Hierarchical (Tree) Data in a Relational Database</a><a class="l2" href="#s7">Section 6: Comparing and Sorting Objects</a><a class="l2" href="#s8">Section 7: Coding Exercise — A Generic, Predicate-Based List Filter</a><a class="l2" href="#s9">Section 8: Additional Concurrency Topics</a></nav>
-<main id="main"><p><strong>Java Interview Preparation Guide</strong></p>
-<p><em>Unified &amp; Deduplicated Master Edition — Part 2</em></p>
-<p><em>Part 2 of the staged merge: Collections &amp; Data Structures, Big-O, Sorting/Comparator, a filtering coding exercise, and additional Concurrency topics not covered in Part 1.</em></p>
-<aside class="note"><p><strong>Note: </strong>Continues numbering conventions from Part 1: each subsection restarts at Q1 to mirror topic-block study. See Part 1 for the Executive Summary and overall merge approach.</p></aside>
-<h2 id="s2">Section 1: Core Data Structures</h2>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"/><a class="l2" href="#s2">Section 1: Core Data Structures</a><a class="l2" href="#s3">Section 2: Big-O Notation</a><a class="l2" href="#s4">Section 3: Collections Framework — Practical Q&amp;A</a><a class="l2" href="#s5">Section 4: Stack / Deque Deep Dive</a><a class="l2" href="#s6">Section 5: Storing Hierarchical (Tree) Data in a Relational Database</a><a class="l2" href="#s7">Section 6: Comparing and Sorting Objects</a><a class="l2" href="#s8">Section 7: Coding Exercise — A Generic, Predicate-Based List Filter</a><a class="l2" href="#s9">Section 8: Additional Concurrency Topics</a></nav>
+<main id="main"><h2 id="s2">Section 1: Core Data Structures</h2>
 <p>Interviewers often ask you to explain (or even implement) basic data structures, not because you should reinvent the wheel in production code, but to test your understanding of how the built-in collections actually work underneath. Below is a tour of the data structures most commonly discussed.</p>
 <p><strong>Arrays</strong></p>
-<p>Arrays are the most fundamental data structure: fixed-size, indexed, and homogeneous (all elements share the same type). Typical uses include storing a fixed batch of records just read from a database, or converting a String into a byte array for further processing. It&#x27;s good practice to wrap a raw array inside a class to prevent it from being accidentally modified or exposed — this applies to other mutable data structures too.</p>
+<p>Arrays are the most fundamental data structure: fixed-size, indexed, and homogeneous (all elements share the same type). Typical uses include storing a fixed batch of records just read from a database, or converting a String into a byte array for further processing. It's good practice to wrap a raw array inside a class to prevent it from being accidentally modified or exposed — this applies to other mutable data structures too.</p>
 <p><strong>Lists</strong></p>
 <p>A List is essentially “an array that can grow.” Most List implementations are backed by a fixed-size array internally, and they resize themselves automatically as needed. Lists permit duplicate elements. If you know roughly how large a list will grow, initialize it with an appropriate initial capacity to minimize the number of internal resize operations.</p>
 <p><strong>Sets</strong></p>
 <p>A Set behaves like a List but does not allow duplicate elements. Use a Set whenever your requirement is to store a collection of unique elements, such as a set of distinct user IDs currently logged in.</p>
 <p><strong>Stacks</strong></p>
-<p>A Stack only allows access to the single most-recently-inserted element — Last In, First Out (LIFO), enforced via peek() (look at the top without removing), push() (add to the top), and pop() (remove and return the top). Stacks are the natural fit for: evaluating mathematical expressions like (4+2) * 3; storing method call frames and exception propagation; checking whether brackets/braces in source code are balanced; implementing undo history in a text editor; and tracking page-visit history in a web browser&#x27;s back button.</p>
+<p>A Stack only allows access to the single most-recently-inserted element — Last In, First Out (LIFO), enforced via peek() (look at the top without removing), push() (add to the top), and pop() (remove and return the top). Stacks are the natural fit for: evaluating mathematical expressions like (4+2) * 3; storing method call frames and exception propagation; checking whether brackets/braces in source code are balanced; implementing undo history in a text editor; and tracking page-visit history in a web browser's back button.</p>
 <p><strong>Queues</strong></p>
 <p>A Queue is similar to a Stack, except the first item inserted is the first one removed — First In, First Out (FIFO), via peek(), offer() (add to the back), and poll() (remove and return the front). In multithreaded programming, a BlockingQueue is commonly used to hand off work items from producer threads to consumer threads safely (see the Concurrency section below).</p>
 <p><strong>LinkedLists</strong></p>
@@ -59,7 +56,7 @@ p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;
 <p><strong>HashMaps</strong></p>
 <p>A HashMap maps keys to values with amortized constant-time O(1) access, backed internally by an array of “buckets.” A hashing function determines which bucket a given key belongs to, and some collision-resolution strategy (in modern Java, chaining — a linked list or, for large buckets, a red-black tree) handles multiple keys that hash to the same bucket.</p>
 <p><strong>Trees</strong></p>
-<p>A Tree is made of nodes, each optionally holding data and pointing to one or more child nodes (often with a reference back to the parent as well), representing a hierarchical or ordered structure. If every node has at most two children, it&#x27;s called a binary tree — a shape that makes searching and inserting particularly efficient. Java&#x27;s standard library does not provide a general-purpose Tree implementation, but one is easy to build.</p>
+<p>A Tree is made of nodes, each optionally holding data and pointing to one or more child nodes (often with a reference back to the parent as well), representing a hierarchical or ordered structure. If every node has at most two children, it's called a binary tree — a shape that makes searching and inserting particularly efficient. Java's standard library does not provide a general-purpose Tree implementation, but one is easy to build.</p>
 <p><em>Problem statement: Implement a generic tree node that supports adding/removing children and tracking its parent.</em></p>
 <pre><button class="copy">Copy</button><code>package com.interviewguide.datastructures;
  
@@ -117,14 +114,14 @@ public class TreeNode {
 <li>HashMap lookup — O(1): the hash function computes a bucket location directly, independent of how many elements the map currently holds.</li>
 <li>Linear search — O(n): searching an unsorted array, List, or LinkedList requires scanning every element in the worst case.</li>
 <li>Nested comparisons — O(n²): comparing every element against every other element (bubble sort, insertion sort).</li>
-<li>Binary search — O(log n): notably better than the O(n) linear search a LinkedList requires, since a LinkedList doesn&#x27;t support efficient random access. If 10 items take at most some time x, 100 items take roughly 2x, and 10,000 items take roughly 4x.</li>
+<li>Binary search — O(log n): notably better than the O(n) linear search a LinkedList requires, since a LinkedList doesn't support efficient random access. If 10 items take at most some time x, 100 items take roughly 2x, and 10,000 items take roughly 4x.</li>
 </ul>
 <p><em>Figure: Big-O growth rate comparison</em></p>
-<h4 class="q">Q2. How does HashMap&#x27;s performance compare to TreeMap? Which should you choose?</h4>
-<p>TreeMap maintains its key/value pairs in sorted order internally using a red-black tree (a self-balancing binary search tree), giving O(log n) performance for insertion, removal, and lookup — slower than HashMap&#x27;s O(1) average case, but with the major advantage that keys are always available in sorted order, enabling firstKey(), lastKey(), and range queries (headMap(), tailMap(), subMap()) that HashMap cannot offer.</p>
+<h4 class="q">Q2. How does HashMap's performance compare to TreeMap? Which should you choose?</h4>
+<p>TreeMap maintains its key/value pairs in sorted order internally using a red-black tree (a self-balancing binary search tree), giving O(log n) performance for insertion, removal, and lookup — slower than HashMap's O(1) average case, but with the major advantage that keys are always available in sorted order, enabling firstKey(), lastKey(), and range queries (headMap(), tailMap(), subMap()) that HashMap cannot offer.</p>
 <p>If you need sorted data on nearly every read, TreeMap/TreeSet is often the right call. If sorted output is only occasionally needed — say, just before generating a report — it can be more efficient to keep an unordered HashMap/HashSet for fast everyday inserts and lookups, and sort on demand with Collections.sort(...) only when a report actually needs to be produced. Big-O describes asymptotic behavior as n grows arbitrarily large; for small-to-moderate data sizes, an O(n) algorithm can easily outperform an O(log n) one due to constant factors or cache locality — the only reliable way to decide is to benchmark both on realistic data volumes.</p>
 <h4 class="q">Q3. What is the tradeoff between an unordered array and a sorted array?</h4>
-<p>A sorted array supports much faster search — O(log n) via binary search — compared to an unsorted array&#x27;s O(n) linear search. The tradeoff is insertion cost: inserting into a sorted array requires shifting every element with a higher value to make room, which is O(n). Inserting into an unsorted array is O(1) — simply append at the end.</p>
+<p>A sorted array supports much faster search — O(log n) via binary search — compared to an unsorted array's O(n) linear search. The tradeoff is insertion cost: inserting into a sorted array requires shifting every element with a higher value to make room, which is O(n). Inserting into an unsorted array is O(1) — simply append at the end.</p>
 <p><em>Problem statement: Insert a value into an unsorted array (O(1) append) versus a sorted array (O(n) shift), and print the results.</em></p>
 <pre><button class="copy">Copy</button><code>package com.interviewguide.bigo;
  
@@ -133,7 +130,7 @@ import java.util.Arrays;
 public class ArrayInsertionExamples {
  
     public static void insertIntoUnsortedArray(String valueToInsert) {
-        String[] unsortedArray = { &quot;A&quot;, &quot;D&quot;, &quot;C&quot; };
+        String[] unsortedArray = { "A", "D", "C" };
         // arrays are fixed size, so we must allocate a new, larger array
         String[] expandedArray = new String[unsortedArray.length + 1];
         System.arraycopy(unsortedArray, 0, expandedArray, 0, unsortedArray.length);
@@ -143,7 +140,7 @@ public class ArrayInsertionExamples {
     }
  
     public static void insertIntoSortedArray(String valueToInsert) {
-        String[] sortedArray = { &quot;A&quot;, &quot;C&quot;, &quot;D&quot; };
+        String[] sortedArray = { "A", "C", "D" };
         // binarySearch returns the index if found, otherwise (-insertionPoint - 1)
         int searchResult = Arrays.binarySearch(sortedArray, valueToInsert);
         if (searchResult &lt; 0) { // not found -- searchResult tells us where it belongs
@@ -160,18 +157,18 @@ public class ArrayInsertionExamples {
     }
  
     public static void main(String[] args) {
-        insertIntoUnsortedArray(&quot;B&quot;); // prints: [A, D, C, B]
-        insertIntoSortedArray(&quot;B&quot;);   // prints: [A, B, C, D]
+        insertIntoUnsortedArray("B"); // prints: [A, D, C, B]
+        insertIntoSortedArray("B");   // prints: [A, B, C, D]
     }
 }</code></pre>
 <p>The decision between ordered and unordered collections ultimately comes down to: Do you have more inserts/deletes, or more searches? What is the expected maximum size? How frequently do you actually need the data in sorted order? And what does an actual performance benchmark on your real data show?</p>
 <p><em>Figure: Unordered array vs sorted array tradeoff</em></p>
 <h2 id="s4">Section 3: Collections Framework — Practical Q&amp;A</h2>
 <h4 class="q">Q1. What is the difference between ArrayList and LinkedList?</h4>
-<p>ArrayList uses a dynamic (resizable) array internally: O(1) random access via get(index), but O(n) insertion/deletion in the middle, since later elements must shift. LinkedList uses doubly-linked nodes: O(n) random access (must walk from an end), but O(1) insertion/deletion once you&#x27;re positioned at the relevant node — it also implements Deque, so it can serve as a stack or queue. Prefer ArrayList for frequent reads; prefer LinkedList (or, more often in practice, ArrayDeque) for frequent inserts/removals at the ends.</p>
+<p>ArrayList uses a dynamic (resizable) array internally: O(1) random access via get(index), but O(n) insertion/deletion in the middle, since later elements must shift. LinkedList uses doubly-linked nodes: O(n) random access (must walk from an end), but O(1) insertion/deletion once you're positioned at the relevant node — it also implements Deque, so it can serve as a stack or queue. Prefer ArrayList for frequent reads; prefer LinkedList (or, more often in practice, ArrayDeque) for frequent inserts/removals at the ends.</p>
 <p><em>Figure: ArrayList vs LinkedList internal structure</em></p>
 <h4 class="q">Q2. How does HashMap work internally, and how does that relate to HashSet, LinkedHashMap/Set, and TreeMap/Set?</h4>
-<p>HashMap stores entries in buckets (an array of nodes), and the key&#x27;s hashCode() modulo the array size determines the bucket index. Collisions are handled via a linked list per bucket, converted to a balanced red-black tree once a bucket exceeds 8 entries (Java 8+), giving O(log n) worst-case lookup in a heavily-collided bucket instead of O(n). Resizing (rehashing) occurs automatically once the load factor (default 0.75) is exceeded.</p>
+<p>HashMap stores entries in buckets (an array of nodes), and the key's hashCode() modulo the array size determines the bucket index. Collisions are handled via a linked list per bucket, converted to a balanced red-black tree once a bucket exceeds 8 entries (Java 8+), giving O(log n) worst-case lookup in a heavily-collided bucket instead of O(n). Resizing (rehashing) occurs automatically once the load factor (default 0.75) is exceeded.</p>
 <ul>
 <li>HashSet is backed internally by a HashMap (elements are stored as keys with a dummy value); no ordering guarantee, O(1) average operations.</li>
 <li>LinkedHashMap / LinkedHashSet additionally maintain insertion order (or, optionally, access order) via an internal doubly-linked list threaded through the entries, at slightly more memory/time overhead.</li>
@@ -179,7 +176,7 @@ public class ArrayInsertionExamples {
 </ul>
 <h4 class="q">Q3. What is the fail-fast vs. fail-safe iterator distinction, and what is ConcurrentModificationException?</h4>
 <p>Fail-fast iterators (ArrayList, HashMap, and most standard collections) detect structural modification during iteration using an internal modification counter (modCount), and throw ConcurrentModificationException as soon as they notice the collection changed underneath them — this is a best-effort safety check, not a guarantee. Fail-safe iterators (CopyOnWriteArrayList, ConcurrentHashMap) instead operate over a stable snapshot or use structurally safe internal updates, so no exception is thrown, but the iterator may not reflect changes made during iteration.</p>
-<p>You can avoid ConcurrentModificationException by using Iterator.remove() (or List&#x27;s removeIf()) instead of modifying the backing collection directly, by switching to a concurrent/copy-on-write collection, or by collecting the changes you want to make into a separate list and applying them only after iteration completes.</p>
+<p>You can avoid ConcurrentModificationException by using Iterator.remove() (or List's removeIf()) instead of modifying the backing collection directly, by switching to a concurrent/copy-on-write collection, or by collecting the changes you want to make into a separate list and applying them only after iteration completes.</p>
 <p><em>Problem statement: Remove all even numbers from a list while iterating over it, without triggering ConcurrentModificationException.</em></p>
 <pre><button class="copy">Copy</button><code>package com.interviewguide.collections;
  
@@ -208,13 +205,13 @@ public class SafeIterationDemo {
 }</code></pre>
 <p><em>Figure: Fail-fast vs fail-safe iterators</em></p>
 <h4 class="q">Q4. What is the difference between Iterator and ListIterator?</h4>
-<p>Iterator traverses a collection forward-only and supports remove(). ListIterator (available only for List types) additionally supports bidirectional traversal (hasPrevious()/previous()), set() to replace the last-returned element, add() to insert a new element at the current position, and nextIndex()/previousIndex() to report the iterator&#x27;s current position.</p>
+<p>Iterator traverses a collection forward-only and supports remove(). ListIterator (available only for List types) additionally supports bidirectional traversal (hasPrevious()/previous()), set() to replace the last-returned element, add() to insert a new element at the current position, and nextIndex()/previousIndex() to report the iterator's current position.</p>
 <h4 class="q">Q5. What is the difference between Comparable and Comparator?</h4>
-<p>Comparable (via compareTo()) defines a class&#x27;s own natural ordering, implemented inside the class itself — a class can only have one natural ordering. Comparator (via compare()) defines external, custom ordering logic that lives outside the class, so you can have as many different Comparator implementations as you need different sort orders, without modifying the class at all. Java 8 added fluent, lambda-friendly chaining via Comparator.comparing(...).thenComparing(...).</p>
-<h4 class="q">Q6. How does TreeSet maintain sorted order, and what&#x27;s its time complexity?</h4>
+<p>Comparable (via compareTo()) defines a class's own natural ordering, implemented inside the class itself — a class can only have one natural ordering. Comparator (via compare()) defines external, custom ordering logic that lives outside the class, so you can have as many different Comparator implementations as you need different sort orders, without modifying the class at all. Java 8 added fluent, lambda-friendly chaining via Comparator.comparing(...).thenComparing(...).</p>
+<h4 class="q">Q6. How does TreeSet maintain sorted order, and what's its time complexity?</h4>
 <p>TreeSet is backed internally by a TreeMap (a red-black tree), maintaining its elements in sorted order based on their natural ordering (Comparable) or a supplied Comparator. add(), remove(), and contains() all run in O(log n). It disallows duplicates, and disallows null elements when relying on natural ordering (since comparing against null would throw). It supports navigation methods like higher() and lower() for finding the nearest element above/below a given value.</p>
 <h4 class="q">Q7. What is CopyOnWriteArrayList, and when should it be used?</h4>
-<p>CopyOnWriteArrayList (java.util.concurrent) is a thread-safe List variant where every mutating operation (add/remove/set) creates an entirely new copy of the underlying array, then swaps the reference atomically. Reads never block and never throw ConcurrentModificationException, since they always operate against a stable, immutable snapshot array. It&#x27;s ideal for read-heavy, write-rare scenarios — the classic example is a list of event listeners that&#x27;s read constantly but modified only occasionally — but is costly for frequent writes, since every single mutation copies the entire backing array.</p>
+<p>CopyOnWriteArrayList (java.util.concurrent) is a thread-safe List variant where every mutating operation (add/remove/set) creates an entirely new copy of the underlying array, then swaps the reference atomically. Reads never block and never throw ConcurrentModificationException, since they always operate against a stable, immutable snapshot array. It's ideal for read-heavy, write-rare scenarios — the classic example is a list of event listeners that's read constantly but modified only occasionally — but is costly for frequent writes, since every single mutation copies the entire backing array.</p>
 <h4 class="q">Q8. How do you get an immutable (read-only) collection view?</h4>
 <p>The Collections utility class provides wrapper methods — unmodifiableList(), unmodifiableSet(), unmodifiableMap(), etc. — implemented using the Decorator design pattern. Each wraps an existing mutable collection in a read-only view that throws UnsupportedOperationException on any attempted modification.</p>
 <pre><button class="copy">Copy</button><code>import java.util.Collections;
@@ -224,13 +221,13 @@ import java.util.Set;
 public class ReadOnlyCollectionExample {
     public static void main(String[] args) {
         Set&lt;String&gt; technologySet = new HashSet&lt;&gt;();
-        technologySet.add(&quot;Java&quot;);
-        technologySet.add(&quot;JEE&quot;);
-        technologySet.add(&quot;Spring&quot;);
-        technologySet.add(&quot;Hibernate&quot;);
+        technologySet.add("Java");
+        technologySet.add("JEE");
+        technologySet.add("Spring");
+        technologySet.add("Hibernate");
  
         Set&lt;String&gt; readOnlyTechnologySet = Collections.unmodifiableSet(technologySet);
-        readOnlyTechnologySet.add(&quot;Ajax&quot;); // throws UnsupportedOperationException
+        readOnlyTechnologySet.add("Ajax"); // throws UnsupportedOperationException
     }
 }</code></pre>
 <aside class="note"><p><strong>Note: </strong>The underlying set (technologySet) is still mutable. If code elsewhere holds a reference to the original mutable set and modifies it, those changes ARE visible through the read-only view, since the view simply wraps the same backing data. True immutability requires that no mutable reference to the backing collection ever escapes.</p></aside>
@@ -244,15 +241,15 @@ public class DuplicateRemover {
         return new ArrayList&lt;&gt;(new LinkedHashSet&lt;&gt;(sourceList));
     }
 }</code></pre>
-<p>This code removes duplicate elements from a list by funneling it through a Set implementation (Sets cannot contain duplicates by definition), then wrapping the result back into a List. LinkedHashSet is used specifically because it preserves insertion order, so the de-duplicated list retains the same relative ordering as the original. If preserving order is not a requirement, LinkedHashSet can be replaced with a plain HashSet — slightly more memory- and time-efficient, at the cost of the resulting list&#x27;s order being unspecified.</p>
+<p>This code removes duplicate elements from a list by funneling it through a Set implementation (Sets cannot contain duplicates by definition), then wrapping the result back into a List. LinkedHashSet is used specifically because it preserves insertion order, so the de-duplicated list retains the same relative ordering as the original. If preserving order is not a requirement, LinkedHashSet can be replaced with a plain HashSet — slightly more memory- and time-efficient, at the cost of the resulting list's order being unspecified.</p>
 <h4 class="q">Q10. What are some best practices relating to the Java Collections Framework?</h4>
 <ul>
 <li>Choose the right data structure for your actual usage pattern: fixed size vs. growable, duplicates allowed or not, ordering requirements, forward-only vs. bi-directional traversal, insert-at-end-only vs. arbitrary-position insertion, read-heavy vs. write-heavy, concurrent access or not.</li>
-<li>Don&#x27;t assume a collection will always stay small — design for it to scale, since data volumes tend to grow over an application&#x27;s lifetime.</li>
+<li>Don't assume a collection will always stay small — design for it to scale, since data volumes tend to grow over an application's lifetime.</li>
 <li>Program to the interface, not the implementation, so you can swap implementations later without changing calling code.</li>
 <li>Return empty collections, not null, when a fetched list is legitimately empty (Collections.emptyList(), Collections.emptySet()). Returning null forces every caller to remember a null-check.</li>
 <li>Use generics for type safety, readability, and to catch type errors at compile time rather than at runtime.</li>
-<li>Encapsulate collections held as fields — return a defensive copy or an unmodifiable view rather than a raw reference, so external code can&#x27;t bypass your class&#x27;s own validation.</li>
+<li>Encapsulate collections held as fields — return a defensive copy or an unmodifiable view rather than a raw reference, so external code can't bypass your class's own validation.</li>
 </ul>
 <pre><button class="copy">Copy</button><code>// Avoid -- tightly couples calling code to a specific implementation
 ArrayList&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
@@ -261,22 +258,22 @@ ArrayList&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
 List&lt;String&gt; technologyNames = new ArrayList&lt;&gt;(100);
 List&lt;String&gt; orderHistory = new LinkedList&lt;&gt;();</code></pre>
 <h2 id="s5">Section 4: Stack / Deque Deep Dive</h2>
-<p>The Java Collection library&#x27;s LIFO mechanism has many practical real-world uses: evaluating expressions and parsing syntax, validating/parsing XML, implementing undo in a text editor, and tracking page-visit history in a web browser.</p>
+<p>The Java Collection library's LIFO mechanism has many practical real-world uses: evaluating expressions and parsing syntax, validating/parsing XML, implementing undo in a text editor, and tracking page-visit history in a web browser.</p>
 <h4 class="q">Q1. What LIFO implementation would you use in modern Java?</h4>
 <p>The old Vector-based Stack class is a legacy holdover, and its own Javadoc recommends using Deque instead, since Deque implementations generally perform better and offer a fuller LIFO API. “Deque” is pronounced “deck” and is unrelated to the verb “dequeue.” A double-ended queue supports adding/removing elements from either end, so a single Deque implementation can serve as either a FIFO queue or a LIFO stack.</p>
-<aside class="note"><p><strong>Note: </strong>The legacy Vector class synchronizes internally on every operation, which is rarely the right level of consistency for real applications and slows things down when synchronization isn&#x27;t actually needed. java.util.concurrent (e.g. ConcurrentLinkedDeque) offers far more efficient thread-safety options when concurrency is genuinely required.</p></aside>
+<aside class="note"><p><strong>Note: </strong>The legacy Vector class synchronizes internally on every operation, which is rarely the right level of consistency for real applications and slows things down when synchronization isn't actually needed. java.util.concurrent (e.g. ConcurrentLinkedDeque) offers far more efficient thread-safety options when concurrency is genuinely required.</p></aside>
 <h4 class="q">Q2. Write a program to check whether a string has properly balanced brackets/parentheses.</h4>
 <p><em>Problem statement: Given an arbitrary string (e.g. a snippet of source code), determine whether every opening bracket — (, {, [ — has a correctly matching, correctly nested closing counterpart.</em></p>
 <p><strong>Pseudocode:</strong></p>
 <ul>
 <li>1. Store every opening bracket encountered in a stack (this naturally gives LIFO behavior).</li>
 <li>2. When a closing bracket is encountered, pop the most recent entry — it should be the matching opening bracket.</li>
-<li>3. If the stack is empty, or the popped bracket doesn&#x27;t match, the brackets are not balanced.</li>
+<li>3. If the stack is empty, or the popped bracket doesn't match, the brackets are not balanced.</li>
 </ul>
 <pre><button class="copy">Copy</button><code>public enum BracketType {
-    LEFT_PAREN(&#x27;(&#x27;), RIGHT_PAREN(&#x27;)&#x27;),
-    LEFT_BRACE(&#x27;{&#x27;), RIGHT_BRACE(&#x27;}&#x27;),
-    LEFT_SQUARE_BRACKET(&#x27;[&#x27;), RIGHT_SQUARE_BRACKET(&#x27;]&#x27;);
+    LEFT_PAREN('('), RIGHT_PAREN(')'),
+    LEFT_BRACE('{'), RIGHT_BRACE('}'),
+    LEFT_SQUARE_BRACKET('['), RIGHT_SQUARE_BRACKET(']');
  
     private final char symbol;
  
@@ -339,22 +336,22 @@ public class BracketBalanceCheckerTest {
  
     @Test
     public void testBalancedBracketsReturnTrue() {
-        boolean result = checker.isBalanced(&quot;public static void main(String[] args) {}&quot;);
+        boolean result = checker.isBalanced("public static void main(String[] args) {}");
         assertTrue(result);
     }
  
     @Test
     public void testUnbalancedBracketsReturnFalse() {
-        assertFalse(checker.isBalanced(&quot;public static void main(String[ args) {}&quot;)); // missing &#x27;]&#x27;
-        assertFalse(checker.isBalanced(&quot;public static void main(String[] args) }&quot;));  // missing &#x27;{&#x27;
-        assertFalse(checker.isBalanced(&quot;public static void main String[] args) {}&quot;)); // missing &#x27;(&#x27;
+        assertFalse(checker.isBalanced("public static void main(String[ args) {}")); // missing ']'
+        assertFalse(checker.isBalanced("public static void main(String[] args) }"));  // missing '{'
+        assertFalse(checker.isBalanced("public static void main String[] args) {}")); // missing '('
     }
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>Test both positive and negative scenarios. Also note: this implementation favors clarity over elegance. Any time you find yourself writing a long chain of if/else-if or a large switch statement like this, it&#x27;s worth considering a more object-oriented design — for example, a Map&lt;Character, Character&gt; pairing each closing bracket to its opening counterpart, collapsing the three near-identical branches into one.</p></aside>
+<aside class="note"><p><strong>Note: </strong>Test both positive and negative scenarios. Also note: this implementation favors clarity over elegance. Any time you find yourself writing a long chain of if/else-if or a large switch statement like this, it's worth considering a more object-oriented design — for example, a Map&lt;Character, Character&gt; pairing each closing bracket to its opening counterpart, collapsing the three near-identical branches into one.</p></aside>
 <p><em>Figure: Balanced-bracket checking using a stack</em></p>
 <h4 class="q">Q3. Why is the Deque interface different from other collection interfaces?</h4>
 <p>Deque allows insertion and removal of elements from BOTH ends of the collection (addFirst/removeFirst and addLast/removeLast), whereas most other collections only support adding/removing at one end. This dual-ended access is what allows a single Deque implementation to function as either a stack or a queue.</p>
-<h4 class="q">Q4. What are the different ways to inspect a program&#x27;s execution trace?</h4>
+<h4 class="q">Q4. What are the different ways to inspect a program's execution trace?</h4>
 <p><strong>1. Understanding the call stack.</strong></p>
 <p>Java is a stack-based language: method invocations are pushed onto a call stack, and popped off in LIFO order as each method completes. When an exception is thrown, a stack trace is printed showing exactly this call chain.</p>
 <p><strong>2. Programmatically accessing a stack trace.</strong></p>
@@ -368,7 +365,7 @@ ThreadMXBean threadManagementBean = ManagementFactory.getThreadMXBean();
 ThreadInfo[] allThreadInfos = threadManagementBean.dumpAllThreads(true, true);
 for (ThreadInfo threadInfo : allThreadInfos) {
     StackTraceElement[] threadStackTrace = threadInfo.getStackTrace();
-    // inspect each thread&#x27;s current call stack
+    // inspect each thread's current call stack
 }</code></pre>
 <p>Thread dumps are invaluable for diagnosing concurrency issues like deadlocks, lock contention, and thread starvation.</p>
 <p><strong>3. Reading a stack trace correctly.</strong></p>
@@ -419,14 +416,14 @@ public class NumberReverser {
 }</code></pre>
 <p><em>Figure: Hierarchical data as a self-referencing table</em></p>
 <h4 class="q">Q2. How would you find the superior (manager) of a given employee?</h4>
-<p>Use a self-join — join the table to itself, matching each employee&#x27;s superior_emp_id against the emp_id of a second copy of the same table:</p>
+<p>Use a self-join — join the table to itself, matching each employee's superior_emp_id against the emp_id of a second copy of the same table:</p>
 <pre><button class="copy">Copy</button><code>SELECT e.emp_id, e.emp_name, s.title
 FROM employee e, employee s
 WHERE e.superior_emp_id = s.emp_id
   AND e.emp_id = 3;</code></pre>
 <h4 class="q">Q3. Is there another way to store a tree structure in a relational database?</h4>
-<p>Yes — the Modified Preorder Tree Traversal (MPTT) technique. Each node is annotated with a left and right numeric value, assigned by walking the tree in a specific traversal order. These left/right values encode the entire hierarchy without needing recursive queries to walk up or down the tree: any row whose left_val and right_val both fall strictly between another row&#x27;s left_val and right_val is a descendant of that row.</p>
-<pre><button class="copy">Copy</button><code>-- Fetch Amanda&#x27;s entire subtree (herself plus all descendants), given Amanda = (6, 11)
+<p>Yes — the Modified Preorder Tree Traversal (MPTT) technique. Each node is annotated with a left and right numeric value, assigned by walking the tree in a specific traversal order. These left/right values encode the entire hierarchy without needing recursive queries to walk up or down the tree: any row whose left_val and right_val both fall strictly between another row's left_val and right_val is a descendant of that row.</p>
+<pre><button class="copy">Copy</button><code>-- Fetch Amanda's entire subtree (herself plus all descendants), given Amanda = (6, 11)
 SELECT * FROM employee
 WHERE left_val BETWEEN 6 AND 11
 ORDER BY left_val ASC;
@@ -438,11 +435,11 @@ WHERE left_val &lt; 7 AND right_val &gt; 8
 ORDER BY left_val ASC;
 -- returns: Peter, Amanda</code></pre>
 <p>To count the number of descendants of a node: number_of_descendants = (right_val − left_val − 1) / 2. For example, Amanda (6–11) has (11−6−1)/2 = 2 descendants (Ralph and Jeanne); Peter (1–12) has (12−1−1)/2 = 5 descendants (everyone else in the tree); Mary (3–4) has (4−3−1)/2 = 0 descendants (a leaf node).</p>
-<aside class="note"><p><strong>Note: </strong>The adjacency-list approach (superior_emp_id) is simpler to understand and update, but requires recursive queries (or application-level recursion) to walk multiple levels up or down the tree. MPTT makes subtree and ancestor queries a single, fast, non-recursive SQL statement — but updates (inserting or moving a node) are more expensive, since they can require renumbering many other rows&#x27; left/right values.</p></aside>
+<aside class="note"><p><strong>Note: </strong>The adjacency-list approach (superior_emp_id) is simpler to understand and update, but requires recursive queries (or application-level recursion) to walk multiple levels up or down the tree. MPTT makes subtree and ancestor queries a single, fast, non-recursive SQL statement — but updates (inserting or moving a node) are more expensive, since they can require renumbering many other rows' left/right values.</p></aside>
 <h2 id="s7">Section 6: Comparing and Sorting Objects</h2>
 <p>Comparing and sorting objects in a collection is extremely common in real-world code — for example, retrieving records from a database and letting the user sort a report by different columns. Java provides the Collections utility class along with the Comparable and Comparator interfaces to support this.</p>
 <h4 class="q">Q1. Write a reusable method to compare two objects for equality, useful for implementing your own equals() method.</h4>
-<p>This kind of helper is useful in a common abstract base class for domain/value objects, so individual field comparisons in an equals() implementation don&#x27;t need to repeat null-checking logic every time.</p>
+<p>This kind of helper is useful in a common abstract base class for domain/value objects, so individual field comparisons in an equals() implementation don't need to repeat null-checking logic every time.</p>
 <pre><button class="copy">Copy</button><code>public abstract class AbstractDomainObject {
     // protected: only subclasses building their own equals() should use this
     protected boolean isFieldEqual(Object firstValue, Object secondValue) {
@@ -479,21 +476,21 @@ public class SecurityHolding extends AbstractDomainObject implements Serializabl
         return securityId;
     }
 }</code></pre>
-<h4 class="q">Q2. Write code to sort a list of strings naturally (alphabetically), and identify what&#x27;s wrong with a naive natural sort.</h4>
-<p>String already implements Comparable&lt;String&gt;, so Collections.sort(...) can sort a List&lt;String&gt; directly using String&#x27;s natural ordering. Internally, Collections.sort() uses an efficient, stable merge-sort-based algorithm (TimSort, since Java 7).</p>
+<h4 class="q">Q2. Write code to sort a list of strings naturally (alphabetically), and identify what's wrong with a naive natural sort.</h4>
+<p>String already implements Comparable&lt;String&gt;, so Collections.sort(...) can sort a List&lt;String&gt; directly using String's natural ordering. Internally, Collections.sort() uses an efficient, stable merge-sort-based algorithm (TimSort, since Java 7).</p>
 <pre><button class="copy">Copy</button><code>List&lt;String&gt; technologyNames = Arrays.asList(
-        &quot;JEE&quot;, &quot;Java&quot;, &quot;Servlets&quot;, &quot;JMS&quot;, &quot;JNDI&quot;, &quot;JDBC&quot;, &quot;JSP&quot;, &quot;EJB&quot;);
-Collections.sort(technologyNames); // uses String&#x27;s own compareTo()
+        "JEE", "Java", "Servlets", "JMS", "JNDI", "JDBC", "JSP", "EJB");
+Collections.sort(technologyNames); // uses String's own compareTo()
 System.out.println(technologyNames);
 // [EJB, JDBC, JEE, JMS, JNDI, JSP, Java, Servlets]</code></pre>
 <p><strong>Two problems with this naive sort:</strong></p>
 <ul>
-<li>It is case-sensitive: String&#x27;s natural ordering sorts all uppercase letters before all lowercase letters (Unicode code points), which is why “Java” ends up after “JSP” even though a case-insensitive alphabetical sort would put it earlier.</li>
+<li>It is case-sensitive: String's natural ordering sorts all uppercase letters before all lowercase letters (Unicode code points), which is why “Java” ends up after “JSP” even though a case-insensitive alphabetical sort would put it earlier.</li>
 <li>If the list contains any null values, Collections.sort() throws a NullPointerException, since it calls compareTo() on each element.</li>
 </ul>
 <p>Both issues are fixed by supplying a custom Comparator instead of relying on natural ordering:</p>
 <pre><button class="copy">Copy</button><code>List&lt;String&gt; technologyNames = Arrays.asList(
-        &quot;JEE&quot;, &quot;Java&quot;, &quot;Servlets&quot;, &quot;JMS&quot;, null, &quot;JNDI&quot;, &quot;JDBC&quot;, &quot;JSP&quot;, &quot;EJB&quot;);
+        "JEE", "Java", "Servlets", "JMS", null, "JNDI", "JDBC", "JSP", "EJB");
  
 Collections.sort(technologyNames, new Comparator&lt;String&gt;() {
     @Override
@@ -507,11 +504,11 @@ Collections.sort(technologyNames, new Comparator&lt;String&gt;() {
 System.out.println(technologyNames);
 // [EJB, JDBC, JEE, Java, JMS, JNDI, JSP, Servlets, null]
  
-// From Java 8 onward, written far more concisely with a lambda and Comparator&#x27;s built-in null handling:
+// From Java 8 onward, written far more concisely with a lambda and Comparator's built-in null handling:
 Collections.sort(technologyNames, Comparator.nullsLast(String::compareToIgnoreCase));</code></pre>
 <h4 class="q">Q3. How do you sort a custom class by its own natural ordering?</h4>
-<p>Implement Comparable&lt;T&gt; on your own class, and define compareTo(...) to encode the class&#x27;s “natural” ordering.</p>
-<p><em>Problem statement: Sort a list of technologies by their popularity rank, using each technology&#x27;s natural ordering.</em></p>
+<p>Implement Comparable&lt;T&gt; on your own class, and define compareTo(...) to encode the class's “natural” ordering.</p>
+<p><em>Problem statement: Sort a list of technologies by their popularity rank, using each technology's natural ordering.</em></p>
 <pre><button class="copy">Copy</button><code>public class JavaTechnology implements Comparable&lt;JavaTechnology&gt; {
     private String technologyName;
     private int popularityRank; // lower value means more popular
@@ -537,23 +534,23 @@ Collections.sort(technologyNames, Comparator.nullsLast(String::compareToIgnoreCa
  
     @Override
     public String toString() {
-        return &quot;(&quot; + technologyName + &quot;, &quot; + popularityRank + &quot;)&quot;;
+        return "(" + technologyName + ", " + popularityRank + ")";
     }
 }
  
 List&lt;JavaTechnology&gt; technologies = new ArrayList&lt;&gt;();
-technologies.add(new JavaTechnology(&quot;JMS&quot;, 5));
-technologies.add(new JavaTechnology(&quot;EJB&quot;, 4));
-technologies.add(new JavaTechnology(&quot;JNDI&quot;, 3));
-technologies.add(new JavaTechnology(&quot;Servlets&quot;, 2));
-technologies.add(new JavaTechnology(&quot;JSP&quot;, 2));
-technologies.add(new JavaTechnology(&quot;Java&quot;, 1));
-technologies.add(new JavaTechnology(&quot;JEE&quot;, 1));
+technologies.add(new JavaTechnology("JMS", 5));
+technologies.add(new JavaTechnology("EJB", 4));
+technologies.add(new JavaTechnology("JNDI", 3));
+technologies.add(new JavaTechnology("Servlets", 2));
+technologies.add(new JavaTechnology("JSP", 2));
+technologies.add(new JavaTechnology("Java", 1));
+technologies.add(new JavaTechnology("JEE", 1));
 Collections.sort(technologies); // invokes compareTo() repeatedly
 System.out.println(technologies);
 // [(JEE, 1), (Java, 1), (Servlets, 2), (JSP, 2), (JNDI, 3), (EJB, 4), (JMS, 5)]</code></pre>
 <h4 class="q">Q4. How do you apply a specific external sort order — say, by rank first, then alphabetically for ties?</h4>
-<p>Create a separate Comparator implementation encoding the desired sort order, without touching the class itself. This keeps sorting logic decoupled from the class&#x27;s own “natural” ordering, and you can have as many Comparators as you need different sort orders.</p>
+<p>Create a separate Comparator implementation encoding the desired sort order, without touching the class itself. This keeps sorting logic decoupled from the class's own “natural” ordering, and you can have as many Comparators as you need different sort orders.</p>
 <pre><button class="copy">Copy</button><code>import java.util.Comparator;
  
 public class TechnologyRankThenNameComparator implements Comparator&lt;JavaTechnology&gt; {
@@ -563,7 +560,7 @@ public class TechnologyRankThenNameComparator implements Comparator&lt;JavaTechn
         Integer secondRank = secondTechnology.getPopularityRank();
         int rankComparison = firstRank.compareTo(secondRank);
         if (rankComparison != 0) {
-            return rankComparison; // ranks differ -- that&#x27;s enough to decide order
+            return rankComparison; // ranks differ -- that's enough to decide order
         }
         // ranks are tied -- break the tie alphabetically by name
         return firstTechnology.getTechnologyName().compareToIgnoreCase(
@@ -618,7 +615,7 @@ public class FactorOfPredicate implements ElementPredicate&lt;Integer&gt; {
  
     public FactorOfPredicate(int divisor) {
         if (divisor == 0) {
-            throw new IllegalArgumentException(&quot;divisor must not be zero&quot;);
+            throw new IllegalArgumentException("divisor must not be zero");
         }
         this.divisor = divisor;
     }
@@ -648,8 +645,8 @@ public class FilteredList&lt;T&gt; {
     private final ElementPredicate&lt;T&gt; filterPredicate;
  
     public FilteredList(List&lt;T&gt; sourceList, ElementPredicate&lt;T&gt; filterPredicate) {
-        this.sourceList = Objects.requireNonNull(sourceList, &quot;sourceList must not be null&quot;);
-        this.filterPredicate = Objects.requireNonNull(filterPredicate, &quot;filterPredicate must not be null&quot;);
+        this.sourceList = Objects.requireNonNull(sourceList, "sourceList must not be null");
+        this.filterPredicate = Objects.requireNonNull(filterPredicate, "filterPredicate must not be null");
     }
  
     public List&lt;T&gt; apply() {
@@ -736,16 +733,16 @@ public class FilteredListTest {
 <h2 id="s9">Section 8: Additional Concurrency Topics</h2>
 <p>The following concurrency questions were not covered in Part 1 and add further depth on thread creation, producer-consumer coordination, lock-free algorithms, and modern virtual threads.</p>
 <h4 class="q">Q1. What is the difference between a Process and a Thread, and what are the ways to create a thread in Java?</h4>
-<p>A process is an independent, isolated program with its own memory space; a thread is a lightweight sub-unit of a process, sharing the process&#x27;s memory (heap, static fields) but with its own private stack and program counter. Threads are far cheaper to create than processes and enable concurrent execution within a single program.</p>
+<p>A process is an independent, isolated program with its own memory space; a thread is a lightweight sub-unit of a process, sharing the process's memory (heap, static fields) but with its own private stack and program counter. Threads are far cheaper to create than processes and enable concurrent execution within a single program.</p>
 <p><strong>Three ways to create a thread in Java:</strong></p>
 <ul>
 <li>Extend the Thread class and override run().</li>
-<li>Implement the Runnable interface and pass an instance to a Thread&#x27;s constructor.</li>
+<li>Implement the Runnable interface and pass an instance to a Thread's constructor.</li>
 <li>Implement Callable&lt;V&gt; (returns a value, can throw checked exceptions) and submit it to an ExecutorService.</li>
 </ul>
 <p>Implementing Runnable/Callable is generally preferred over extending Thread, since Java supports only single inheritance — extending Thread uses up your one available superclass slot, and separates the “task” from the “thread that runs it,” which is a cleaner design and works naturally with thread pools.</p>
 <h4 class="q">Q2. Explain the producer-consumer problem and how BlockingQueue solves it.</h4>
-<p>Producer-consumer involves one or more threads producing data items and one or more threads consuming them, requiring coordination so producers don&#x27;t overwhelm a full buffer and consumers don&#x27;t busy-wait on an empty one. Implementing this correctly by hand requires careful wait()/notify() coordination and is easy to get subtly wrong.</p>
+<p>Producer-consumer involves one or more threads producing data items and one or more threads consuming them, requiring coordination so producers don't overwhelm a full buffer and consumers don't busy-wait on an empty one. Implementing this correctly by hand requires careful wait()/notify() coordination and is easy to get subtly wrong.</p>
 <p>BlockingQueue (e.g. ArrayBlockingQueue, LinkedBlockingQueue) handles this internally: put() blocks the producer when the queue is full, and take() blocks the consumer when the queue is empty, eliminating manual wait()/notify() coordination entirely.</p>
 <p><em>Problem statement: Coordinate two threads so one prints odd numbers and the other prints even numbers, strictly in ascending order from 1 to 10.</em></p>
 <pre><button class="copy">Copy</button><code>class NumberPrinter {
@@ -759,7 +756,7 @@ public class FilteredListTest {
                 try { wait(); } catch (InterruptedException ignored) { }
             }
             if (currentNumber &lt;= maxLimit) {
-                System.out.println(&quot;Odd: &quot; + currentNumber++);
+                System.out.println("Odd: " + currentNumber++);
                 isOddTurn = false;
                 notifyAll(); // wake the even-number thread
             }
@@ -772,7 +769,7 @@ public class FilteredListTest {
                 try { wait(); } catch (InterruptedException ignored) { }
             }
             if (currentNumber &lt;= maxLimit) {
-                System.out.println(&quot;Even: &quot; + currentNumber++);
+                System.out.println("Even: " + currentNumber++);
                 isOddTurn = true;
                 notifyAll(); // wake the odd-number thread
             }
@@ -790,9 +787,9 @@ public class AlternatePrintDemo {
     }
 }</code></pre>
 <p><em>Figure: Producer-consumer via BlockingQueue</em></p>
-<h4 class="q">Q3. What&#x27;s the difference between wait()/notify() and the Lock/Condition API?</h4>
+<h4 class="q">Q3. What's the difference between wait()/notify() and the Lock/Condition API?</h4>
 <p>wait()/notify() are methods on Object, usable only inside a synchronized block, and offer a single implicit condition per monitor — every waiting thread wakes on the same notify()/notifyAll() call, with no way to selectively wake only threads waiting for a specific condition. Lock/Condition (java.util.concurrent.locks) let you create multiple named Condition objects per Lock, so you can wait on and signal distinct conditions independently (e.g. a “notFull” condition and a “notEmpty” condition on the same buffer), plus tryLock() with a timeout and interruptible lock acquisition — offering considerably more flexibility and finer control than intrinsic locking.</p>
-<h4 class="q">Q4. Explain ExecutorService&#x27;s common thread pool types.</h4>
+<h4 class="q">Q4. Explain ExecutorService's common thread pool types.</h4>
 <ul>
 <li>FixedThreadPool — a fixed number of reusable threads; good when you want to cap concurrent resource usage.</li>
 <li>CachedThreadPool — elastic pool that creates new threads as needed and reuses idle ones, terminating threads that stay idle too long; good for many short-lived, bursty tasks.</li>
@@ -801,8 +798,8 @@ public class AlternatePrintDemo {
 </ul>
 <p><em>Figure: ExecutorService thread pool types</em></p>
 <h4 class="q">Q5. What is the difference between CAS (Compare-And-Swap) and lock-based synchronization? Explain the ABA problem.</h4>
-<p>CAS is a lock-free, hardware-supported atomic operation (used internally by AtomicInteger and ConcurrentHashMap) that atomically compares a memory location&#x27;s current value to an expected value and, if they match, swaps in a new value — all as one indivisible CPU instruction. If another thread changed the value in the meantime, the CAS simply fails and the caller retries, rather than blocking. This avoids context-switch overhead under low contention, but can waste CPU cycles retrying under high contention, where a lock might actually perform better.</p>
-<p>The ABA problem occurs when a value changes from A to B and back to A between a thread&#x27;s initial read and its later CAS attempt: the CAS succeeds because the value matches what was expected (A), even though the value did in fact change in between — which can be incorrect if the intermediate change mattered (e.g. a linked-list node was freed and reused). It&#x27;s solved with AtomicStampedReference, which pairs the value with a version stamp that increments on every change, so a CAS can detect that the value went A → B → A even though the final value looks unchanged.</p>
+<p>CAS is a lock-free, hardware-supported atomic operation (used internally by AtomicInteger and ConcurrentHashMap) that atomically compares a memory location's current value to an expected value and, if they match, swaps in a new value — all as one indivisible CPU instruction. If another thread changed the value in the meantime, the CAS simply fails and the caller retries, rather than blocking. This avoids context-switch overhead under low contention, but can waste CPU cycles retrying under high contention, where a lock might actually perform better.</p>
+<p>The ABA problem occurs when a value changes from A to B and back to A between a thread's initial read and its later CAS attempt: the CAS succeeds because the value matches what was expected (A), even though the value did in fact change in between — which can be incorrect if the intermediate change mattered (e.g. a linked-list node was freed and reused). It's solved with AtomicStampedReference, which pairs the value with a version stamp that increments on every change, so a CAS can detect that the value went A → B → A even though the final value looks unchanged.</p>
 <p><em>Figure: Compare-And-Swap and the ABA problem</em></p>
 <h4 class="q">Q6. What are Virtual Threads (Project Loom, Java 21), and how do they differ from platform threads?</h4>
 <p>Virtual threads are lightweight, JVM-managed threads multiplexed onto a small pool of “carrier” platform (OS) threads, rather than being mapped one-to-one onto an OS thread the way traditional platform threads are. When a virtual thread blocks on I/O, the JVM “unmounts” it from its carrier thread — freeing that carrier to run a different virtual thread — rather than blocking an entire OS thread for the duration. This enables applications to run millions of concurrent virtual threads using simple, familiar blocking-style code, instead of needing complex reactive/async pipelines purely to conserve OS threads. Virtual threads are ideal for high-throughput, I/O-bound workloads (web request handling, calling downstream services); they offer no benefit for CPU-bound work, since a CPU-bound virtual thread still occupies its carrier thread for its entire computation.</p>
@@ -857,7 +854,7 @@ public class ExpiringCache&lt;KeyType, ValueType&gt; {
     }
  
     public Optional&lt;ValueType&gt; getEntry(KeyType entryKey) {
-        accessLock.writeLock().lock(); // write lock: access-order mutates the map&#x27;s internal ordering
+        accessLock.writeLock().lock(); // write lock: access-order mutates the map's internal ordering
         try {
             CacheEntry&lt;ValueType&gt; foundEntry = internalStorage.get(entryKey);
             if (foundEntry == null || foundEntry.isExpired()) {
@@ -870,7 +867,7 @@ public class ExpiringCache&lt;KeyType, ValueType&gt; {
         }
     }
 }</code></pre>
-<aside class="note"><p><strong>Note: </strong>Note: getEntry() must take the write lock (not a read lock) because LinkedHashMap&#x27;s access-order mode mutates its internal linked-list ordering on every get(), so a concurrent &quot;read&quot; is not actually read-only here.</p></aside></main></div>
+<aside class="note"><p><strong>Note: </strong>Note: getEntry() must take the write lock (not a read lock) because LinkedHashMap's access-order mode mutates its internal linked-list ordering on every get(), so a concurrent "read" is not actually read-only here.</p></aside></main></div>
 <script>
 var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
 document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};
