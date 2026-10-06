@@ -1,0 +1,680 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Java Interview Guide – Part 4</title>
+<style>
+:root{--bg:#fff;--fg:#1f2430;--mut:#667085;--side:#f5f6f8;--bd:#e2e5ea;--ac:#c2410c;--code:#0f172a;--codefg:#e2e8f0;--note:#fff7ed;--noteb:#fb923c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161b;--fg:#e6e8ec;--mut:#9aa3b2;--side:#1b1e25;--bd:#2c303a;--ac:#fb923c;--note:#2a2018;--noteb:#c2410c}}
+:root[data-theme="dark"]{--bg:#14161b;--fg:#e6e8ec;--mut:#9aa3b2;--side:#1b1e25;--bd:#2c303a;--ac:#fb923c;--note:#2a2018;--noteb:#c2410c}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 60px);scroll-behavior:smooth}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:10px;align-items:center;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--bd)}
+header h1{font-size:16px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button,input{font:inherit;color:var(--fg)}
+#menu,#theme{background:var(--side);border:1px solid var(--bd);border-radius:8px;padding:4px 10px;cursor:pointer}
+#menu{display:none}
+.wrap{display:flex;max-width:1280px;margin:0 auto}
+nav{width:300px;flex:none;position:sticky;top:calc(env(safe-area-inset-top,0px) + 53px);height:calc(100vh - 53px);overflow:auto;padding:14px;background:var(--side);border-right:1px solid var(--bd)}
+nav input{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);margin-bottom:10px}
+nav a{display:block;color:var(--fg);text-decoration:none;padding:5px 8px;border-radius:6px;font-size:14px;line-height:1.35}
+nav a.l2{font-weight:600;margin-top:8px}nav a.l3{padding-left:20px;color:var(--mut)}nav a:hover,nav a.on{background:var(--bd);color:var(--ac)}
+main{flex:1;min-width:0;padding:24px clamp(16px,4vw,48px) 80px;max-width:900px}
+h2{font-size:26px;margin:48px 0 8px;padding-bottom:8px;border-bottom:2px solid var(--ac)}h3{font-size:21px;margin:36px 0 4px}
+h4.q{font-size:17px;margin:32px 0 6px;padding:10px 14px;background:var(--side);border-left:4px solid var(--ac);border-radius:0 8px 8px 0}
+ul{padding-left:22px}li{margin:6px 0}
+pre{position:relative;background:var(--code);color:var(--codefg);padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.5;margin:14px 0}
+pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;background:none;color:inherit;padding:0}
+p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background:var(--side);border:1px solid var(--bd);padding:1px 5px;border-radius:5px}
+.copy{position:absolute;top:6px;right:6px;background:#334155;color:#e2e8f0;border:0;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;opacity:.8}
+.note{background:var(--note);border-left:4px solid var(--noteb);padding:4px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid var(--bd);padding:6px 10px;text-align:left}
+.hide{display:none!important}
+@media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
+</style></head><body>
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 4: Databases, Web Services &amp; Operations</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"><a class="l2" href="#s2">Section 1: Date, Time &amp; Calendar</a><a class="l2" href="#s3">Section 2: SQL Joins, Views &amp; Database Design</a><a class="l2" href="#s4">Section 3: Stored Procedures, Triggers, Transactions &amp; Isolation</a><a class="l2" href="#s5">Section 4: JDBC</a><a class="l2" href="#s6">Section 5: SQL Tuning, Indexing &amp; Database Scalability</a><a class="l2" href="#s7">Section 6: MongoDB</a><a class="l2" href="#s8">Section 7: Web Services — SOAP &amp; REST</a><a class="l2" href="#s9">Section 8: Servlet &amp; JSP Extras</a><a class="l2" href="#s10">Section 9: Unix / Linux Command Line</a></nav>
+<main id="main"><p><strong>Java Interview Preparation Guide</strong></p>
+<p><em>Unified &amp; Deduplicated Master Edition — Part 4</em></p>
+<p><em>Part 4 of the staged merge: Date/Time, Databases (SQL, JDBC, transactions, tuning, scalability), MongoDB, Web Services (SOAP/REST), Servlet/JSP extras, and Unix commands.</em></p>
+<aside class="note"><p><strong>Note: </strong>Cross-references: Servlet lifecycle, threading, sessions, forward vs. redirect, and hierarchical (tree) data in a relational DB (adjacency list, MPTT) were answered in Parts 2–3 and are extended here rather than repeated. Q numbering restarts per section.</p></aside>
+<h2 id="s2">Section 1: Date, Time &amp; Calendar</h2>
+<h4 class="q">Q1. Is SimpleDateFormat safe to use in a multithreaded program?</h4>
+<p>No. DateFormat and all its subclasses, including SimpleDateFormat, are NOT thread-safe. Sharing one instance across threads without external synchronization can produce silently wrong parse/format results (genuinely incorrect dates, not just exceptions), because its internal Calendar field is mutated during both parse() and format().</p>
+<p>If you must use it in a multithreaded context, confine each instance to one thread, for example with a ThreadLocal (remember to call remove() in pooled-thread environments; see Part 1).</p>
+<pre><button class="copy">Copy</button><code>private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMATTER =
+        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat(&quot;dd-MM-yyyy&quot;));
+ 
+String formattedDate = DATE_FORMATTER.get().format(new Date());</code></pre>
+<aside class="note"><p><strong>Note: </strong>The modern, strongly preferred fix is java.time (Java 8+): LocalDate, LocalDateTime, and DateTimeFormatter are immutable and inherently thread-safe, so a DateTimeFormatter can be shared freely across threads.</p></aside>
+<h4 class="q">Q2. How do you format a date in Java (e.g. in ddMMyyyy format)?</h4>
+<p><em>Problem statement: Print today&#x27;s date as ddMMyyyy using the modern API, and using the legacy API for older code.</em></p>
+<pre><button class="copy">Copy</button><code>// Modern (preferred): java.time
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+ 
+LocalDate today = LocalDate.now();
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern(&quot;ddMMyyyy&quot;);
+String formattedDate = today.format(formatter); // e.g. &quot;28092026&quot;
+ 
+// Legacy (only when maintaining older code): SimpleDateFormat
+import java.text.SimpleDateFormat;
+import java.util.Date;
+ 
+SimpleDateFormat legacyFormatter = new SimpleDateFormat(&quot;ddMMyyyy&quot;);
+String legacyFormattedDate = legacyFormatter.format(new Date());</code></pre>
+<h2 id="s3">Section 2: SQL Joins, Views &amp; Database Design</h2>
+<h4 class="q">Q1. What are INNER, LEFT, RIGHT, and CROSS joins?</h4>
+<ul>
+<li>INNER JOIN — returns only rows with a match in both tables.</li>
+<li>LEFT (OUTER) JOIN — returns every row from the left table plus matching right-table rows; where no match exists, right-table columns are NULL.</li>
+<li>RIGHT (OUTER) JOIN — the mirror image: every right-table row is preserved, with NULLs for unmatched left-table columns. Any RIGHT JOIN can be rewritten as a LEFT JOIN by swapping the table order, so many teams standardize on LEFT JOIN only.</li>
+<li>CROSS JOIN — the Cartesian product: every row of the first table paired with every row of the second, with no ON condition (M × N rows).</li>
+</ul>
+<pre><button class="copy">Copy</button><code>-- LEFT JOIN: every employee appears, even those with no department (department_name is NULL)
+SELECT employee.employee_name, department.department_name
+FROM employee
+LEFT JOIN department ON employee.department_id = department.department_id;
+ 
+-- These two queries produce IDENTICAL results:
+SELECT * FROM employee LEFT JOIN department ON employee.department_id = department.department_id;
+SELECT * FROM department RIGHT JOIN employee ON employee.department_id = department.department_id;
+ 
+-- CROSS JOIN: 4 sizes x 3 colors = 12 product-variant combinations
+SELECT size.size_name, color.color_name
+FROM size
+CROSS JOIN color;</code></pre>
+<aside class="note"><p><strong>Note: </strong>A join accidentally missing its ON condition can silently behave like a CROSS JOIN, a classic and often performance-catastrophic mistake. Always confirm every join has an appropriate ON condition unless a full Cartesian product is deliberately intended.</p></aside>
+<p><em>Figure: SQL joins — which rows are returned</em></p>
+<h4 class="q">Q2. What is the difference between a view and a materialized view?</h4>
+<p>Both save a query under a name so it can be treated like a virtual table, but they differ in how and when the data is computed.</p>
+<ul>
+<li>View (regular/logical) — stores only the query definition. Each query re-executes the underlying SELECT against live base-table data, so it is always current, but an expensive query pays its full cost every time.</li>
+<li>Materialized view — physically stores the result set like a table. Reads are fast (a scan or index lookup on precomputed data), but the data can be stale until refreshed (manually, on a schedule, or via triggers, depending on the database).</li>
+</ul>
+<pre><button class="copy">Copy</button><code>-- Regular view: always live, recomputed on every query
+CREATE VIEW active_customer_summary AS
+SELECT customer_id, COUNT(*) AS order_count, SUM(order_total) AS lifetime_value
+FROM orders WHERE order_status = &#x27;COMPLETED&#x27; GROUP BY customer_id;
+ 
+-- Materialized view (Oracle/PostgreSQL): computed once, stored, must be refreshed
+CREATE MATERIALIZED VIEW active_customer_summary_mv AS
+SELECT customer_id, COUNT(*) AS order_count, SUM(order_total) AS lifetime_value
+FROM orders WHERE order_status = &#x27;COMPLETED&#x27; GROUP BY customer_id;
+REFRESH MATERIALIZED VIEW active_customer_summary_mv; -- PostgreSQL syntax</code></pre>
+<p>Guidance: use a regular view for simple query reuse where the query is cheap and freshness matters; use a materialized view to accelerate an expensive aggregation or join that is queried often but doesn&#x27;t need the very latest data (a daily sales dashboard refreshed nightly, for example).</p>
+<p><em>Figure: View vs materialized view</em></p>
+<h4 class="q">Q3. What are normalization and denormalization?</h4>
+<p>Normalization organizes tables and columns to minimize redundancy and avoid update, insertion, and deletion anomalies, by progressively splitting data into smaller, focused tables linked by foreign keys, formalized as the normal forms (1NF, 2NF, 3NF, and beyond). Denormalization is the deliberate, calculated reversal of some normalization: reintroducing redundant or precomputed data to improve read performance, accepting the risk of update anomalies that must then be managed by application logic or triggers.</p>
+<pre><button class="copy">Copy</button><code>-- Un-normalized: department name repeated on every employee row; renaming a
+-- department means updating every employee row (an &quot;update anomaly&quot; risk)
+employee(employee_id, employee_name, department_id, department_name)
+ 
+-- Normalized: department name stored in exactly ONE place
+employee(employee_id, employee_name, department_id)
+department(department_id, department_name)</code></pre>
+<p>In one sentence: normalization optimizes for integrity and minimal redundancy (favoring write-heavy transactional systems); denormalization optimizes for read performance (reporting, analytics, read-heavy systems, or a measured join bottleneck) at the cost of redundancy and extra care to keep copies consistent.</p>
+<h4 class="q">Q4. How do you query a table to traverse a parent-child hierarchy?</h4>
+<p>Storing the hierarchy (adjacency list with a self-referencing foreign key, or the Modified Preorder Tree Traversal) is covered in Part 2, Section 5. For querying an adjacency list, a self-join retrieves one level at a time; for an unknown depth, use a recursive common table expression (supported by PostgreSQL, SQL Server, Oracle, and MySQL 8+).</p>
+<pre><button class="copy">Copy</button><code>-- One level up: each employee&#x27;s direct manager (self-join)
+SELECT e.emp_name AS employee_name, m.emp_name AS manager_name
+FROM employee e
+LEFT JOIN employee m ON e.manager_id = m.emp_id;
+ 
+-- Any depth: every direct and indirect report beneath employee 1
+WITH RECURSIVE employee_hierarchy AS (
+    -- Anchor member: start at the specific top-level employee
+    SELECT emp_id, emp_name, manager_id, 1 AS hierarchy_level
+    FROM employee
+    WHERE emp_id = 1
+    UNION ALL
+    -- Recursive member: repeatedly join to find the next level DOWN
+    SELECT e.emp_id, e.emp_name, e.manager_id, eh.hierarchy_level + 1
+    FROM employee e
+    INNER JOIN employee_hierarchy eh ON e.manager_id = eh.emp_id
+)
+SELECT * FROM employee_hierarchy ORDER BY hierarchy_level;</code></pre>
+<h4 class="q">Q5. What is NVL, and what are inline views?</h4>
+<p>NVL(expression, replacement) is Oracle-specific: it returns the replacement if the expression is NULL. The portable SQL-standard equivalent is COALESCE, which also accepts more than two arguments (returning the first non-null value).</p>
+<p>An inline view (derived table) is a subquery in the FROM clause, treated as a temporary on-the-fly table for that outer query — useful for staging a complex query or pre-aggregating data before a join, without creating a permanent named view.</p>
+<pre><button class="copy">Copy</button><code>SELECT employee_name, COALESCE(commission_amount, 0) AS commission FROM employee;
+ 
+-- The subquery in FROM is the &quot;inline view&quot;
+SELECT department_summary.department_name, department_summary.total_salary
+FROM (
+    SELECT department_id, department_name, SUM(salary) AS total_salary
+    FROM employee
+    JOIN department USING (department_id)
+    GROUP BY department_id, department_name
+) AS department_summary
+WHERE department_summary.total_salary &gt; 500000;</code></pre>
+<h2 id="s4">Section 3: Stored Procedures, Triggers, Transactions &amp; Isolation</h2>
+<h4 class="q">Q1. What is the difference between a function and a stored procedure?</h4>
+<ul>
+<li>Return value — a function must return exactly one value (or a table) and is designed to be called inside a SQL expression (SELECT calculate_tax(order_total) FROM orders); a procedure need not return anything (many databases allow OUT parameters) and is invoked as a standalone statement (CALL / EXEC).</li>
+<li>Side effects — many databases restrict functions from data-modifying operations (INSERT/UPDATE/DELETE) and transaction control, since a function should be a predictable computation safe inside a query; procedures face no such restriction and commonly orchestrate multi-step modifications under explicit transaction control.</li>
+<li>Usage — functions compose into larger statements (SELECT list, WHERE clause); procedures are top-level units of work, often a whole business operation.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>-- Function: returns a single value, usable inline in a query
+CREATE FUNCTION calculate_discounted_price(original_price DECIMAL, discount_percent DECIMAL)
+RETURNS DECIMAL AS $$
+BEGIN
+    RETURN original_price * (1 - discount_percent / 100);
+END;
+$$ LANGUAGE plpgsql;
+SELECT product_name, calculate_discounted_price(price, 10) AS sale_price FROM products;
+ 
+-- Procedure: multi-step operation with side effects, called standalone
+CREATE PROCEDURE process_monthly_billing(IN target_month DATE) AS $$
+BEGIN
+    UPDATE accounts SET balance = balance + monthly_fee WHERE billing_month = target_month;
+    INSERT INTO billing_log (billing_month, processed_at) VALUES (target_month, NOW());
+    COMMIT;
+END;
+$$ LANGUAGE plpgsql;
+CALL process_monthly_billing(&#x27;2026-09-01&#x27;);</code></pre>
+<h4 class="q">Q2. When do you use database triggers?</h4>
+<p>A trigger is procedural logic the database automatically executes in response to an INSERT, UPDATE, or DELETE on a table, either BEFORE or AFTER the event. Legitimate uses:</p>
+<ul>
+<li>Auditing — recording who changed a row and when into an audit table, a trail that can&#x27;t be bypassed even by application code that doesn&#x27;t write to it.</li>
+<li>Enforcing complex business rules beyond a CHECK or foreign key (e.g. rejecting a DELETE on an already-shipped order via a BEFORE DELETE trigger).</li>
+<li>Keeping denormalized data in sync (e.g. an order&#x27;s cached total_amount as line items change).</li>
+<li>Side effects a plain ON DELETE CASCADE can&#x27;t express (e.g. archiving a row to a history table before deleting it).</li>
+</ul>
+<pre><button class="copy">Copy</button><code>CREATE TRIGGER log_salary_changes
+AFTER UPDATE OF salary ON employee
+FOR EACH ROW
+BEGIN
+    INSERT INTO salary_change_audit (employee_id, old_salary, new_salary, changed_at)
+    VALUES (OLD.employee_id, OLD.salary, NEW.salary, NOW());
+END;</code></pre>
+<aside class="note"><p><strong>Note: </strong>Triggers are powerful but frequently overused: their invisible, automatic nature makes behavior harder to understand and debug, since a developer reading application code can&#x27;t tell a trigger will silently modify other data. Use them sparingly and document them, favoring explicit application logic where practical.</p></aside>
+<h4 class="q">Q3. What are transactions and ACID, and what are the four isolation levels?</h4>
+<p>A transaction groups operations into one indivisible unit: BEGIN starts it, COMMIT makes all changes permanent and visible together, and ROLLBACK undoes every change since BEGIN. ACID: Atomicity (all or nothing), Consistency (moves the database from one valid state to another), Isolation (concurrent transactions don&#x27;t corrupt each other&#x27;s uncommitted state), Durability (committed changes survive a crash). In JDBC, control this with Connection.setAutoCommit(false) followed by explicit commit()/rollback().</p>
+<pre><button class="copy">Copy</button><code>BEGIN;
+UPDATE accounts SET balance = balance - 100 WHERE account_id = 1; -- withdraw
+UPDATE accounts SET balance = balance + 100 WHERE account_id = 2; -- deposit
+COMMIT;   -- both updates become permanent together, atomically
+-- If any error occurred between BEGIN and COMMIT:
+ROLLBACK; -- undoes BOTH updates, as if neither had run</code></pre>
+<p>An isolation level controls the “I” in ACID: how much one transaction may see of another&#x27;s concurrent, uncommitted work. The SQL standard defines four levels, progressively stronger and typically lower in concurrency:</p>
+<ul>
+<li>READ UNCOMMITTED — permits dirty reads (seeing another transaction&#x27;s uncommitted changes, which may be rolled back). Rarely used.</li>
+<li>READ COMMITTED — the default in PostgreSQL and Oracle. Prevents dirty reads but permits non-repeatable reads (rereading the same row can return different values if another transaction commits in between).</li>
+<li>REPEATABLE READ — the default in MySQL/InnoDB. A row read twice in one transaction returns the same data, but phantom reads (a new row matching your WHERE appearing on a repeated query) can occur under the standard&#x27;s minimum; InnoDB&#x27;s next-key locking prevents most of them.</li>
+<li>SERIALIZABLE — the strongest: the outcome equals some sequential, one-at-a-time execution, preventing all anomalies at a real cost to concurrency (more locking, or conflict detection with retries).</li>
+</ul>
+<p><em>Figure: Transaction isolation levels</em></p>
+<p><strong>Tech-lead scenario: choosing a non-default isolation level</strong></p>
+<p>In a banking ledger, two concurrent transfers against the same account both read the balance under READ COMMITTED, both saw sufficient funds, and both debited, leaving a negative balance (a lost-update anomaly). Blanket-switching the database to SERIALIZABLE would have tanked throughput across unrelated tables. The right fix was scoped: apply SELECT ... FOR UPDATE (pessimistic row-level locking) only to the balance-check-and-debit operation.</p>
+<pre><button class="copy">Copy</button><code>@Transactional(isolation = Isolation.READ_COMMITTED)
+public void transfer(String fromAccountId, String toAccountId, BigDecimal amount) {
+    // SELECT ... FOR UPDATE: locks the row so a concurrent transfer must wait
+    Account fromAccount = accountRepository.findByIdForUpdate(fromAccountId);
+    if (fromAccount.getBalance().compareTo(amount) &lt; 0) {
+        throw new InsufficientFundsException(fromAccountId);
+    }
+    fromAccount.debit(amount);
+    Account toAccount = accountRepository.findByIdForUpdate(toAccountId);
+    toAccount.credit(amount);
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>The right answer is almost never “raise the global isolation level.” Identify the specific critical section needing stronger guarantees and scope the fix precisely: row-level locking, optimistic locking with a version column, or a narrowly scoped SERIALIZABLE transaction. Most applications keep the database default (commonly READ COMMITTED) for the vast majority of operations.</p></aside>
+<h2 id="s5">Section 4: JDBC</h2>
+<p>Connection pooling internals (pseudo-close via PooledConnection) were explained in Part 3, Section 5, Q17; pool sizing appears in Section 5 below.</p>
+<h4 class="q">Q1. How do you connect to a database from Java using drivers?</h4>
+<p>You need a JDBC driver: a vendor-specific JAR implementing java.sql.Driver that translates JDBC calls into the database&#x27;s network protocol. Steps:</p>
+<ul>
+<li>1. Add the driver JAR to the classpath (a Maven/Gradle dependency in modern apps).</li>
+<li>2. Since JDBC 4.0 (Java 6) the driver is auto-registered via ServiceLoader; the older Class.forName(&quot;com.mysql.cj.jdbc.Driver&quot;) call is no longer required, though still seen in legacy code.</li>
+<li>3. Call DriverManager.getConnection(url, username, password) with a database-specific JDBC URL.</li>
+<li>4. Create Statement/PreparedStatement/CallableStatement objects to run queries and updates.</li>
+<li>5. Close the Connection, Statement, and ResultSet, ideally with try-with-resources.</li>
+</ul>
+<p><em>Problem statement: Fetch an employee&#x27;s name by ID with a parameterized query, closing every resource automatically.</em></p>
+<pre><button class="copy">Copy</button><code>import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+ 
+String databaseUrl = &quot;jdbc:mysql://localhost:3306/mydatabase&quot;;
+try (Connection connection = DriverManager.getConnection(databaseUrl, &quot;appuser&quot;, &quot;apppassword&quot;);
+     PreparedStatement statement = connection.prepareStatement(
+             &quot;SELECT employee_name FROM employee WHERE employee_id = ?&quot;)) {
+    statement.setLong(1, 42L); // bind parameter: prevents SQL injection
+    try (ResultSet resultSet = statement.executeQuery()) {
+        while (resultSet.next()) {
+            System.out.println(resultSet.getString(&quot;employee_name&quot;));
+        }
+    }
+} catch (java.sql.SQLException databaseException) {
+    databaseException.printStackTrace();
+}
+// connection, statement, and resultSet are all auto-closed here, even on exceptions</code></pre>
+<aside class="note"><p><strong>Note: </strong>In real applications, raw DriverManager.getConnection() is usually replaced by a connection pool; application code still uses the same Connection/PreparedStatement/ResultSet APIs against a pooled handle.</p></aside>
+<h4 class="q">Q2. What is the difference between Statement, PreparedStatement, and CallableStatement?</h4>
+<ul>
+<li>Statement — executes static SQL strings, recompiled each execution and vulnerable to SQL injection through concatenation.</li>
+<li>PreparedStatement — a precompiled, parameterized statement (? placeholders bound via setInt/setString). The database can cache and reuse the execution plan, and binding prevents injection; the standard choice for any SQL involving user input.</li>
+<li>CallableStatement — invokes a stored procedure or function using the {call name(?, ?)} escape syntax and, unlike PreparedStatement, supports OUT and INOUT parameters.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// PreparedStatement: a parameterized query executed directly
+PreparedStatement preparedStatement = connection.prepareStatement(
+        &quot;UPDATE accounts SET balance = balance - ? WHERE account_id = ?&quot;);
+preparedStatement.setBigDecimal(1, withdrawalAmount);
+preparedStatement.setLong(2, accountId);
+preparedStatement.executeUpdate();
+ 
+// CallableStatement: invokes a stored procedure and reads an OUT parameter
+CallableStatement callableStatement = connection.prepareCall(&quot;{call calculate_account_interest(?, ?)}&quot;);
+callableStatement.setLong(1, accountId);                            // IN parameter
+callableStatement.registerOutParameter(2, java.sql.Types.DECIMAL);   // OUT parameter
+callableStatement.execute();
+BigDecimal calculatedInterest = callableStatement.getBigDecimal(2);  // read the OUT value</code></pre>
+<h4 class="q">Q3. What is the difference between executeQuery(), executeUpdate(), and execute()?</h4>
+<p>executeQuery() runs SELECT statements and returns a ResultSet. executeUpdate() runs INSERT, UPDATE, DELETE, or DDL and returns the affected row count. execute() handles either case (when the statement type is unknown until runtime) and returns a boolean indicating whether a ResultSet was produced.</p>
+<p><em>Problem statement: Validate a login with a parameterized query so a crafted username cannot inject SQL.</em></p>
+<pre><button class="copy">Copy</button><code>import java.sql.*;
+ 
+public class UserAccountRepository {
+    public boolean isValidLogin(Connection databaseConnection, String username, String password)
+            throws SQLException {
+        String sqlQuery = &quot;SELECT COUNT(*) FROM accounts WHERE username = ? AND password = ?&quot;;
+        try (PreparedStatement preparedStatement = databaseConnection.prepareStatement(sqlQuery)) {
+            preparedStatement.setString(1, username);
+            preparedStatement.setString(2, password);
+            try (ResultSet queryResult = preparedStatement.executeQuery()) {
+                return queryResult.next() &amp;&amp; queryResult.getInt(1) &gt; 0;
+            }
+        }
+    }
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>For real credentials, store a salted hash (e.g. bcrypt) and compare hashes rather than storing or comparing plaintext passwords; the query above demonstrates only the injection-safe parameter binding.</p></aside>
+<h2 id="s6">Section 5: SQL Tuning, Indexing &amp; Database Scalability</h2>
+<p><em>Figure: JDBC — from driver to result set</em></p>
+<h4 class="q">Q1. How do you approach optimizing a slow query? Explain B-Tree vs. Hash indexes.</h4>
+<p>A B-Tree index (the default for most RDBMSs) keeps keys sorted, efficiently supporting equality, range queries (&gt;, &lt;, BETWEEN), and prefix matching (LIKE &#x27;abc%&#x27;) in O(log n). A Hash index supports only exact-match equality in O(1) average time and cannot do range queries or ordering; it is rarely the right default unless the access pattern is purely equality-based.</p>
+<p><strong>Step-by-step diagnosis:</strong></p>
+<ul>
+<li>1. Capture the actual slow query via slow-query logs or APM; don&#x27;t guess.</li>
+<li>2. Examine the execution plan (EXPLAIN / EXPLAIN ANALYZE in PostgreSQL and MySQL, EXPLAIN PLAN in Oracle, the graphical plan in SQL Server): look for a full table scan where an index scan was expected, the estimated rows at each step, and the join algorithm chosen (nested loop, hash, merge).</li>
+<li>3. Add or adjust indexes on columns used in WHERE, JOIN, and ORDER BY. For multi-column filters, use a composite index with equality columns first and range columns last.</li>
+<li>4. Don&#x27;t wrap an indexed column in a function inside WHERE (WHERE UPPER(last_name) = &#x27;SMITH&#x27;, or WHERE LOWER(email) = ?), which usually defeats a plain index unless a matching functional index exists.</li>
+<li>5. Select only the needed columns rather than SELECT *, reducing disk reads and network transfer, especially for wide tables or large TEXT/BLOB columns.</li>
+<li>6. Simplify deeply nested subqueries into joins where the optimizer handles them better (modern optimizers often rewrite many of these automatically).</li>
+<li>7. Check for N+1 query patterns from the ORM layer (see Q3); often the real culprit is hundreds of round trips, not a missing index.</li>
+<li>8. Keep database statistics current: stale statistics can lead the optimizer to a badly suboptimal plan even when good indexes exist.</li>
+<li>9. Consider a materialized view for an inherently expensive aggregation where perfect freshness isn&#x27;t required, or read replicas / a cache for a hot read path.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>-- Composite index matching the filter columns (equality columns first)
+CREATE INDEX idx_orders_customer_status ON orders (customer_id, status);
+ 
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE customer_id = 12345 AND status = &#x27;PENDING&#x27;;
+ 
+-- Before: the function on order_date prevents use of a standard index
+SELECT * FROM orders WHERE YEAR(order_date) = 2026;
+-- After: an equivalent RANGE condition CAN use a standard index on order_date
+SELECT * FROM orders WHERE order_date &gt;= &#x27;2026-01-01&#x27; AND order_date &lt; &#x27;2027-01-01&#x27;;</code></pre>
+<aside class="note"><p><strong>Note: </strong>Indexes aren&#x27;t free: every index slows writes and consumes storage. A tech lead should insist on justifying new indexes with actual query plans and expected access frequency, not “index everything to be safe,” which quietly degrades write throughput over time.</p></aside>
+<p><em>Figure: B-Tree index vs Hash index</em></p>
+<p><em>Figure: Slow query diagnosis flow</em></p>
+<h4 class="q">Q2. How do you size a connection pool (HikariCP) for a high-throughput service?</h4>
+<p>Opening a connection per request is expensive (TCP handshake, authentication, session setup), so a pool keeps ready-to-use connections that requests borrow and return; HikariCP is the Spring Boot default and generally the fastest JVM pool. A very common mistake is assuming more connections means more throughput: the database has a finite number of cores that can run queries in parallel, and beyond that extra connections only add context switching and contention, reducing throughput. HikariCP&#x27;s guidance suggests roughly pool size = (core_count × 2) + effective_spindle_count, which often lands surprisingly small, and the aggregate across all application instances pointing at the same database is what matters, not each instance&#x27;s pool alone.</p>
+<pre><button class="copy">Copy</button><code>spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 3000        # fail fast rather than queue indefinitely
+      idle-timeout: 600000
+      max-lifetime: 1800000           # recycle before DB/load-balancer timeouts silently kill connections
+      leak-detection-threshold: 60000 # flags connections held too long (usually a missing try-with-resources)</code></pre>
+<p>Diagnosing pool exhaustion: if requests time out waiting for a connection, the fix is rarely “just increase the pool.” It is usually a slow query holding connections too long, or a leak (a code path that acquires a connection but doesn&#x27;t release it on an exception path). Expose pool metrics (active, idle, pending) on every service dashboard from day one.</p>
+<h4 class="q">Q3. What is the N+1 query problem in JPA/Hibernate, and how do you fix it?</h4>
+<p>Fetching N parent entities triggers 1 query for the parents plus N additional queries, one per parent, to lazily load an association, instead of a single join.</p>
+<pre><button class="copy">Copy</button><code>// Problematic: 1 query for orders + N queries, one per order, to lazily load items
+List&lt;Order&gt; orders = orderRepository.findAll();
+orders.forEach(order -&gt; order.getItems().size()); // triggers a lazy load per order</code></pre>
+<p><strong>Fixes:</strong></p>
+<ul>
+<li>JOIN FETCH in a JPQL query for a known, bounded fetch.</li>
+<li>@EntityGraph for a declarative, reusable approach.</li>
+<li>Batch fetching (@BatchSize) as a safety net, turning N lazy-load queries into ceil(N/batchSize) IN-clause queries.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Fix 1: JOIN FETCH
+@Query(&quot;SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items WHERE o.status = :status&quot;)
+List&lt;Order&gt; findByStatusWithItems(@Param(&quot;status&quot;) String status);
+ 
+// Fix 2: @EntityGraph
+@EntityGraph(attributePaths = {&quot;items&quot;, &quot;customer&quot;})
+@Query(&quot;SELECT o FROM Order o WHERE o.status = :status&quot;)
+List&lt;Order&gt; findByStatusWithGraph(@Param(&quot;status&quot;) String status);
+ 
+// Fix 3: batch fetching
+@Entity
+@BatchSize(size = 50)
+public class Order { /* ... */ }</code></pre>
+<p>Catch it before production: enable Hibernate statistics in staging (spring.jpa.properties.hibernate.generate_statistics=true) and add query-count assertions (p6spy, or Hypersistence Utils&#x27; SQLStatementCountValidator) to integration tests for hot-path endpoints, so a performance bug becomes a build failure instead of a production incident.</p>
+<p><em>Figure: N+1 query problem in JPA/Hibernate</em></p>
+<h4 class="q">Q4. How would you design database sharding for a multi-tenant SaaS banking product with 10,000+ tenants?</h4>
+<p>The shard key is the most consequential decision; for multi-tenant systems tenant_id is almost always right, since nearly every query is scoped to one tenant, keeping queries shard-local and avoiding cross-shard joins.</p>
+<ul>
+<li>Shard mapping — keep a lightweight, highly available lookup (or a Redis-cached config table) mapping tenant_id to shard_id. A directory-based approach beats purely algorithmic hashing when tenants differ wildly in size, because a hot tenant can be manually moved to its own dedicated shard.</li>
+<li>Connection routing — route at the data-access layer or through a proxy (Vitess, ProxySQL, Citus) using the tenant context already present in the request.</li>
+<li>Cross-shard needs — for platform-wide reporting or billing aggregation, don&#x27;t query shards live; replicate data asynchronously (CDC) into a separate analytics store.</li>
+<li>Compliance — data-residency rules (a tenant&#x27;s data must stay in a given country) must be built into shard assignment from day one, since retrofitting geo-based sharding means live migration with zero downtime.</li>
+<li>Schema migrations — across dozens of shards, use orchestrated, rollback-safe per-shard migrations (Flyway/Liquibase in a pipeline), never manual.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>@Component
+public class TenantRoutingDataSource extends AbstractRoutingDataSource {
+    @Override
+    protected Object determineCurrentLookupKey() {
+        // set by a request filter from the authenticated token
+        return TenantContext.getCurrentTenant();
+    }
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>Sharding decisions are extremely expensive to reverse once tenants are live. Get the shard key and rebalancing strategy right in design review before the first shard fills, and explicitly simulate the “one huge enterprise tenant” case, which is what breaks naive hash-based sharding first.</p></aside>
+<p><em>Figure: Multi-tenant database sharding</em></p>
+<h4 class="q">Q5. How do you run schema migrations with zero downtime on a table with 50M+ rows?</h4>
+<p>Core principle: schema changes and application deploys must be decoupled and individually backward/forward compatible, because rolling deployments guarantee old and new code run against the same schema at the same time. Use the expand-contract (parallel change) pattern:</p>
+<ul>
+<li>1. Expand — add the new column/table as nullable or with a default, without touching existing columns; old code is unaffected.</li>
+<li>2. Backfill — populate existing rows in small batches, never a single massive UPDATE (which locks the table and can blow up replication lag).</li>
+<li>3. Dual-write — deploy code that writes both old and new while still reading the old, so the app can be rolled back without a schema rollback.</li>
+<li>4. Cutover — once backfill is complete and consistency is validated, deploy code that reads the new column/table.</li>
+<li>5. Contract — after the cutover has been stable for a safe period, drop the old column in a separate, final migration.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>-- Batch backfill, NOT one statement over 50M rows
+UPDATE orders SET normalized_status = LOWER(status)
+WHERE id BETWEEN ? AND ?          -- chunked ranges, run repeatedly with small sleeps between batches
+  AND normalized_status IS NULL;</code></pre>
+<p>For big-table changes use online schema-change tooling (gh-ost / pt-online-schema-change for MySQL; native ADD COLUMN with a default in modern PostgreSQL is metadata-only and fast) rather than a naive blocking ALTER TABLE. Make expand-contract a documented team standard, not tribal knowledge.</p>
+<h4 class="q">Q6. How would you design a data archival/retention strategy for a table growing 1M rows/day under regulatory retention rules?</h4>
+<p>Unbounded growth of a hot transactional table degrades index performance, backup/restore time, and query latency, while regulated data often has explicit retention requirements (e.g. 7 years) and rules about what “deletion” means for audit.</p>
+<ul>
+<li>Partition by date range (native PostgreSQL/MySQL partitioning, or Oracle partitioned tables): recent-range queries scan only relevant partitions, and old partitions can be detached or archived as a metadata operation instead of a slow row-by-row delete.</li>
+<li>Tier hot/warm/cold: recent data (say 90 days) in the primary transactional database; warm data (90 days to 2 years) in a cheaper queryable store (a read replica or columnar store); cold data (2–7+ years) in object storage (S3/Azure Blob) in a compressed, query-on-demand format (Parquet plus Athena/Presto).</li>
+<li>Run archival as a scheduled batch job with checksum/row-count validation to prove no data loss, plus an audit log of the archival action itself.</li>
+<li>For regulatory immutability, prefer write-once storage (e.g. S3 Object Lock in compliance mode) over a mutable archive table.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>CREATE TABLE transactions (
+    id BIGINT, txn_date DATE, amount NUMERIC, account_id BIGINT
+) PARTITION BY RANGE (txn_date);
+ 
+CREATE TABLE transactions_2026_01 PARTITION OF transactions
+    FOR VALUES FROM (&#x27;2026-01-01&#x27;) TO (&#x27;2026-02-01&#x27;);</code></pre>
+<aside class="note"><p><strong>Note: </strong>Pull compliance and legal in early: a technically elegant pipeline that doesn&#x27;t satisfy the bank&#x27;s specific retention-proof requirements is the wrong thing built. Ask “what does the compliance team actually need to be able to prove?” before writing code.</p></aside>
+<h2 id="s7">Section 6: MongoDB</h2>
+<h4 class="q">Q1. How can you improve and fix performance issues with documents in MongoDB?</h4>
+<p>MongoDB is a document-oriented NoSQL database. Many tuning principles echo relational tuning (indexing, query analysis), with some document-specific considerations:</p>
+<ul>
+<li>Create appropriate indexes: queries filtering or sorting on unindexed fields force a full collection scan. Use explain() to inspect the execution plan; look for IXSCAN rather than COLLSCAN.</li>
+<li>Avoid overly large, deeply nested documents: there is a hard 16MB per-document limit, and large documents cost more to read, write, and transmit. Split fast-growing sub-data (an ever-growing comment list) into a separate collection.</li>
+<li>Choose the data-modeling strategy deliberately: embedding related data (denormalization) is fast for reads but complicates updates to duplicated data; referencing (storing an ID, like a foreign key) avoids duplication but needs an extra query or a $lookup aggregation stage.</li>
+<li>Structure aggregation pipelines to filter and reduce data as early as possible (a $match stage first, before expensive $group or $sort).</li>
+<li>Use the profiler (db.setProfilingLevel(1, { slowms: 100 })) to log operations slower than a threshold and focus tuning effort.</li>
+<li>For read-heavy loads, use a replica set with reads directed to secondary nodes; for data volume or write throughput beyond one server, use sharding on a chosen shard key.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Create an index to speed up a frequently filtered field
+db.orders.createIndex({ customerId: 1, orderDate: -1 });
+ 
+// Check that the query uses the index (look for IXSCAN, not COLLSCAN)
+db.orders.find({ customerId: &quot;12345&quot; }).sort({ orderDate: -1 }).explain(&quot;executionStats&quot;);
+ 
+// Well-structured pipeline: filter EARLY, before grouping and sorting
+db.orders.aggregate([
+    { $match: { orderStatus: &quot;COMPLETED&quot; } },                        // reduce the working set FIRST
+    { $group: { _id: &quot;$customerId&quot;, total: { $sum: &quot;$orderTotal&quot; } } },
+    { $sort: { total: -1 } }
+]);</code></pre>
+<h2 id="s8">Section 7: Web Services — SOAP &amp; REST</h2>
+<h4 class="q">Q1. What is the difference between SOAP and REST web services?</h4>
+<p>They embody different philosophies; understanding why they differ matters more than memorizing a checklist.</p>
+<ul>
+<li>Protocol vs. style — SOAP is a strict protocol with a rigid XML envelope (header + body). REST is an architectural style (statelessness, a uniform resource-and-verb interface) implemented over ordinary HTTP with any payload format.</li>
+<li>Payload — SOAP is always XML. REST is format-agnostic, though JSON is the de facto standard for its simplicity and smaller size.</li>
+<li>State — REST is explicitly stateless: each request carries everything the server needs and the server holds no client session state. SOAP has no such constraint.</li>
+<li>Contract — SOAP services are described by a WSDL (Web Services Description Language) document that machine-readably specifies operations and message structure, enabling automated client-code generation. REST is described less formally, usually via docs or an OpenAPI/Swagger specification.</li>
+<li>Standards — SOAP has the WS-* family (WS-Security, WS-ReliableMessaging, WS-AtomicTransaction). REST relies on what HTTP already provides (TLS, status codes, caching headers).</li>
+<li>Typical use — SOAP persists in enterprise, financial, and legacy-integration settings that value a strict contract, distributed transactions, and message-level security. REST is the default for most modern APIs, valued for simplicity and its fit with HTTP infrastructure (caches, load balancers, browsers).</li>
+</ul>
+<pre><button class="copy">Copy</button><code>&lt;!-- A SOAP request: always XML, wrapped in a formal envelope --&gt;
+&lt;soapenv:Envelope xmlns:soapenv=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+    &lt;soapenv:Header/&gt;
+    &lt;soapenv:Body&gt;
+        &lt;getEmployeeDetails&gt;
+            &lt;employeeId&gt;42&lt;/employeeId&gt;
+        &lt;/getEmployeeDetails&gt;
+    &lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;
+ 
+# A REST request: a plain HTTP GET, the resource identified directly by its URL
+GET /api/employees/42 HTTP/1.1
+Host: example.com
+Accept: application/json
+ 
+# Typical REST response: plain JSON, no envelope required
+{ &quot;employeeId&quot;: 42, &quot;employeeName&quot;: &quot;Alice&quot;, &quot;department&quot;: &quot;Engineering&quot; }</code></pre>
+<p><em>Figure: SOAP vs REST</em></p>
+<h4 class="q">Q2. What HTTP methods do RESTful services support, and what do safe and idempotent mean?</h4>
+<ul>
+<li>GET — retrieve a representation; safe (no side effects) and idempotent.</li>
+<li>POST — typically create a resource or trigger a non-idempotent action; calling it twice is expected to create two resources.</li>
+<li>PUT — replace a resource entirely with the supplied representation (or create it at that client-specified URL); idempotent.</li>
+<li>PATCH — partial update of only the fields supplied; not necessarily idempotent, though many implementations are designed to be.</li>
+<li>DELETE — remove a resource; conventionally idempotent (deleting an already-deleted resource shouldn&#x27;t be treated as a failure).</li>
+<li>HEAD — like GET but returns headers only, with no body; cheap for checking size or last-modified metadata.</li>
+<li>OPTIONS — asks which methods a resource supports; browsers use it for the CORS preflight check before a cross-origin request.</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>PUT vs. PATCH is a common follow-up: PUT requires the complete updated representation, and any omitted field is typically reset or cleared; PATCH sends only the fields that should change and leaves everything else untouched.</p></aside>
+<h4 class="q">Q3. What security mechanisms are used in SOAP web services (vs. REST)?</h4>
+<p>SOAP security is addressed by the WS-Security standard, which layers protection into the message itself (message-level security) rather than relying solely on HTTPS. This matters when a message passes through several intermediaries: HTTPS protects only one network hop, whereas message-level protections travel with the message end to end.</p>
+<ul>
+<li>WS-Security header — a dedicated SOAP header carrying credentials (username/password token or X.509 certificate) and signature/encryption details.</li>
+<li>XML Digital Signature — lets the recipient verify the sender&#x27;s identity and that the message wasn&#x27;t tampered with.</li>
+<li>XML Encryption — encrypts part or all of the content so only the intended final recipient can read it, even if intermediaries route the message.</li>
+<li>Transport security (HTTPS/TLS) — used alongside, not instead of, WS-Security.</li>
+</ul>
+<p>REST typically relies on OAuth2 / OpenID Connect for authentication and authorization, and HTTPS/TLS for transport security; it has no widely adopted formal equivalent to WS-Security&#x27;s message-level model, favoring HTTP&#x27;s existing security infrastructure. (JWT structure and XSS/CSRF are covered in Part 3, Section 6.)</p>
+<h4 class="q">Q4. Why can&#x27;t you send arbitrary data in a web service header?</h4>
+<ul>
+<li>Purpose — headers carry metadata (auth tokens, content type, caching directives, correlation/trace IDs), not business payload; mixing them blurs “how to process this message” and “what it contains.”</li>
+<li>Size limits — servers, proxies, and load balancers typically cap total header size (commonly 4KB–16KB), so large data risks silent, mysterious request failures; bodies are built for large payloads.</li>
+<li>Encoding — header values are restricted to a limited (essentially ASCII) character set, making them a poor fit for structured or binary data without awkward Base64 overhead.</li>
+<li>Caching, logging, and security — headers are far more likely to be logged, cached, or inspected by intermediaries (proxies, API gateways, monitoring), so placing sensitive business data there is a genuine security risk.</li>
+</ul>
+<p>Convention in both SOAP and REST: headers for metadata, body for business data.</p>
+<h4 class="q">Q5. Can you send JSON inside a SOAP message?</h4>
+<p>Not in a standard, conformant way: SOAP mandates that the envelope and its body are XML, and tooling, validation, and the WSDL contract are built around that. The common workaround is embedding the JSON as the text content of an XML element, which SOAP treats as opaque text; the receiving application must extract and parse it as JSON separately, outside the SOAP/XML pipeline.</p>
+<pre><button class="copy">Copy</button><code>&lt;soapenv:Envelope xmlns:soapenv=&quot;http://schemas.xmlsoap.org/soap/envelope/&quot;&gt;
+    &lt;soapenv:Body&gt;
+        &lt;submitOrderData&gt;
+            &lt;!-- To SOAP this is opaque text; the receiver must parse the JSON itself --&gt;
+            &lt;jsonPayload&gt;{&quot;orderId&quot;: 123, &quot;items&quot;: [&quot;A&quot;, &quot;B&quot;]}&lt;/jsonPayload&gt;
+        &lt;/submitOrderData&gt;
+    &lt;/soapenv:Body&gt;
+&lt;/soapenv:Envelope&gt;</code></pre>
+<p>This hybrid is uncommon and generally considered an anti-pattern: if the data is naturally JSON and doesn&#x27;t need SOAP&#x27;s formal contract or WS-Security, a plain REST/JSON API is cleaner.</p>
+<h4 class="q">Q6. How do you test web services?</h4>
+<ul>
+<li>Manual, exploratory testing — Postman (mainly REST/JSON) or SoapUI (built for SOAP, also supports REST) for interactive requests and saved collections.</li>
+<li>Automated unit tests — test controller/service logic with dependencies mocked; Spring&#x27;s MockMvc simulates an HTTP request without a running server.</li>
+<li>Automated integration tests — exercise the real endpoint end to end (routing, serialization, business logic, persistence), typically with a real or embedded test database.</li>
+<li>Contract testing — tools like Pact let a consumer define the request/response contract it expects and verify the provider satisfies it, catching breaking API changes early.</li>
+<li>Load/performance testing — JMeter or Gatling simulate many concurrent users to verify response time and error rate under realistic or peak load.</li>
+</ul>
+<p><em>Problem statement: Test a REST endpoint&#x27;s JSON response without starting a real server.</em></p>
+<pre><button class="copy">Copy</button><code>@WebMvcTest(EmployeeController.class)
+public class EmployeeControllerTest {
+ 
+    @Autowired
+    private MockMvc mockMvc;
+ 
+    @MockBean
+    private EmployeeService employeeService; // dependency mocked out
+ 
+    @Test
+    public void shouldReturnEmployeeDetailsAsJson() throws Exception {
+        when(employeeService.findById(42L)).thenReturn(new Employee(42L, &quot;Alice&quot;));
+ 
+        mockMvc.perform(get(&quot;/api/employees/42&quot;))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath(&quot;$.employeeName&quot;).value(&quot;Alice&quot;));
+    }
+}</code></pre>
+<h2 id="s9">Section 8: Servlet &amp; JSP Extras</h2>
+<p>Servlet lifecycle, single- vs. multi-threaded behavior, sessions, and forward vs. redirect basics are in Part 3, Section 1. Additional points follow.</p>
+<h4 class="q">Q1. What is the difference between ServletContext and ServletConfig?</h4>
+<ul>
+<li>ServletConfig — scoped to one specific servlet, holding parameters declared for it (&lt;init-param&gt; inside its &lt;servlet&gt; element in web.xml, or @WebServlet attributes); obtained via getServletConfig().</li>
+<li>ServletContext — scoped to the entire web application (exactly one, shared by every servlet, filter, and listener). It holds application-wide parameters (&lt;context-param&gt; in web.xml) and serves as a shared attribute store (setAttribute/getAttribute) that lives for the application&#x27;s lifetime, not any single request or session.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>&lt;!-- web.xml --&gt;
+&lt;!-- Application-wide parameter: reachable via ServletContext from ANY servlet --&gt;
+&lt;context-param&gt;
+    &lt;param-name&gt;applicationEnvironment&lt;/param-name&gt;
+    &lt;param-value&gt;production&lt;/param-value&gt;
+&lt;/context-param&gt;
+ 
+&lt;servlet&gt;
+    &lt;servlet-name&gt;ReportServlet&lt;/servlet-name&gt;
+    &lt;servlet-class&gt;com.example.ReportServlet&lt;/servlet-class&gt;
+    &lt;!-- Servlet-SPECIFIC parameter: reachable only from within ReportServlet --&gt;
+    &lt;init-param&gt;
+        &lt;param-name&gt;reportOutputFormat&lt;/param-name&gt;
+        &lt;param-value&gt;PDF&lt;/param-value&gt;
+    &lt;/init-param&gt;
+&lt;/servlet&gt;
+ 
+public class ReportServlet extends HttpServlet {
+    @Override
+    public void init() {
+        String outputFormat = getServletConfig().getInitParameter(&quot;reportOutputFormat&quot;);         // &quot;PDF&quot;
+        String environment = getServletContext().getInitParameter(&quot;applicationEnvironment&quot;);     // &quot;production&quot;
+        // ServletContext is also an application-wide, shared attribute store:
+        getServletContext().setAttribute(&quot;sharedCache&quot;, new ConcurrentHashMap&lt;&gt;());
+    }
+}</code></pre>
+<h4 class="q">Q2. What are the different JSP scopes?</h4>
+<p>JSP defines four scopes controlling how long an attribute lives and who can see it:</p>
+<ul>
+<li>page — the narrowest: accessible only within the same JSP page for that single request; does not survive a forward or redirect (backed by pageContext).</li>
+<li>request — lasts for one HTTP request and is visible across pages when the request is internally forwarded (a forward reuses the same request object); does not survive a redirect, which is a new request.</li>
+<li>session — lasts for the user&#x27;s session across many requests until it times out or is invalidated.</li>
+<li>application — the widest: visible to every page and servlet for as long as the application is deployed, shared by all users (backed by the ServletContext).</li>
+</ul>
+<pre><button class="copy">Copy</button><code>&lt;%
+    pageContext.setAttribute(&quot;localCounter&quot;, 1);                     // page scope: this page only
+    request.setAttribute(&quot;searchResults&quot;, resultsList);             // request scope: this page + forwarded pages
+    session.setAttribute(&quot;loggedInUsername&quot;, &quot;jsmith&quot;);            // session scope: this user&#x27;s session
+    application.setAttribute(&quot;totalVisitorCount&quot;, visitorCount);    // application scope: every user
+%&gt;</code></pre>
+<h4 class="q">Q3. How can data be transferred from one JSP page to another, and when should you use forward vs. redirect?</h4>
+<ul>
+<li>Request attributes plus forward() — the destination reads them with request.getAttribute(...) since the request object is reused.</li>
+<li>Session attributes — available to any later page in the session, whether reached by forward, redirect, or a plain link.</li>
+<li>URL/query parameters — work for both forward and redirect, but suit only small string data and are visible in the address bar (a concern for anything sensitive).</li>
+<li>Hidden form fields — pass data through a genuine user-initiated form submission, read as ordinary request parameters.</li>
+</ul>
+<p>Use forward() to chain server-side processing invisibly before rendering (a controller servlet handling a form and forwarding to a JSP to show the result). Use sendRedirect() to implement the Post/Redirect/Get pattern: redirect after processing a form POST so a browser refresh simply re-fetches the confirmation page with a harmless GET instead of re-submitting the form and, for example, creating a duplicate order.</p>
+<h2 id="s10">Section 9: Unix / Linux Command Line</h2>
+<h4 class="q">Q1. How do you find a file recursively in Unix?</h4>
+<p>find searches recursively by default (unlike ls, which lists only a directory&#x27;s immediate contents). To search inside file contents instead of by name, use grep -r.</p>
+<pre><button class="copy">Copy</button><code># Find a file by exact name, searching recursively from the current directory downward
+find . -name &quot;application.properties&quot;
+ 
+# Case-insensitive name search
+find . -iname &quot;readme*&quot;
+ 
+# Only regular files (excluding directories) matching a pattern
+find /var/log -type f -name &quot;*.log&quot;
+ 
+# Combine criteria, e.g. files modified in the last 7 days
+find . -name &quot;*.tmp&quot; -mtime -7
+ 
+# Search WITHIN file contents, recursively
+grep -r &quot;TODO&quot; /path/to/project</code></pre>
+<h4 class="q">Q2. How do you see CPU and memory utilization in Unix?</h4>
+<ul>
+<li>top — the classic interactive, continuously refreshing view of processes (sorted by CPU by default) with a system-wide summary.</li>
+<li>htop — a friendlier, colorized alternative with easier sorting, filtering, and a process tree (often must be installed separately).</li>
+<li>free -h — a one-shot summary of total, used, and free RAM and swap in human-readable units.</li>
+<li>vmstat — virtual-memory, CPU, and I/O statistics, useful for spotting system-level problems like heavy swapping.</li>
+<li>ps aux — a one-shot snapshot of all processes with CPU and memory use, good for scripting and piping.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>top                                # interactive, continuously refreshing view
+free -h                            # quick memory summary in human-readable units
+ps aux --sort=-%cpu | head -10     # top 10 processes by CPU usage, as a one-shot list</code></pre>
+<h4 class="q">Q3. How can you run the last command without using the up arrow?</h4>
+<ul>
+<li>!! — repeats the immediately preceding command exactly; sudo !! re-runs it prefixed with sudo, handy after a permission failure.</li>
+<li>!n — repeats a specific command by its number in the history list (shown by history).</li>
+<li>!string — repeats the most recent command that started with the string (e.g. !git).</li>
+<li>Ctrl+R — an interactive, incremental reverse search through history: type a few characters and jump to the matching past command.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>ls -la /some/directory
+!!        # re-runs &quot;ls -la /some/directory&quot; exactly
+sudo !!   # re-runs the previous command again, prefixed with sudo</code></pre>
+<h4 class="q">Q4. How does the Unix shell work at a high level?</h4>
+<p>A shell (bash, zsh, sh) is the command-line interpreter between the user and the kernel. When you press Enter it:</p>
+<ul>
+<li>1. Reads the input line.</li>
+<li>2. Parses it into tokens (command and arguments) and identifies shell syntax: pipes (|), redirection (&gt;, &gt;&gt;, &lt;), background execution (&amp;), and command substitution ($(...)).</li>
+<li>3. Performs expansions: variables (like $HOME), wildcard/glob patterns (*.txt expanded to matching filenames), and tilde (~).</li>
+<li>4. Decides whether the command is a built-in (cd, echo, export, implemented by the shell itself with no new process) or an external program.</li>
+<li>5. For an external program, searches the directories in the PATH variable, in order, for a matching executable.</li>
+<li>6. Forks a child process and, in it, execs the program, replacing the child&#x27;s memory image — the classic fork-then-exec mechanism.</li>
+<li>7. Waits for the process to finish, unless it was started in the background with a trailing &amp;.</li>
+<li>8. Makes the exit status available (via $?), used by scripts for control flow such as an if statement.</li>
+</ul>
+<h4 class="q">Q5. What does grep do, and how does grep &quot;word&quot; filename execute?</h4>
+<p>grep (“Global Regular Expression Print”) searches input (files, or data piped from another command) for lines matching a literal string or regular expression and prints the matching lines.</p>
+<ul>
+<li>grep &quot;pattern&quot; file.txt — print matching lines.</li>
+<li>-i — case-insensitive; -r — search recursively through a directory tree; -v — invert (print lines that do NOT match); -c — print only a count; -n — prefix line numbers; -E — extended regex, enabling alternation (pattern1|pattern2).</li>
+</ul>
+<p>For grep &quot;word&quot; filename: it reads the file line by line and checks whether the literal text “word” appears anywhere in each line. By default this is a substring match, so it also matches “password” and “wordsmith”. Matching lines are printed in file order and non-matching lines are skipped. If nothing matches, grep prints nothing and its exit status is 1 (0 means at least one match), which is what lets it drive shell if conditions.</p>
+<pre><button class="copy">Copy</button><code># Match &quot;word&quot; as a whole, separate word (not a substring of &quot;password&quot;):
+grep -w &quot;word&quot; filename
+ 
+# Using grep&#x27;s exit status directly in a shell script&#x27;s control flow:
+if grep -q &quot;ERROR&quot; application.log; then
+    echo &quot;Errors were found in the log file&quot;
+fi</code></pre>
+<h4 class="q">Q6. What are nohup and &amp; used for, and how do you run a process in the background?</h4>
+<p>They solve two different, complementary problems. A trailing &amp; runs the command in the background so the shell returns control immediately. nohup (“no hang up”) makes the command immune to SIGHUP, the signal sent to a session&#x27;s processes when its controlling terminal closes (for example, closing an SSH connection); without it the process is normally killed with the terminal. Used together, they launch a long-running job that neither ties up your terminal nor dies when you log out.</p>
+<pre><button class="copy">Copy</button><code>nohup ./long_running_script.sh &amp;
+# Runs in the background AND survives closing this SSH session.
+# By default nohup writes the output to nohup.out in the current directory:
+cat nohup.out
+ 
+./my_script.sh &amp;   # runs immediately in the background
+jobs               # lists background jobs in THIS shell session
+fg %1              # brings background job 1 back to the foreground
+bg %1              # resumes a STOPPED job (e.g. paused with Ctrl+Z) in the background
+ 
+# Move an already-running foreground process to the background:
+# press Ctrl+Z to pause it, then run: bg</code></pre>
+<aside class="note"><p><strong>Note: </strong>Better options for genuinely long-running work: tmux or screen (terminal multiplexers that let you detach and later re-attach to view live output), or for a real production service a process supervisor/init system such as systemd or supervisord rather than nohup.</p></aside>
+<h4 class="q">Q7. How do you see the first and last 10 lines of a file, and how do you delete files recursively?</h4>
+<pre><button class="copy">Copy</button><code>head -10 filename.txt   # first 10 lines (10 is also the default)
+tail -10 filename.txt   # last 10 lines (10 is also the default)
+tail -f application.log # follow a growing log file live, printing new lines as they are appended
+ 
+rm -r some_directory    # recursively remove a directory and everything in it
+rm -rf some_directory   # same, but FORCE: no confirmation, ignore missing files/errors
+ 
+# Delete only files matching a pattern, recursively:
+find . -name &quot;*.tmp&quot; -type f -delete</code></pre>
+<aside class="note"><p><strong>Note: </strong>rm -rf is genuinely dangerous: it deletes recursively and silently with no confirmation and no recycle bin. A typo, an unexpectedly expanded wildcard, or (worst) running it as root against / or a variable that evaluated to empty has caused countless data-loss incidents. Double- and triple-check the exact target, especially in automated scripts.</p></aside></main></div>
+<script>
+var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
+document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};
+nav.addEventListener('click',function(e){if(e.target.tagName==='A')nav.classList.remove('open')});
+document.getElementById('theme').onclick=function(){var r=document.documentElement,dk=r.getAttribute('data-theme')==='dark'||(!r.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);r.setAttribute('data-theme',dk?'light':'dark')};
+document.querySelectorAll('.copy').forEach(function(b){b.onclick=function(){var t=b.nextSibling.textContent;try{navigator.clipboard.writeText(t);b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1200)}catch(e){}}});
+// search: hide non-matching question blocks
+var blocks=[];qs.forEach(function(h){var els=[h],n=h.nextElementSibling;while(n&&!/^H[234]$/.test(n.tagName)){els.push(n);n=n.nextElementSibling}blocks.push(els)});
+document.getElementById('q').addEventListener('input',function(e){var v=e.target.value.toLowerCase().trim();blocks.forEach(function(els){var m=!v||els.map(function(x){return x.textContent}).join(' ').toLowerCase().indexOf(v)>-1;els.forEach(function(x){x.classList.toggle('hide',!m)})})});
+// scrollspy
+var links=[].slice.call(nav.querySelectorAll('a')),heads=links.map(function(a){return document.querySelector(a.getAttribute('href'))});
+addEventListener('scroll',function(){var c=0;heads.forEach(function(h,i){if(h.getBoundingClientRect().top<120)c=i});links.forEach(function(a,i){a.classList.toggle('on',i===c)})},{passive:true});
+</script></body></html>

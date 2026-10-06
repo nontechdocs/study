@@ -1,0 +1,703 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Java Interview Guide – Part 1</title>
+<style>
+:root{--bg:#fff;--fg:#1f2430;--mut:#667085;--side:#f5f6f8;--bd:#e2e5ea;--ac:#c2410c;--code:#0f172a;--codefg:#e2e8f0;--note:#fff7ed;--noteb:#fb923c;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14161b;--fg:#e6e8ec;--mut:#9aa3b2;--side:#1b1e25;--bd:#2c303a;--ac:#fb923c;--note:#2a2018;--noteb:#c2410c}}
+:root[data-theme="dark"]{--bg:#14161b;--fg:#e6e8ec;--mut:#9aa3b2;--side:#1b1e25;--bd:#2c303a;--ac:#fb923c;--note:#2a2018;--noteb:#c2410c}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 60px);scroll-behavior:smooth}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:10px;align-items:center;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--bd)}
+header h1{font-size:16px;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button,input{font:inherit;color:var(--fg)}
+#menu,#theme{background:var(--side);border:1px solid var(--bd);border-radius:8px;padding:4px 10px;cursor:pointer}
+#menu{display:none}
+.wrap{display:flex;max-width:1280px;margin:0 auto}
+nav{width:300px;flex:none;position:sticky;top:calc(env(safe-area-inset-top,0px) + 53px);height:calc(100vh - 53px);overflow:auto;padding:14px;background:var(--side);border-right:1px solid var(--bd)}
+nav input{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);margin-bottom:10px}
+nav a{display:block;color:var(--fg);text-decoration:none;padding:5px 8px;border-radius:6px;font-size:14px;line-height:1.35}
+nav a.l2{font-weight:600;margin-top:8px}nav a.l3{padding-left:20px;color:var(--mut)}nav a:hover,nav a.on{background:var(--bd);color:var(--ac)}
+main{flex:1;min-width:0;padding:24px clamp(16px,4vw,48px) 80px;max-width:900px}
+h2{font-size:26px;margin:48px 0 8px;padding-bottom:8px;border-bottom:2px solid var(--ac)}h3{font-size:21px;margin:36px 0 4px}
+h4.q{font-size:17px;margin:32px 0 6px;padding:10px 14px;background:var(--side);border-left:4px solid var(--ac);border-radius:0 8px 8px 0}
+ul{padding-left:22px}li{margin:6px 0}
+pre{position:relative;background:var(--code);color:var(--codefg);padding:14px 16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.5;margin:14px 0}
+pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre;background:none;color:inherit;padding:0}
+p code,li code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;background:var(--side);border:1px solid var(--bd);padding:1px 5px;border-radius:5px}
+.copy{position:absolute;top:6px;right:6px;background:#334155;color:#e2e8f0;border:0;border-radius:6px;padding:2px 8px;font-size:12px;cursor:pointer;opacity:.8}
+.note{background:var(--note);border-left:4px solid var(--noteb);padding:4px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid var(--bd);padding:6px 10px;text-align:left}
+.hide{display:none!important}
+@media(max-width:860px){#menu{display:block}nav{position:fixed;z-index:6;left:0;top:calc(env(safe-area-inset-top,0px) + 53px);bottom:0;height:auto;transform:translateX(-100%);transition:transform .2s;width:min(320px,86vw)}nav.open{transform:none}}
+</style></head><body>
+<header><button id="menu">☰</button><h1>Java Interview Guide — Part 1: Core Java Fundamentals, Design Patterns &amp; Concurrency</h1><button id="theme">◐</button></header>
+<div class="wrap"><nav id="nav"><input id="q" placeholder="Search questions…" type="search"><a class="l2" href="#s1">Executive Summary</a><a class="l2" href="#s3">Section 1: Core Java Fundamentals</a><a class="l2" href="#s4">Section 2: Design Patterns</a><a class="l3" href="#s5">Quick Reference</a><a class="l3" href="#s6">Design Pattern Interview Questions</a><a class="l2" href="#s7">Section 3: Multithreading &amp; Concurrency</a><a class="l3" href="#s8">The Executor Framework</a><a class="l3" href="#s9">Thread Safety &amp; Synchronization Fundamentals</a><a class="l3" href="#s10">Multithreading Interview Questions</a></nav>
+<main id="main"><p><strong>Java Interview Preparation Guide</strong></p>
+<p><em>Unified &amp; Deduplicated Master Edition</em></p>
+<p><em>Synthesized from three source compilations (Unified Master, Unified Threemerge, and Master Guide) into a single, thematically ordered reference. Duplicate questions have been merged, redundant introductions removed, and all unique technical content preserved.</em></p>
+<h2 id="s1">Executive Summary</h2>
+<p>This document merges three overlapping Java interview-preparation sources into one continuous guide:</p>
+<ul>
+<li>Source A — &quot;Unified Master Edition&quot;: an already-deduplicated Parts 1–10 guide covering Core Java through domain/Agile knowledge.</li>
+<li>Source B — &quot;Unified Threemerge&quot;: an earlier edition covering the same Parts 1–6 ground as Source A, with near-identical wording. Its content is a subset of Source A and has been folded in without duplication.</li>
+<li>Source C — &quot;Master Guide&quot;: an independent, more advanced compilation (Parts I–XIV) covering JVM internals, tech-lead-level deep dives, Spring Boot/microservices, Kafka, AWS/Kubernetes, System Design, DSA coding problems, and leadership/behavioral questions. It overlaps with Source A on foundational topics (Singleton, Collections, threading basics) but adds substantial unique material.</li>
+</ul>
+<p><strong>Merge approach:</strong></p>
+<ul>
+<li>Where two sources answered the same question, the more complete answer was kept and the other&#x27;s unique details (if any) were merged in; the duplicate question was removed rather than repeated.</li>
+<li>Introductory boilerplate (&quot;this document covers...&quot;, cover pages, restated tables of contents) was removed from every source except this single top-level summary.</li>
+<li>All code and pseudocode examples use descriptive, 8+ character variable/method names and include explanatory comments, with a problem statement preceding each example, per your stated preferences.</li>
+<li>Topics are grouped thematically: Core Java → Concurrency → Collections/Data Structures → Web/Enterprise → Databases → Spring/Microservices → Cloud/DevOps → System Design/DSA → Leadership. Numbering restarts per section (Q1, Q2, …) to mirror how these are usually studied in topic blocks.</li>
+</ul>
+<p><strong>Coverage in this delivery (Part 1 of a multi-part merge):</strong></p>
+<ul>
+<li>Section 1 — Core Java Fundamentals (immutability, Strings, HashMap internals, timing, generics/copy semantics)</li>
+<li>Section 2 — Design Patterns (creational, structural, behavioral, DI/IoC)</li>
+<li>Section 3 — Multithreading &amp; Concurrency (synchronization, deadlocks, volatile, Executors, locks, JMM, ThreadLocal, CompletableFuture)</li>
+</ul>
+<aside class="note"><p><strong>Note: </strong>This is Part 1 of a staged merge. Remaining topics (Collections/Big-O, Web/Servlets/Hibernate, Security/GC/Spring internals, Databases/SQL, Spring Boot/Microservices, Kafka, AWS/Kubernetes, Angular/React, System Design, DSA coding problems, and Leadership/Behavioral) will be delivered in follow-up documents to keep each file manageable and fully deduplicated.</p></aside>
+<h2 id="s3">Section 1: Core Java Fundamentals</h2>
+<h4 class="q">Q1. What is an immutable object? Can you write an immutable class?</h4>
+<p>An immutable object is an object whose state cannot be changed after construction. Any “modification” instead produces a brand-new object, leaving the original untouched. String is the most common example of an immutable class in Java.</p>
+<p>Immutable classes are typically declared final, to stop a subclass from overriding methods in a way that could break immutability. You can achieve the same safety without the final keyword by making fields private and never modifying them after the constructor runs.</p>
+<p><strong>Rules for writing your own immutable class:</strong></p>
+<ul>
+<li>Declare the class as final so it cannot be subclassed.</li>
+<li>Make all fields private and final.</li>
+<li>Do not provide setter methods.</li>
+<li>Initialize all fields via the constructor only.</li>
+<li>If a field is a mutable object (e.g. a Date or a List), return a defensive copy from any getter, rather than the original reference.</li>
+</ul>
+<p><em>Problem statement: Implement an immutable 2D point class that supports a “translate” operation without mutating the original instance.</em></p>
+<pre><button class="copy">Copy</button><code>public final class ImmutablePoint {
+ 
+    private final int xCoordinate;
+    private final int yCoordinate;
+ 
+    public ImmutablePoint(int xCoordinate, int yCoordinate) {
+        this.xCoordinate = xCoordinate;
+        this.yCoordinate = yCoordinate;
+    }
+ 
+    public int getXCoordinate() {
+        return xCoordinate;
+    }
+ 
+    public int getYCoordinate() {
+        return yCoordinate;
+    }
+ 
+    // &quot;Modifying&quot; an immutable object returns a NEW instance instead
+    // of mutating the fields of the current one.
+    public ImmutablePoint translate(int deltaX, int deltaY) {
+        return new ImmutablePoint(xCoordinate + deltaX, yCoordinate + deltaY);
+    }
+}</code></pre>
+<h4 class="q">Q2. Do all properties of an immutable object need to be final?</h4>
+<p>Not strictly. You can achieve the same effect by making a field non-final but private, and simply never modifying it anywhere except inside the constructor. Marking fields final is still best practice because it lets the compiler enforce immutability for you and communicates intent clearly to other developers.</p>
+<h4 class="q">Q3. What is the difference between creating a String with new() and with a literal?</h4>
+<p>When you create a String using the new() operator, a new object is always allocated on the heap, and it is NOT automatically added to the String pool. When you create a String using a literal, Java automatically places it into the String pool (also called the intern pool), which lives on the heap.</p>
+<p><em>Problem statement: Demonstrate the reference-identity difference between a heap-allocated String and a pooled String literal, and show how to manually intern a String.</em></p>
+<pre><button class="copy">Copy</button><code>String heapString = new String(&quot;Test&quot;);   // new object in heap, NOT in string pool
+String pooledString = &quot;Test&quot;;              // placed into the string pool automatically
+ 
+// To manually add the heap-allocated string to the pool:
+String internedString = heapString.intern();
+ 
+System.out.println(pooledString == internedString); // true  - both refer to the pooled instance
+System.out.println(pooledString == heapString);      // false - different objects</code></pre>
+<p>The String pool exists so that identical string literals can share a single object in memory, saving space, since Strings are immutable and safe to share.</p>
+<h4 class="q">Q4. How does substring() work internally in String?</h4>
+<p>substring() creates a new String object representing a portion of the original string, defined by the given start index (inclusive) and end index (exclusive). In older JDKs (before Java 7 update 6), substring() shared the original character array internally and only changed the offset and length fields — fast, but capable of causing a memory leak if a huge original string was kept alive by a tiny substring. Since that update, substring() copies the relevant characters into a new array, so the original string can be garbage collected independently.</p>
+<pre><button class="copy">Copy</button><code>String original = &quot;Hello, World!&quot;;
+String extracted = original.substring(7, 12); // &quot;World&quot;
+// In modern Java, &quot;extracted&quot; holds its own independent char array,
+// so &quot;original&quot; is free to be garbage collected even if &quot;extracted&quot; is still referenced.</code></pre>
+<h4 class="q">Q5. Which two methods do you need to implement for a key object in a HashMap?</h4>
+<p>Any object used as a key in a HashMap must correctly implement equals() and hashCode(). These two methods work together: hashCode() determines which bucket the key is stored in, and equals() confirms an exact match once the correct bucket is found.</p>
+<h4 class="q">Q6. Where do equals() and hashCode() come into play during a get() operation?</h4>
+<p>When you call map.get(key), HashMap first calls hashCode() on the key to compute a bucket index. It then walks the entries in that bucket (there may be more than one, due to hash collisions) and calls equals() on each candidate key until it finds a match. If hashCode() is implemented poorly (e.g. it always returns the same value), every key lands in the same bucket, degrading lookups toward O(n).</p>
+<p><em>Figure: HashMap internal bucket/collision structure</em></p>
+<h4 class="q">Q7. When do you override hashCode() and equals(), and what happens if you don&#x27;t?</h4>
+<p>Override both whenever you need to compare objects for logical equality (rather than reference equality), or whenever instances of the class will be used as keys in a hash-based collection (HashMap, HashSet, Hashtable) or stored as elements in one. The two methods must remain consistent: if two objects are equal according to equals(), they must return the same hashCode().</p>
+<p>If a class does not override hashCode(), it inherits Object&#x27;s default implementation, based on the object&#x27;s memory address. Two logically-equal objects (even if equals() is overridden to compare their content) will then likely produce different hash codes, land in different buckets, and you will not be able to retrieve a value using a different-but-equal key instance than the one originally used to insert it.</p>
+<p>Performance implication: a poorly-implemented hashCode() — or the default identity-based one when content-based equality was intended — causes more hash collisions. When many keys land in the same bucket, HashMap degrades from average O(1) lookup toward O(n) (or O(log n) in Java 8+, where large buckets convert to a red-black tree), because it must linearly scan (or tree-search) the colliding entries and call equals() on each one.</p>
+<h4 class="q">Q8. What&#x27;s wrong with using HashMap in a multi-threaded environment? When can get() enter an infinite loop?</h4>
+<p>HashMap is not thread-safe. If multiple threads modify a HashMap concurrently — particularly during a resize operation (rehashing when the load-factor threshold is exceeded) — the internal linked structure of a bucket can become corrupted. In older Java versions (pre-Java 8), this could literally create a circular reference within a bucket&#x27;s linked list, causing get() to loop forever while traversing that bucket. In Java 8+, the specific infinite-loop bug from bucket resizing was mitigated, but HashMap can still corrupt state under concurrent modification. Regardless of JDK version, HashMap should never be shared across threads without external synchronization — use ConcurrentHashMap instead.</p>
+<h4 class="q">Q9. Can you write code for iterating over a HashMap in both the old (pre-Java-5) style and the modern style?</h4>
+<p><em>Problem statement: Iterate over the key/value pairs of a HashMap using three progressively modern styles.</em></p>
+<pre><button class="copy">Copy</button><code>Map&lt;String, Integer&gt; inventoryCounts = new HashMap&lt;&gt;();
+inventoryCounts.put(&quot;apples&quot;, 50);
+inventoryCounts.put(&quot;bananas&quot;, 30);
+ 
+// Old style (pre-Java 5): explicit Iterator over entrySet()
+Iterator&lt;Map.Entry&lt;String, Integer&gt;&gt; entryIterator = inventoryCounts.entrySet().iterator();
+while (entryIterator.hasNext()) {
+    Map.Entry&lt;String, Integer&gt; currentEntry = entryIterator.next();
+    System.out.println(currentEntry.getKey() + &quot; = &quot; + currentEntry.getValue());
+}
+ 
+// Modern style (Java 5+): enhanced for-loop over entrySet()
+for (Map.Entry&lt;String, Integer&gt; currentEntry : inventoryCounts.entrySet()) {
+    System.out.println(currentEntry.getKey() + &quot; = &quot; + currentEntry.getValue());
+}
+ 
+// Java 8+: forEach with a lambda
+inventoryCounts.forEach((itemName, itemCount) -&gt;
+    System.out.println(itemName + &quot; = &quot; + itemCount));</code></pre>
+<h4 class="q">Q10. How does HashMap&#x27;s performance compare to TreeMap? Which would you choose and when?</h4>
+<p>HashMap offers average O(1) get/put, backed by an array of buckets with hashCode()-based dispatch, but gives no ordering guarantee over its keys. TreeMap offers guaranteed O(log n) get/put, backed by a red-black tree, and keeps keys in sorted order (natural ordering or a supplied Comparator), and additionally supports range queries such as firstKey(), lastKey(), headMap(), and tailMap(). Choose HashMap when you only need fast lookups and don&#x27;t care about order; choose TreeMap when you need the keys sorted or need range-based navigation, and can accept the O(log n) cost.</p>
+<p><em>Figure: HashMap vs TreeMap comparison</em></p>
+<h4 class="q">Q11. How do you safely remove elements from an ArrayList while iterating over it?</h4>
+<p>Removing directly from a List with a for-each loop (or by index while iterating forward) throws ConcurrentModificationException or skips elements, because the List&#x27;s internal modCount changes underneath the iterator. The safe approaches are to use the Iterator&#x27;s own remove() method, or Java 8+&#x27;s removeIf().</p>
+<pre><button class="copy">Copy</button><code>List&lt;String&gt; shoppingCartItems = new ArrayList&lt;&gt;(List.of(&quot;milk&quot;, &quot;eggs&quot;, &quot;expired-cheese&quot;, &quot;bread&quot;));
+ 
+// Safe: Iterator.remove() keeps the iterator&#x27;s internal state consistent
+Iterator&lt;String&gt; cartIterator = shoppingCartItems.iterator();
+while (cartIterator.hasNext()) {
+    String currentItem = cartIterator.next();
+    if (currentItem.startsWith(&quot;expired&quot;)) {
+        cartIterator.remove();
+    }
+}
+ 
+// Safe and concise: Java 8+ removeIf()
+shoppingCartItems.removeIf(itemName -&gt; itemName.startsWith(&quot;expired&quot;));</code></pre>
+<h4 class="q">Q12. Can we create an immutable object that contains a mutable field, and still keep it truly immutable?</h4>
+<p>Yes, by never exposing the mutable field&#x27;s original reference. The constructor must store a defensive copy of the mutable input, and every getter must return a defensive copy (or an unmodifiable view) rather than the field itself. Without this, a caller who obtains the reference could mutate the “immutable” object&#x27;s internal state from outside.</p>
+<pre><button class="copy">Copy</button><code>public final class ImmutableSchedule {
+    private final List&lt;String&gt; appointmentTimes;
+ 
+    public ImmutableSchedule(List&lt;String&gt; appointmentTimes) {
+        // defensive copy on the way in: caller&#x27;s list can&#x27;t mutate our state later
+        this.appointmentTimes = new ArrayList&lt;&gt;(appointmentTimes);
+    }
+ 
+    public List&lt;String&gt; getAppointmentTimes() {
+        // defensive copy on the way out: caller can&#x27;t mutate our internal list
+        return Collections.unmodifiableList(new ArrayList&lt;&gt;(appointmentTimes));
+    }
+}</code></pre>
+<h4 class="q">Q13. Can you cast an int into a byte? What happens if the int is larger than a byte can hold?</h4>
+<p>Yes, via an explicit narrowing primitive cast: (byte) someInt. If the int&#x27;s value doesn&#x27;t fit in a byte&#x27;s 8-bit signed range (-128 to 127), the higher-order bits are simply discarded (silent truncation, not an exception), which can produce a surprising, wrapped-around value. This is why narrowing casts of user-controlled values should be range-checked first.</p>
+<pre><button class="copy">Copy</button><code>int largeValue = 130;
+byte truncatedValue = (byte) largeValue; // 130 doesn&#x27;t fit in a byte -&gt; wraps to -126
+System.out.println(truncatedValue);       // prints -126, not 130</code></pre>
+<h4 class="q">Q14. Can you make an array volatile in Java? What does that actually guarantee?</h4>
+<p>Yes, you can declare an array reference volatile, e.g. private volatile int[] counters. However, volatile only guarantees visibility and ordering for the reference itself — that is, for reassigning the array variable to point at a different array. It does NOT make the individual elements inside the array volatile: writes to counters[3] by one thread are not guaranteed to be visible to another thread without additional synchronization (e.g. using AtomicIntegerArray instead).</p>
+<h4 class="q">Q15. Can you write your own container class and use it in a for-each loop?</h4>
+<p>Yes — implement the Iterable interface (a single method, iterator(), returning an Iterator). Any class that implements Iterable can be used directly as the source of a for-each loop.</p>
+<p><em>Problem statement: Write a simple bounded container that supports for-each iteration over its stored elements.</em></p>
+<pre><button class="copy">Copy</button><code>public class BoundedContainer&lt;ElementType&gt; implements Iterable&lt;ElementType&gt; {
+    private final ElementType[] storedElements;
+    private int elementCount = 0;
+ 
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public BoundedContainer(int capacity) {
+        storedElements = (ElementType[]) new Object[capacity];
+    }
+ 
+    public void add(ElementType element) {
+        storedElements[elementCount++] = element;
+    }
+ 
+    @Override
+    public Iterator&lt;ElementType&gt; iterator() {
+        return new Iterator&lt;ElementType&gt;() {
+            private int currentIndex = 0;
+ 
+            @Override
+            public boolean hasNext() {
+                return currentIndex &lt; elementCount;
+            }
+ 
+            @Override
+            public ElementType next() {
+                return storedElements[currentIndex++];
+            }
+        };
+    }
+}
+ 
+// Usage:
+BoundedContainer&lt;String&gt; fruitBasket = new BoundedContainer&lt;&gt;(3);
+fruitBasket.add(&quot;apple&quot;);
+fruitBasket.add(&quot;pear&quot;);
+for (String fruitName : fruitBasket) {
+    System.out.println(fruitName);
+}</code></pre>
+<h4 class="q">Q16. How can you determine what type a generic parameter is at runtime? (Type erasure)</h4>
+<p>You generally can&#x27;t, directly — Java generics use type erasure: generic type information exists only at compile time for type-checking, and is erased to raw types (or their bounds) in the compiled bytecode. At runtime, a List&lt;String&gt; and a List&lt;Integer&gt; are both just List. Workarounds include passing a Class&lt;T&gt; token explicitly to the constructor/method, or using reflection on a field/method signature that still retains generic signature metadata (via getGenericSuperclass() on a concrete subclass).</p>
+<h4 class="q">Q17. Is recursion possible in Java? How does it relate to the call stack, and what happens if it goes too deep?</h4>
+<p>Yes, Java fully supports recursion — a method calling itself, directly or indirectly. Each call pushes a new stack frame (holding local variables and the return address) onto the current thread&#x27;s call stack. If recursion doesn&#x27;t terminate, or terminates only after more nested calls than the stack can hold, the JVM throws a StackOverflowError. Java does not perform tail-call optimization, so even a well-structured recursive algorithm can overflow the stack for large inputs; an iterative rewrite (or an explicit stack data structure) is the usual fix for deep recursion in production code.</p>
+<p><em>Problem statement: Compute a factorial recursively, illustrating call-stack growth.</em></p>
+<pre><button class="copy">Copy</button><code>public static long computeFactorial(int inputNumber) {
+    // base case: stops the recursion from growing the call stack forever
+    if (inputNumber &lt;= 1) {
+        return 1;
+    }
+    // recursive case: each call adds one frame to the call stack
+    return inputNumber * computeFactorial(inputNumber - 1);
+}</code></pre>
+<h4 class="q">Q18. Give the simplest way to find out how long a method takes to execute, without a profiling tool.</h4>
+<p>Read the system time immediately before invoking the method and immediately after it returns, then subtract. This gives a coarse wall-clock measurement without needing external tooling.</p>
+<pre><button class="copy">Copy</button><code>long startTimeMillis = System.currentTimeMillis();
+methodUnderTest();
+long endTimeMillis = System.currentTimeMillis();
+System.out.println(&quot;Time taken for execution: &quot; + (endTimeMillis - startTimeMillis) + &quot; ms&quot;);
+ 
+// For higher precision (nanoseconds, monotonic, unaffected by clock adjustments), prefer:
+long startTimeNanos = System.nanoTime();
+methodUnderTest();
+long endTimeNanos = System.nanoTime();
+System.out.println(&quot;Time taken (ns): &quot; + (endTimeNanos - startTimeNanos));</code></pre>
+<aside class="note"><p><strong>Note: </strong>If the method executes too quickly, the measured time may round down to zero milliseconds. Test on a method that does a meaningful amount of work, or run it in a loop many times and divide the total by the iteration count.</p></aside>
+<h4 class="q">Q19. What are some Java Collections best practices worth mentioning in an interview?</h4>
+<ul>
+<li>Program to interfaces (List, Map, Set), not concrete implementations (ArrayList, HashMap), so the implementation can change without touching calling code.</li>
+<li>Prefer the enhanced for-loop or Streams over manual index-based loops where possible — clearer and less error-prone.</li>
+<li>Use Collections.unmodifiableXxx() or the List.of()/Map.of() factory methods to expose read-only views and prevent accidental external mutation.</li>
+<li>Choose the right implementation for the access pattern: ArrayList for random access, LinkedList for frequent insert/remove at the ends, TreeMap/TreeSet for sorted data, ConcurrentHashMap for concurrent access.</li>
+<li>Specify an initial capacity for ArrayList/HashMap when the approximate size is known in advance, to avoid repeated internal resizing.</li>
+</ul>
+<h4 class="q">Q20. How do you handle error conditions while writing or calling a stored procedure from Java?</h4>
+<p>A stored procedure should be designed to return an explicit error code or status output parameter when a business-logic operation fails, so the calling Java code can inspect that value and react accordingly. If the stored procedure call itself fails at the JDBC level (e.g. connection lost, syntax error, constraint violation), Java throws a SQLException, which must be caught, logged, and handled — typically by rolling back the current transaction.</p>
+<pre><button class="copy">Copy</button><code>try (CallableStatement storedProcedureCall =
+         databaseConnection.prepareCall(&quot;{call updateAccountBalance(?, ?)}&quot;)) {
+    storedProcedureCall.setInt(1, accountId);
+    storedProcedureCall.setBigDecimal(2, newBalance);
+    storedProcedureCall.execute();
+} catch (SQLException databaseException) {
+    // handle connection/database-level failures explicitly
+    logger.error(&quot;Stored procedure call failed&quot;, databaseException);
+    transactionManager.rollback();
+}</code></pre>
+<h4 class="q">Q21. What is the difference between shallow copy and deep copy?</h4>
+<p>A shallow copy duplicates an object&#x27;s top-level fields, but any reference-type fields still point to the same underlying objects as the original — mutating a shared nested object through the copy affects the original too. A deep copy recursively duplicates every referenced object as well, producing a fully independent object graph. Object.clone() performs a shallow copy by default; a true deep copy requires manual recursive cloning, a copy constructor that itself deep-copies nested fields, or serialization-based cloning.</p>
+<h2 id="s4">Section 2: Design Patterns</h2>
+<h3 id="s5">Quick Reference</h3>
+<p><strong>Observer Pattern</strong></p>
+<p>Defines a one-to-many dependency between objects: when one object (the Subject) changes state, all its dependents (Observers) are notified and updated automatically. Advantages: loose coupling between subject and observer; supports broadcast-style communication to many listeners at once. Disadvantages: debugging can be difficult because control flow is indirect; can introduce memory leaks if observers are not properly unregistered.</p>
+<p><strong>Factory Pattern</strong></p>
+<p>A creational pattern that centralizes object construction behind static factory methods rather than direct constructor calls. Benefits include the ability to cache and reuse immutable objects, and the ability to introduce new subclasses or implementations without changing calling code.</p>
+<p><strong>Singleton Pattern — trade-offs</strong></p>
+<ul>
+<li>Advantages: hides construction dependencies from client code; provides one well-known access point that&#x27;s easy to maintain; supports both lazy and eager initialization; can be extended into a factory-style pattern.</li>
+<li>Disadvantages: makes unit testing harder by introducing global shared state; reduces potential for parallelism, since concurrent access to the shared instance typically requires locking.</li>
+</ul>
+<h3 id="s6">Design Pattern Interview Questions</h3>
+<p><em>Figure: Shallow copy vs deep copy</em></p>
+<h4 class="q">Q1. What are design patterns, and have you used one in your own code?</h4>
+<p>Design patterns are proven, reusable solutions to commonly occurring design problems, distilled from the collective experience of many software engineers over time. They are not finished code you copy-paste — they are templates describing how to structure a solution to a class of problem. Using them is a form of design reuse: instead of solving a well-known problem from scratch, you apply a battle-tested approach and gain a shared vocabulary with other engineers (saying “we used a Factory here” instantly communicates intent).</p>
+<h4 class="q">Q2. Can you name a few design patterns used in the standard JDK library?</h4>
+<ul>
+<li>Decorator — used throughout java.io, e.g. BufferedReader wraps a Reader to add buffering.</li>
+<li>Singleton — used by java.lang.Runtime and java.util.Calendar&#x27;s getInstance() methods.</li>
+<li>Factory Method — used by wrapper classes such as Boolean.valueOf(...), Integer.valueOf(...).</li>
+<li>Observer — used in java.util.Observer/Observable, and extensively in Swing&#x27;s event-listener model.</li>
+<li>Iterator — the entire java.util.Iterator/Iterable contract underlying the enhanced for-loop.</li>
+<li>Proxy — used by java.lang.reflect.Proxy for dynamic proxies.</li>
+</ul>
+<h4 class="q">Q3. What is the Factory pattern, and how does it differ from Abstract Factory?</h4>
+<p>The Factory pattern provides a single method that creates objects of one product family, hiding the concrete class-selection logic from the caller. This gives increased encapsulation: when client code asks a factory for a product rather than calling new directly, you can later swap the concrete implementation without touching client code — useful when the exact type to create depends on runtime configuration, when construction is complex enough to warrant centralizing, or when you want to control/limit/cache instances (object pooling).</p>
+<p>Abstract Factory adds one further level of abstraction: it defines an interface for creating families of related objects, and you can have multiple concrete factory implementations, each responsible for producing a whole related set of products. For example, an AbstractFactory interface might be extended by AutomobileFactory, UserFactory, and RoleFactory, each creating objects within its own family — whereas a plain Factory would just have one createProduct() method returning one kind of object.</p>
+<h4 class="q">Q4. What is the Singleton pattern? Compare three ways to write it thread-safely.</h4>
+<p>Singleton restricts a class to a single instance shared across the whole application, typically used for expensive-to-create, globally-needed objects like configuration managers or connection pools. java.lang.Runtime is the textbook example.</p>
+<p><strong>Approach 1 — enum singleton (simplest, recommended since Java 5):</strong></p>
+<p>Enum instances are inherently singleton and thread-safe by the JVM&#x27;s class-loading guarantees, so no explicit synchronization is needed.</p>
+<pre><button class="copy">Copy</button><code>public enum ConfigurationManager {
+    INSTANCE;
+ 
+    private final Properties settings = new Properties();
+ 
+    public String getSetting(String key) {
+        return settings.getProperty(key);
+    }
+}
+// Usage: ConfigurationManager.INSTANCE.getSetting(&quot;timeout&quot;);</code></pre>
+<p><strong>Approach 2 — double-checked locking:</strong></p>
+<p>Synchronize only the critical section (the code that actually creates the instance), not the entire getInstance() method. Synchronizing the whole method forces every caller to acquire the lock even long after the instance already exists, needlessly serializing access and hurting performance under high concurrency.</p>
+<p><em>Problem statement: Implement a thread-safe Singleton database connection manager using double-checked locking, ensuring the instance is only constructed once even under concurrent first access.</em></p>
+<pre><button class="copy">Copy</button><code>public class DatabaseConnectionManager {
+    // volatile prevents instruction reordering that could expose a
+    // partially-constructed instance to another thread
+    private static volatile DatabaseConnectionManager singletonInstance;
+ 
+    private DatabaseConnectionManager() {
+        // expensive initialization, e.g. opening a connection pool
+    }
+ 
+    public static DatabaseConnectionManager getInstance() {
+        if (singletonInstance == null) {               // first check (no locking, fast path)
+            synchronized (DatabaseConnectionManager.class) { // critical section only
+                if (singletonInstance == null) {        // second check (inside the lock)
+                    singletonInstance = new DatabaseConnectionManager();
+                }
+            }
+        }
+        return singletonInstance;
+    }
+}</code></pre>
+<p>The volatile keyword is essential here: without it, another thread could see a reference to a DatabaseConnectionManager object whose constructor hasn&#x27;t finished running yet, due to instruction reordering by the JIT compiler or CPU.</p>
+<p><strong>Approach 3 — Bill Pugh static holder idiom:</strong></p>
+<p>Relies on the JVM&#x27;s own class-loading guarantees: the nested SingletonHolder class is not loaded until getInstance() is first called, so initialization is both lazy and inherently thread-safe, with no synchronization overhead at all on the read path.</p>
+<pre><button class="copy">Copy</button><code>public class ConfigurationManagerHolder {
+    private ConfigurationManagerHolder() { } // private constructor
+ 
+    private static class SingletonHolder {
+        private static final ConfigurationManagerHolder INSTANCE = new ConfigurationManagerHolder();
+    }
+ 
+    public static ConfigurationManagerHolder getInstance() {
+        return SingletonHolder.INSTANCE; // loaded lazily, thread-safe
+    }
+}</code></pre>
+<p><em>Figure: Singleton pattern — three approaches</em></p>
+<h4 class="q">Q5. What is the Observer design pattern in Java?</h4>
+<p>Observer establishes a one-to-many relationship where a Subject notifies all registered Observer objects whenever its state changes, so each observer can react accordingly. A common real-world example is a weather station: the WeatherData object is the Subject, and multiple display panels (current conditions, forecast, statistics) are Observers that update automatically whenever new data arrives. Java&#x27;s built-in java.util.Observer/Observable are deprecated; modern code typically defines a custom Listener interface with a List&lt;Listener&gt; and a notifyAll()-style method invoked on state change, or uses PropertyChangeListener.</p>
+<h4 class="q">Q6. Give an example of the Decorator design pattern. Does it operate at the object level or class level?</h4>
+<p>Decorator operates at the object level — it wraps an existing object instance at runtime to add new behavior or responsibilities, without altering the original class&#x27;s source code or affecting other instances of the same class. Java&#x27;s I/O library is the classic example: BufferedReader wraps any Reader to add buffered reading, and BufferedWriter wraps any Writer to add buffered writing, both improving performance transparently.</p>
+<pre><button class="copy">Copy</button><code>// The underlying reader has no buffering
+FileReader rawFileReader = new FileReader(&quot;data.txt&quot;);
+// Decorator wraps it, adding buffering capability without changing FileReader itself
+BufferedReader bufferedFileReader = new BufferedReader(rawFileReader);
+ 
+String currentLine;
+while ((currentLine = bufferedFileReader.readLine()) != null) {
+    System.out.println(currentLine);
+}</code></pre>
+<p><em>Figure: Decorator pattern</em></p>
+<h4 class="q">Q7. What is the MVC design pattern? Give one example.</h4>
+<p>Model-View-Controller separates an application into three interconnected components, each with a distinct responsibility: the Model holds the application&#x27;s data and business logic, independent of how it&#x27;s displayed; the View renders the Model&#x27;s data to the user (a UI screen, an HTML page, a report); the Controller receives user input, invokes the appropriate operations on the Model, and selects the View to render the result.</p>
+<p>This separation means the same Model can be displayed through multiple different Views without duplicating business logic, and the UI can be redesigned without touching the underlying data logic. Spring MVC is the classic Java example: a @Controller class handles an incoming HTTP request, calls a service/Model layer to fetch or update data, and forwards the result to a JSP or Thymeleaf View template for rendering.</p>
+<p><em>Figure: MVC pattern flow</em></p>
+<h4 class="q">Q8. What is the Front Controller design pattern? Give an example.</h4>
+<p>Front Controller centralizes all incoming requests to an application through a single handler, rather than letting each request go directly to its own separate handler/page. The front controller handles common cross-cutting logic — authentication, logging, routing to the correct downstream handler — before delegating actual business processing to a specific handler, avoiding duplicated security/logging code across dozens of individual servlets. The classic Java EE example is Spring MVC&#x27;s DispatcherServlet, or the older single front-controller Servlet pattern in JSP/Servlet applications.</p>
+<p><em>Figure: Front Controller pattern</em></p>
+<h4 class="q">Q9. What is the Chain of Responsibility design pattern?</h4>
+<p>Chain of Responsibility passes a request along a chain of potential handler objects, where each handler decides either to process the request or pass it to the next handler in the chain. The sender doesn&#x27;t need to know which handler will ultimately process it, decoupling senders from receivers. A real-world Java example is the Servlet Filter chain: an incoming HTTP request passes through a series of Filter objects (authentication, logging, compression), each of which can process the request and either forward it via chain.doFilter() or short-circuit the chain entirely. Logging frameworks like java.util.logging use a chain of Handler/Logger objects in the same spirit.</p>
+<p><em>Figure: Chain of Responsibility pattern</em></p>
+<h4 class="q">Q10. What is the Adapter design pattern? Give examples in Java.</h4>
+<p>Adapter converts the interface of one class into another interface a client expects, letting classes with incompatible interfaces work together without modifying their source. It acts as a bridge/wrapper between an existing class and the interface the caller actually needs.</p>
+<ul>
+<li>java.util.Arrays.asList(...) adapts an array to the List interface.</li>
+<li>java.io.InputStreamReader adapts a byte-oriented InputStream to a character-oriented Reader.</li>
+<li>java.io.OutputStreamWriter adapts a byte-oriented OutputStream to a character-oriented Writer.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// InputStreamReader is a textbook Adapter: it adapts the byte-based InputStream
+// interface to the character-based Reader interface that BufferedReader needs.
+InputStream rawByteStream = new FileInputStream(&quot;data.txt&quot;);
+Reader adaptedCharacterReader = new InputStreamReader(rawByteStream, StandardCharsets.UTF_8);
+BufferedReader lineReader = new BufferedReader(adaptedCharacterReader);</code></pre>
+<p><em>Figure: Adapter pattern</em></p>
+<h4 class="q">Q11. What is the Builder pattern, and when should it be used?</h4>
+<p>Builder constructs complex objects step by step via chained method calls, avoiding telescoping constructors with many parameters. It&#x27;s useful when an object has many optional fields: it improves readability (e.g. Person.builder().name(&quot;Alice&quot;).age(30).build()) and allows the resulting object to be immutable, since it&#x27;s only constructed once all properties are set.</p>
+<h4 class="q">Q12. What is Dependency Injection, and how does Spring implement Inversion of Control?</h4>
+<p>Dependency Injection (DI) supplies an object&#x27;s dependencies externally — via constructor, setter, or field — rather than having the object create them itself, promoting loose coupling and easier testing (dependencies can be mocked). Inversion of Control (IoC) is the broader principle DI implements: control over object creation and wiring is inverted from application code to a container/framework. Spring implements IoC via the ApplicationContext, which reads bean definitions (via annotations like @Autowired/@Inject or Java/XML configuration) and manages object lifecycles, injecting dependencies automatically and reducing tight coupling and boilerplate `new` calls throughout the codebase.</p>
+<h2 id="s7">Section 3: Multithreading &amp; Concurrency</h2>
+<h3 id="s8">The Executor Framework</h3>
+<p>Before java.util.concurrent existed, developers managed threads manually by creating new Thread objects directly — which does not scale well and makes it hard to control the number of concurrently running threads. The Executor framework decouples task submission from the mechanics of how each task actually runs: how threads are created, scheduled, reused, and shut down.</p>
+<p><strong>Executor</strong></p>
+<p>The simplest interface in the framework, in java.util.concurrent. It exposes a single method, execute(Runnable), whose entire purpose is to separate “submitting a task” from “deciding how and when that task actually runs.”</p>
+<p><strong>Executors</strong></p>
+<p>A factory class, also in java.util.concurrent, providing static factory methods that return various kinds of ExecutorService, ScheduledExecutorService, and ThreadFactory instances, so you rarely need to implement Executor yourself.</p>
+<p><strong>newFixedThreadPool()</strong></p>
+<p>One of the most commonly used factory methods on Executors. It creates a thread pool with a fixed number of reusable threads. If a thread dies unexpectedly before its task completes, a fresh thread from the pool automatically takes over remaining work, keeping the pool size constant.</p>
+<p><em>Problem statement: Submit a recurring background task to a fixed-size thread pool without managing threads manually.</em></p>
+<pre><button class="copy">Copy</button><code>// RecurringCounterTask.java - prints an incrementing counter every second
+package com.interviewguide.concurrency;
+ 
+public class RecurringCounterTask implements Runnable {
+    @Override
+    public void run() {
+        try {
+            for (int counterValue = 0; ; counterValue++) {
+                System.out.println(counterValue);
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException interruptedException) {
+            // restore the interrupt status so calling code can observe it
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+ 
+// TaskRunner.java - submits the task to a fixed-size thread pool
+package com.interviewguide.concurrency;
+ 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+ 
+public class TaskRunner {
+    public static void main(String[] args) {
+        Executor threadPoolExecutor = Executors.newFixedThreadPool(10);
+        threadPoolExecutor.execute(new RecurringCounterTask());
+    }
+}</code></pre>
+<p><strong>Executor vs. ExecutorService</strong></p>
+<p>Both are interfaces in java.util.concurrent. ExecutorService extends Executor and adds significant lifecycle and coordination control:</p>
+<ul>
+<li>shutdown() / shutdownNow() — gracefully or forcibly stop accepting and running tasks.</li>
+<li>awaitTermination(timeout, unit) — block until all tasks complete or the timeout elapses.</li>
+<li>isShutdown() / isTerminated() — query the pool&#x27;s lifecycle state.</li>
+<li>invokeAny(...) / invokeAll(...) — submit a batch of Callable tasks and either get the first successful result, or wait for all of them.</li>
+<li>submit(...) — unlike execute(), returns a Future so you can retrieve a result or exception.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>ExecutorService threadPoolExecutor = Executors.newFixedThreadPool(10);
+threadPoolExecutor.execute(new RecurringCounterTask());
+// attempts to interrupt all running tasks and stop the pool immediately
+threadPoolExecutor.shutdownNow();</code></pre>
+<aside class="note"><p><strong>Note: </strong>shutdownNow() attempts to stop all actively executing tasks by interrupting them. In the example above, the task is blocked inside Thread.sleep(), so the interrupt causes sleep() to throw an InterruptedException immediately, unwinding that task&#x27;s run() method.</p></aside>
+<h3 id="s9">Thread Safety &amp; Synchronization Fundamentals</h3>
+<p><strong>Thread.sleep()</strong></p>
+<ul>
+<li>The static method Thread.sleep(long millis) forces the currently executing thread to pause for at least the given duration.</li>
+<li>sleep() declares a checked exception, InterruptedException, so every call must either be wrapped in a try/catch or the enclosing method must declare it in its own throws clause.</li>
+<li>Calling sleep() gives other threads a chance to run, but there is no guarantee about scheduling order afterward — sleep() is a simple (if crude) way to encourage fair thread switching, not a substitute for proper synchronization.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>try {
+    Thread.sleep(200); // pause this thread for ~200 milliseconds
+} catch (InterruptedException interruptedException) {
+    Thread.currentThread().interrupt(); // restore the interrupt flag
+}</code></pre>
+<p><strong>Why shared mutable state is dangerous</strong></p>
+<ul>
+<li>Serious problems arise when two or more threads have access to the same mutable object on the heap.</li>
+<li>If one thread is interrupted mid-way through modifying an object&#x27;s internal state, another thread could observe or modify that object while it&#x27;s only half-updated, corrupting data.</li>
+<li>To make a class thread-safe, you must decide which sequences of statements need to be treated as a single atomic operation — one that runs to completion, uninterrupted by any other thread, before another thread may touch the same object&#x27;s state.</li>
+</ul>
+<p><strong>The synchronized keyword</strong></p>
+<ul>
+<li>Use synchronized on a method declaration to prevent more than one thread from entering that method (on the same object instance) at the same time.</li>
+<li>Every object has a single intrinsic lock (monitor). It only becomes relevant once an object has one or more synchronized methods.</li>
+<li>A thread attempting to enter a synchronized method must first acquire that object&#x27;s lock; if another thread holds it, the requesting thread blocks until it becomes available.</li>
+<li>Even with multiple synchronized methods on a class, there is still only one lock per object instance — once any thread enters one synchronized method on an object, no other thread can enter any other synchronized method on that same object concurrently. This is precisely what protects an object&#x27;s internal data.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>public class BankAccount {
+    private double currentBalance;
+ 
+    // synchronized: only one thread at a time can execute THIS method
+    // on a given BankAccount instance
+    public synchronized void withdrawFunds(double withdrawalAmount) {
+        if (currentBalance &gt;= withdrawalAmount) {
+            currentBalance -= withdrawalAmount;
+        }
+    }
+ 
+    // this method is ALSO locked out while withdrawFunds() is running,
+    // because they share the same object-level lock
+    public synchronized void depositFunds(double depositAmount) {
+        currentBalance += depositAmount;
+    }
+}</code></pre>
+<aside class="note"><p><strong>Note: </strong>Synchronizing an entire method is the simplest approach, but locks out ALL synchronized methods on that instance for the duration, even unrelated ones. For finer-grained control, synchronize only the specific block of code that touches shared state, as shown in Q1 below.</p></aside>
+<h3 id="s10">Multithreading Interview Questions</h3>
+<h4 class="q">Q1. What is the difference between a synchronized method and a synchronized block?</h4>
+<p>A synchronized method locks the entire method body using the intrinsic lock of the object it&#x27;s called on (or the Class object, if the method is static). A synchronized block lets you lock on any explicit object you choose, and only for the specific statements inside the block. Synchronized blocks are generally preferred because they minimize the amount of code executed while holding the lock, reducing contention and improving throughput.</p>
+<p><em>Problem statement: Reduce inventory stock safely under concurrent access, locking only the critical section rather than the entire method.</em></p>
+<pre><button class="copy">Copy</button><code>public class InventoryManager {
+    private int stockCount;
+    private final Object stockLock = new Object();
+ 
+    public void reduceStock(int quantity) {
+        // only this critical section is locked, not the whole method
+        synchronized (stockLock) {
+            if (stockCount &gt;= quantity) {
+                stockCount -= quantity;
+            }
+        }
+        // any non-shared-state work can happen here, outside the lock
+        logStockChange(quantity);
+    }
+ 
+    private void logStockChange(int quantity) {
+        System.out.println(&quot;Reduced stock by &quot; + quantity);
+    }
+}</code></pre>
+<h4 class="q">Q2. What is a deadlock, and how can you avoid it?</h4>
+<p>A deadlock occurs when two or more threads are each waiting for a lock held by one of the others, so none of them can ever proceed. The classic example is Thread A holding Lock 1 and waiting for Lock 2, while Thread B holds Lock 2 and waits for Lock 1.</p>
+<p><strong>Common ways to avoid deadlock:</strong></p>
+<ul>
+<li>Always acquire multiple locks in a consistent, global order across all threads.</li>
+<li>Use tryLock(timeout) from java.util.concurrent.locks.Lock instead of blocking indefinitely, so a thread can back off and retry if it cannot acquire a lock within a reasonable time.</li>
+<li>Minimize the scope and duration for which locks are held.</li>
+<li>Avoid calling out to unknown/overridable code while holding a lock.</li>
+</ul>
+<pre><button class="copy">Copy</button><code>// Deadlock-prone: threads may acquire lockA and lockB in different orders
+synchronized (lockA) {
+    synchronized (lockB) {
+        // ...
+    }
+}
+ 
+// Fix: always acquire locks in the same global order (e.g. by a consistent ID)
+Object firstLock  = accountA.getId() &lt; accountB.getId() ? lockA : lockB;
+Object secondLock = accountA.getId() &lt; accountB.getId() ? lockB : lockA;
+synchronized (firstLock) {
+    synchronized (secondLock) {
+        // safe: every thread acquires locks in the same order
+    }
+}</code></pre>
+<p><em>Figure: Deadlock — circular wait</em></p>
+<h4 class="q">Q3. What is the difference between wait()/notify() and sleep()?</h4>
+<p>wait() and notify() are methods on Object, used for inter-thread communication. A thread calling wait() must already hold the object&#x27;s monitor lock; calling wait() releases that lock and suspends the thread until another thread calls notify() or notifyAll() on the same object. sleep(), by contrast, is a static Thread method that pauses the current thread for a fixed duration WITHOUT releasing any locks it holds.</p>
+<p><em>Problem statement: Implement a simple producer/consumer handoff using wait()/notify() on a shared buffer.</em></p>
+<pre><button class="copy">Copy</button><code>class SharedBuffer {
+    private final Object bufferLock = new Object();
+    private boolean dataReady = false;
+ 
+    void produce() {
+        synchronized (bufferLock) {
+            dataReady = true;
+            bufferLock.notify(); // wake up a thread waiting on bufferLock
+        }
+    }
+ 
+    void consume() throws InterruptedException {
+        synchronized (bufferLock) {
+            while (!dataReady) {
+                bufferLock.wait(); // releases the lock and waits to be notified
+            }
+            // process the data
+        }
+    }
+}</code></pre>
+<p><em>Figure: wait()/notify() vs sleep()</em></p>
+<h4 class="q">Q4. What is a race condition? Give an example.</h4>
+<p>A race condition occurs when the correctness of a program depends on the relative timing of multiple threads, and the outcome varies depending on which thread happens to execute first. A classic example is two threads incrementing a shared counter without synchronization: the increment (read, add one, write back) is not atomic, so both threads can read the same initial value before either writes back, and one increment is silently lost.</p>
+<pre><button class="copy">Copy</button><code>public class UnsafeCounter {
+    private int count = 0;
+ 
+    public void increment() {
+        count++; // NOT atomic: read, add 1, write back - three separate steps
+    }
+}
+// If two threads call increment() concurrently on the same instance without
+// synchronization, one of the increments can be lost due to interleaving.
+ 
+public class SafeCounter {
+    private int count = 0;
+ 
+    public synchronized void increment() {
+        count++; // now atomic with respect to other synchronized calls
+    }
+}</code></pre>
+<h4 class="q">Q5. What is the volatile keyword, and when should you use it?</h4>
+<p>volatile guarantees two things for a field: (1) every read of the field always sees the most recently written value from any thread (visibility), and (2) the compiler and CPU will not reorder instructions around accesses to that field. It does NOT make compound operations like count++ atomic. volatile is appropriate for simple flags or references that are written by one thread and read by others, such as a shutdown flag or the double-checked-locking Singleton pattern shown in Section 2.</p>
+<pre><button class="copy">Copy</button><code>public class Worker implements Runnable {
+    private volatile boolean shutdownRequested = false;
+ 
+    public void requestShutdown() {
+        shutdownRequested = true; // visible to the worker thread immediately
+    }
+ 
+    @Override
+    public void run() {
+        while (!shutdownRequested) {
+            // do work
+        }
+    }
+}</code></pre>
+<h4 class="q">Q6. What is the difference between Callable and Runnable?</h4>
+<p>Runnable&#x27;s run() method returns void and cannot throw checked exceptions. Callable&lt;V&gt;&#x27;s call() method returns a value of type V and can throw a checked exception. Callable is designed to be used with ExecutorService.submit(), which returns a Future&lt;V&gt; that lets you retrieve the result once the task finishes.</p>
+<pre><button class="copy">Copy</button><code>Callable&lt;Integer&gt; computeSquareTask = () -&gt; {
+    int inputValue = 7;
+    return inputValue * inputValue;
+};
+ 
+ExecutorService threadPoolExecutor = Executors.newSingleThreadExecutor();
+Future&lt;Integer&gt; resultFuture = threadPoolExecutor.submit(computeSquareTask);
+Integer squareResult = resultFuture.get(); // blocks until the result is ready
+System.out.println(squareResult); // 49
+threadPoolExecutor.shutdown();</code></pre>
+<h4 class="q">Q7. What is the difference between Executor.submit() and Executor.execute()?</h4>
+<p>Both methods schedule a task for execution on a thread pool, but they differ in what they return and how they handle exceptions:</p>
+<ul>
+<li>execute(Runnable) returns void. There is no way to retrieve a result or check whether the task completed successfully from the call itself.</li>
+<li>submit(Callable) or submit(Runnable) returns a Future object, which lets you call get() to retrieve the task&#x27;s result (blocking until it&#x27;s done) or check isDone()/cancel().</li>
+</ul>
+<p>The exception handling behavior also differs. If a task submitted with execute() throws an uncaught exception, it propagates to the thread&#x27;s UncaughtExceptionHandler (by default this just prints a stack trace to System.err). If a task is submitted with submit(), any exception — checked or unchecked — is instead captured and stored inside the returned Future, surfacing only when you call future.get(), which re-throws it wrapped in an ExecutionException.</p>
+<pre><button class="copy">Copy</button><code>ExecutorService threadPool = Executors.newFixedThreadPool(4);
+ 
+// execute(): fire-and-forget, exceptions go to the uncaught exception handler
+threadPool.execute(() -&gt; { throw new RuntimeException(&quot;boom&quot;); });
+ 
+// submit(): exception is captured inside the Future
+Future&lt;Integer&gt; resultFuture = threadPool.submit(() -&gt; {
+    throw new RuntimeException(&quot;boom&quot;);
+});
+try {
+    resultFuture.get(); // throws ExecutionException wrapping the RuntimeException
+} catch (ExecutionException wrappedException) {
+    System.out.println(&quot;Caught: &quot; + wrappedException.getCause());
+} catch (InterruptedException interruptedException) {
+    Thread.currentThread().interrupt();
+}</code></pre>
+<h4 class="q">Q8. What is ConcurrentHashMap, and how is it different from a synchronized HashMap?</h4>
+<p>ConcurrentHashMap (java.util.concurrent) is a thread-safe map designed for high concurrency. Unlike Collections.synchronizedMap(new HashMap&lt;&gt;()), which uses a single lock for the entire map (so only one thread can access it at a time, even for unrelated keys), ConcurrentHashMap internally partitions its data so that multiple threads can read and write concurrently with minimal contention. In modern JDKs (Java 8+) it uses a combination of CAS (compare-and-swap) operations and fine-grained locking per bin, rather than locking the whole map.</p>
+<ul>
+<li>Read operations in ConcurrentHashMap generally do not block at all.</li>
+<li>Iterators returned by ConcurrentHashMap are weakly consistent: they never throw ConcurrentModificationException, and reflect the state of the map at some point at or after the iterator was created.</li>
+<li>A synchronized HashMap&#x27;s iterator, by contrast, throws ConcurrentModificationException if the map is structurally modified by another thread during iteration.</li>
+</ul>
+<p>Internally (JDK 8+), ConcurrentHashMap achieves this without locking the entire map by using CAS-based updates for the common case of inserting into an empty bin, and synchronizing only on the head node of a single bin when a collision chain must be modified — so writes to different bins never contend with each other.</p>
+<p><em>Figure: ConcurrentHashMap bucket-level locking</em></p>
+<h4 class="q">Q9. What is a ThreadLocal, and what memory-leak risk does it carry in application-server or thread-pool environments?</h4>
+<p>ThreadLocal&lt;T&gt; gives each thread its own independent copy of a variable, invisible to other threads — useful for per-thread context such as a database connection, a user session, or a SimpleDateFormat instance (which is not itself thread-safe). Internally, each Thread object holds a small map from ThreadLocal instance to value.</p>
+<p>The memory-leak risk arises specifically in thread-pool environments (application servers, ExecutorService pools) because pooled threads are long-lived and reused across many logical tasks. If a task sets a ThreadLocal value and never calls remove() when it finishes, the value (and anything it references) stays attached to that pooled thread indefinitely, since the thread itself is never garbage collected. Over time and many task executions, this silently accumulates memory — and can also leak stale/incorrect context into a later, unrelated task reusing the same pooled thread. The fix is to always clear a ThreadLocal in a finally block once the task using it completes.</p>
+<pre><button class="copy">Copy</button><code>private static final ThreadLocal&lt;SimpleDateFormat&gt; DATE_FORMAT_HOLDER =
+        ThreadLocal.withInitial(() -&gt; new SimpleDateFormat(&quot;yyyy-MM-dd&quot;));
+ 
+public String formatOrderDate(Date orderDate) {
+    try {
+        return DATE_FORMAT_HOLDER.get().format(orderDate);
+    } finally {
+        // essential in a pooled-thread environment: prevents the value (and
+        // anything it references) from leaking into the next task on this thread
+        DATE_FORMAT_HOLDER.remove();
+    }
+}</code></pre>
+<h4 class="q">Q10. Explain the Java Memory Model (JMM) and why volatile alone doesn&#x27;t make compound operations atomic.</h4>
+<p>The Java Memory Model defines the rules for how and when writes made by one thread become visible to reads made by another thread, in the presence of compiler, JIT, and CPU-level instruction reordering. Without any synchronization, the JMM makes almost no visibility guarantees — one thread can run indefinitely without ever observing another thread&#x27;s write to a shared, non-volatile field, because the reader may be working from a cached or reordered view of memory. Synchronization primitives (synchronized, volatile, java.util.concurrent locks) establish happens-before relationships, which are the JMM&#x27;s formal guarantee that everything a thread did before a given point is visible to another thread after it reaches a corresponding point.</p>
+<p>volatile establishes happens-before ordering for reads and writes of that single field, and prevents reordering around it — but a compound operation like count++ is actually three separate steps (read, increment, write). Even with count declared volatile, another thread can interleave between those steps: Thread A reads the current value, Thread B reads the same (still-old) value, both increment locally, and both write back, so one increment is lost. volatile guarantees visibility of the field, not atomicity of multi-step operations performed on it. True atomicity requires either synchronized around the whole read-modify-write sequence, or an atomic class from java.util.concurrent.atomic (e.g. AtomicInteger.incrementAndGet(), which performs the operation as a single CAS-based primitive).</p>
+<p><em>Figure: Java Memory Model and volatile</em></p>
+<h4 class="q">Q11. ConcurrentHashMap internals — how does it achieve thread safety without locking the entire map?</h4>
+<p>Modern ConcurrentHashMap (Java 8+) is backed by the same array-of-buckets structure as HashMap, but synchronizes at the level of an individual bin (bucket) rather than the whole table. Inserting into an empty bin is done with a CAS (compare-and-swap) operation — lock-free. Only when a collision occurs and the bin&#x27;s linked list (or, for large bins, its red-black tree) must be modified does the implementation synchronize, and it synchronizes only on that bin&#x27;s head node, not on the map as a whole. This means writes targeting different bins never contend with each other, and reads are largely lock-free throughout, giving far higher throughput under concurrent access than a single coarse-grained lock over the entire map would.</p>
+<h4 class="q">Q12. What are the differences between synchronized, ReentrantLock, and StampedLock? When would you choose each?</h4>
+<p>synchronized is the built-in intrinsic lock: simplest to use, automatically released even if an exception is thrown, but strictly block-structured (you can&#x27;t try to acquire it with a timeout, can&#x27;t interrupt a thread waiting on it, and can&#x27;t inspect whether it&#x27;s currently held).</p>
+<p>ReentrantLock (java.util.concurrent.locks) offers everything synchronized does, plus: tryLock() and tryLock(timeout, unit) for non-blocking or bounded-wait acquisition; lockInterruptibly() so a waiting thread can respond to interruption; fairness ordering (an optional constructor flag that grants the lock in the order threads requested it, avoiding thread starvation); and multiple associated Condition objects (in place of a single implicit wait/notify per object). The cost is that you must remember to unlock() in a finally block yourself — the JVM won&#x27;t do it for you on an exception.</p>
+<p>StampedLock (Java 8+) adds a third mode beyond simple read/write locking: an optimistic read, which doesn&#x27;t block writers at all and instead returns a stamp that the reader later validates; if a write occurred in the meantime, the optimistic read is discarded and retried under a full read lock. This makes StampedLock significantly faster than ReentrantReadWriteLock for read-heavy workloads, at the cost of a more error-prone API (it is not reentrant, and forgetting to validate the optimistic stamp silently reads torn/stale data).</p>
+<p>Choice: use synchronized for simple cases where its block-structured nature is sufficient; use ReentrantLock when you need tryLock/timeouts, interruptible waiting, fairness, or multiple wait conditions; use StampedLock for very read-heavy hot paths where the optimistic-read fast path&#x27;s extra throughput is worth the added complexity and care.</p>
+<h4 class="q">Q13. Explain the difference between CompletableFuture and traditional Future. Design an async pipeline with error handling.</h4>
+<p>A plain Future only supports blocking retrieval of a result via get() (optionally with a timeout) — there is no way to register a callback, chain further work onto its completion, or combine it with another Future without a separate thread blocking on get(). CompletableFuture (java.util.concurrent, Java 8+) implements both Future and CompletionStage, adding a rich set of composition methods: thenApply() to transform a result, thenCompose() to chain a dependent async operation, thenCombine() to join two independent futures, and exceptionally()/handle() for error handling — all without blocking a thread to wait for the prior stage.</p>
+<p><em>Problem statement: Build an asynchronous pipeline that fetches a customer&#x27;s profile, then fetches their order history, combines both into a summary, and falls back to a default summary if any stage fails.</em></p>
+<pre><button class="copy">Copy</button><code>public CompletableFuture&lt;CustomerSummary&gt; buildCustomerSummaryAsync(String customerId) {
+    CompletableFuture&lt;CustomerProfile&gt; profileFuture =
+            CompletableFuture.supplyAsync(() -&gt; customerService.fetchProfile(customerId));
+ 
+    CompletableFuture&lt;List&lt;Order&gt;&gt; orderHistoryFuture =
+            CompletableFuture.supplyAsync(() -&gt; orderService.fetchOrderHistory(customerId));
+ 
+    return profileFuture
+            // thenCombine: merge two independent async results once both complete
+            .thenCombine(orderHistoryFuture, CustomerSummary::new)
+            // exceptionally: fall back to a safe default if any prior stage failed
+            .exceptionally(pipelineError -&gt; {
+                logger.warn(&quot;Falling back to default summary for &quot; + customerId, pipelineError);
+                return CustomerSummary.defaultFor(customerId);
+            });
+}</code></pre>
+<p><em>Figure: CompletableFuture async pipeline</em></p></main></div>
+<script>
+var nav=document.getElementById('nav'),qs=document.querySelectorAll('h4.q');
+document.getElementById('menu').onclick=function(){nav.classList.toggle('open')};
+nav.addEventListener('click',function(e){if(e.target.tagName==='A')nav.classList.remove('open')});
+document.getElementById('theme').onclick=function(){var r=document.documentElement,dk=r.getAttribute('data-theme')==='dark'||(!r.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme: dark)').matches);r.setAttribute('data-theme',dk?'light':'dark')};
+document.querySelectorAll('.copy').forEach(function(b){b.onclick=function(){var t=b.nextSibling.textContent;try{navigator.clipboard.writeText(t);b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1200)}catch(e){}}});
+// search: hide non-matching question blocks
+var blocks=[];qs.forEach(function(h){var els=[h],n=h.nextElementSibling;while(n&&!/^H[234]$/.test(n.tagName)){els.push(n);n=n.nextElementSibling}blocks.push(els)});
+document.getElementById('q').addEventListener('input',function(e){var v=e.target.value.toLowerCase().trim();blocks.forEach(function(els){var m=!v||els.map(function(x){return x.textContent}).join(' ').toLowerCase().indexOf(v)>-1;els.forEach(function(x){x.classList.toggle('hide',!m)})})});
+// scrollspy
+var links=[].slice.call(nav.querySelectorAll('a')),heads=links.map(function(a){return document.querySelector(a.getAttribute('href'))});
+addEventListener('scroll',function(){var c=0;heads.forEach(function(h,i){if(h.getBoundingClientRect().top<120)c=i});links.forEach(function(a,i){a.classList.toggle('on',i===c)})},{passive:true});
+</script></body></html>
