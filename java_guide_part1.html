@@ -284,6 +284,69 @@ public static ProductPricePair findCheapestProduct(Map&lt;String, Double&gt; pri
         return new Temperature(celsiusValue);
     }
 }</code></pre><h4 class="q">Q28. What are the advantages of OOP? Give a real-time example.</h4><ul><li><strong>Encapsulation</strong> — hide data behind methods (a BankAccount exposes deposit()/withdraw(), not the balance field).</li><li><strong>Abstraction</strong> — expose what an object does, not how (PaymentProcessor interface).</li><li><strong>Inheritance / reuse</strong> — share common behaviour (SavingsAccount and CurrentAccount extend Account).</li><li><strong>Polymorphism</strong> — one call, different behaviour at runtime (processor.pay() works for card, UPI, or wallet).</li><li><strong>Maintainability &amp; testability</strong> — small, replaceable, mockable units.</li></ul><h4 class="q">Q29. What is the difference between BigDecimal and BigInteger? Why not use double for money?</h4><ul><li><strong>BigInteger</strong> — arbitrary-precision <em>whole</em> numbers (beyond long's range, e.g., factorials, cryptography).</li><li><strong>BigDecimal</strong> — arbitrary-precision <em>decimal</em> numbers with a scale; exact for money. Always create from a String (<code>new BigDecimal("0.10")</code>), not a double, and specify a RoundingMode when dividing.</li><li><strong>double</strong> is binary floating point and cannot represent 0.1 exactly (0.1 + 0.2 != 0.3).</li><li>Both are immutable and slower than primitives.</li></ul>
+<h4 class="q">Q30. What is the difference between a static variable and an instance variable?</h4>
+<div class="tw"><table><tr><th>Aspect</th><th>Static variable</th><th>Instance variable</th></tr><tr><td>Belongs to</td><td>The class</td><td>Each object</td></tr><tr><td>Copies</td><td>One, shared by all objects</td><td>One per object</td></tr><tr><td>Created</td><td>When the class is loaded</td><td>When the object is created with <code>new</code></td></tr><tr><td>Access</td><td><code>ClassName.variable</code></td><td>Through an object reference</td></tr><tr><td>Thread safety</td><td>Shared state, needs care</td><td>Safe unless the object itself is shared</td></tr></table></div>
+<p><strong>Problem statement:</strong> Count how many Customer objects were created while each customer keeps its own name.</p>
+<pre><button class="copy">Copy</button><code>class Customer {
+    private static int totalCustomers = 0;   // static: one shared counter for the whole class
+    private final String customerName;       // instance: separate value in every object
+
+    Customer(String customerName) {
+        this.customerName = customerName;
+        totalCustomers++;                    // every new object updates the same shared counter
+    }
+
+    static int getTotalCustomers() { return totalCustomers; }
+}
+
+new Customer("Alice");
+new Customer("Bob");
+System.out.println(Customer.getTotalCustomers()); // 2</code></pre>
+<h4 class="q">Q31. What are abstraction and encapsulation in Java, and how do they differ?</h4>
+<ul><li><strong>Abstraction</strong> hides implementation complexity and exposes only what an object does (abstract classes, interfaces). It is a design-level concept.</li><li><strong>Encapsulation</strong> hides data by keeping fields private and exposing them through methods that enforce rules. It protects state.</li></ul>
+<p><strong>Problem statement:</strong> Let callers pay through any gateway (abstraction) while the account protects its balance from invalid changes (encapsulation).</p>
+<pre><button class="copy">Copy</button><code>// Abstraction: callers depend on the contract, not on how the transfer happens
+interface PaymentGateway {
+    void transferMoney(double transferAmount);
+}
+
+// Encapsulation: balance is private and only changed through a validated method
+class BankAccount implements PaymentGateway {
+    private double accountBalance;                 // cannot be modified directly from outside
+
+    public BankAccount(double openingBalance) {
+        this.accountBalance = openingBalance;
+    }
+
+    @Override
+    public void transferMoney(double transferAmount) {
+        if (transferAmount &lt;= 0 || transferAmount &gt; accountBalance) {
+            throw new IllegalArgumentException("Invalid transfer amount");  // rule enforced here
+        }
+        accountBalance -= transferAmount;
+    }
+
+    public double getAccountBalance() { return accountBalance; }  // read-only access
+}</code></pre>
+<h4 class="q">Q32. What is the diamond problem in Java, and how is it resolved?</h4>
+<p>It occurs when a class can inherit the same method from two parents that share a common ancestor, making the call ambiguous. Java avoids it for classes by allowing only single class inheritance. With Java 8 default methods it can reappear through interfaces; the compiler then forces the implementing class to override the method, optionally choosing a parent version with <code>InterfaceName.super.method()</code>. See also Section 5, Q8.</p>
+<p><strong>Problem statement:</strong> A class implements two interfaces that both define a default <code>sendAlert()</code>. Resolve the conflict.</p>
+<pre><button class="copy">Copy</button><code>interface EmailNotifier {
+    default void sendAlert() { System.out.println("Email alert"); }
+}
+
+interface SmsNotifier {
+    default void sendAlert() { System.out.println("SMS alert"); }
+}
+
+// Without the override below this class would NOT compile (ambiguous default methods)
+class AlertService implements EmailNotifier, SmsNotifier {
+    @Override
+    public void sendAlert() {
+        EmailNotifier.super.sendAlert(); // explicitly call the email version
+        SmsNotifier.super.sendAlert();   // explicitly call the SMS version
+    }
+}</code></pre>
 <h2 id="s2">Section 2: Java Object Fundamentals &amp; Lifecycle</h2>
 <h4 class="q">Q1. What is an object, and what three steps does a statement like Human person = new Human() perform?</h4>
 <p>An object is an instance of a class — a bundle of state (fields) and behavior (methods). Car, Bird, and Human are classes; a specific car with a given license plate is an object. The single statement performs three steps: Declaration (the name refers to an object of type Human), Instantiation (the new operator allocates memory), and Initialization (the constructor runs to set the initial state).</p>
@@ -513,6 +576,36 @@ String eventDescription = switch (paymentEvent) {
             .mapToLong(currentNumber -&gt; (long) currentNumber * currentNumber)
             .sum();                                           // terminal: triggers execution
 }</code></pre>
+<h4 class="q">Q12. What are the major differences between Java 8, 11, 17 and 21?</h4>
+<div class="tw"><table><tr><th>Version</th><th>Key features</th></tr><tr><td><strong>Java 8</strong> (LTS, 2014)</td><td>Lambdas, Stream API, Optional, <code>java.time</code>, default/static interface methods, method references, CompletableFuture. Default GC: Parallel.</td></tr><tr><td><strong>Java 11</strong> (LTS, 2018)</td><td>Standard <code>HttpClient</code>, <code>var</code> in lambda parameters, String methods (<code>isBlank</code>, <code>strip</code>, <code>lines</code>, <code>repeat</code>), <code>Files.readString/writeString</code>, single-file source launch, Java EE/CORBA modules removed. Default GC: G1.</td></tr><tr><td><strong>Java 17</strong> (LTS, 2021)</td><td>Records, sealed classes, text blocks, pattern matching for <code>instanceof</code>, switch expressions, strong encapsulation of JDK internals, ZGC/Shenandoah production-ready, <code>RandomGenerator</code>.</td></tr><tr><td><strong>Java 21</strong> (LTS, 2023)</td><td>Virtual threads, pattern matching for <code>switch</code>, record patterns, sequenced collections (<code>getFirst</code>, <code>getLast</code>, <code>reversed</code>), generational ZGC.</td></tr></table></div>
+<p>Takeaway: 8 = functional style, 11 = modern APIs and cleanup, 17 = concise data modelling (records/sealed), 21 = lightweight concurrency and richer pattern matching.</p>
+<p><strong>Problem statement:</strong> Describe shapes with records and a pattern-matching switch, then run many blocking tasks on virtual threads.</p>
+<pre><button class="copy">Copy</button><code>// Java 17+: sealed hierarchy of records; Java 21: pattern matching in switch
+sealed interface Shape permits Circle, Rectangle { }
+record Circle(double radiusValue) implements Shape { }
+record Rectangle(double widthValue, double heightValue) implements Shape { }
+
+static double calculateArea(Shape inputShape) {
+    return switch (inputShape) {                                  // exhaustive, no default needed
+        case Circle circle       -&gt; Math.PI * circle.radiusValue() * circle.radiusValue();
+        case Rectangle rectangle -&gt; rectangle.widthValue() * rectangle.heightValue();
+    };
+}
+
+// Java 21: virtual threads, one cheap thread per task
+try (ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor()) {
+    for (int taskNumber = 0; taskNumber &lt; 10_000; taskNumber++) {
+        virtualExecutor.submit(() -&gt; {
+            Thread.sleep(java.time.Duration.ofSeconds(1));       // blocking does not tie up an OS thread
+            return "done";
+        });
+    }
+} // close() waits for all tasks to finish
+
+// Java 21: sequenced collections
+List&lt;String&gt; orderedNames = new ArrayList&lt;&gt;(List.of("alpha", "beta", "gamma"));
+String firstName = orderedNames.getFirst();                       // "alpha"
+List&lt;String&gt; reversedNames = orderedNames.reversed();             // [gamma, beta, alpha]</code></pre>
 <h2 id="s6">Section 6: Core Java &amp; OO Design — Rapid-Fire</h2>
 <p>Already covered earlier and not repeated here: immutable objects and defensive copies (Section 1), the equals()/hashCode() contract and its failure modes (Section 1), int-to-byte casts (Section 1), volatile arrays (Section 1), String pool and intern() (Section 1), Singleton/Builder/Observer/Factory/DI/IoC (Section 9), and ThreadLocal (Part 2, Section 1).</p>
 <p><strong>Language basics</strong></p>

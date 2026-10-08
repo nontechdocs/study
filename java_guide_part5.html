@@ -199,6 +199,56 @@ public class OrderPageController {
         return "orders/details";   // logical name resolved by the ViewResolver
     }
 }</code></pre>
+<h4 class="q">Q11. How do you handle exceptions thrown from a Spring Boot interceptor?</h4>
+<p>A <code>HandlerInterceptor</code> runs inside <code>DispatcherServlet</code>, so exceptions it throws are resolved by the same <code>@ControllerAdvice</code> / <code>@ExceptionHandler</code> used for controllers.</p><ul><li><code>preHandle()</code> runs before the controller; return <code>false</code> to stop the request or throw an exception for the advice to handle.</li><li><code>postHandle()</code> runs after the controller, only if no exception occurred.</li><li><code>afterCompletion()</code> runs whenever <code>preHandle</code> returned true, even on exceptions; its <code>Exception</code> parameter holds the failure. Use it for cleanup/logging, not to change the response.</li><li>Servlet <em>Filters</em> run outside DispatcherServlet, so <code>@ControllerAdvice</code> does not see their exceptions; delegate to a <code>HandlerExceptionResolver</code> or handle them in the filter.</li></ul>
+<p><strong>Problem statement:</strong> Reject requests without an API key header and return a clean 401 JSON error through a global handler.</p>
+<pre><button class="copy">Copy</button><code>// 1. Custom exception thrown by the interceptor
+public class MissingApiKeyException extends RuntimeException {
+    public MissingApiKeyException(String errorMessage) { super(errorMessage); }
+}
+
+// 2. Interceptor: validates the header before the controller runs
+@Component
+public class ApiKeyInterceptor implements HandlerInterceptor {
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        String apiKeyHeader = request.getHeader("X-API-KEY");
+        if (apiKeyHeader == null || apiKeyHeader.isBlank()) {
+            throw new MissingApiKeyException("API key is required");  // routed to @RestControllerAdvice
+        }
+        return true;                                                   // continue to the controller
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+                                Object handler, Exception exception) {
+        // always runs after the request finishes; logging/cleanup only
+        if (exception != null) { System.out.println("Request failed: " + exception.getMessage()); }
+    }
+}
+
+// 3. Global handler converts the exception into an HTTP response
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MissingApiKeyException.class)
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; handleMissingKey(MissingApiKeyException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)         // 401
+                .body(Map.of("error", exception.getMessage()));
+    }
+}
+
+// 4. Register the interceptor
+@Configuration
+public class WebConfiguration implements WebMvcConfigurer {
+    @Autowired private ApiKeyInterceptor apiKeyInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(apiKeyInterceptor).addPathPatterns("/orders/**");
+    }
+}</code></pre>
 <h2 id="s3">Section 3: Testing, Code Quality &amp; Production Readiness</h2>
 <h4 class="q">Q1. What is the difference between @Mock and @InjectMocks in Mockito?</h4>
 <p>@Mock creates a fake implementation of a dependency with stubbed behavior, isolating the class under test from real collaborators. @InjectMocks creates a real instance of the class under test and injects the @Mock fields into it (via constructor, setter, or field), enabling isolated unit tests with no Spring context.</p>
@@ -293,6 +343,32 @@ public class CustomerController {
     public CustomerDto createCustomer(@RequestBody CustomerDto customerRequest) {
         customerRequest.setCustomerId(UUID.randomUUID().toString());
         return customerRequest;   // converter serializes it back to XML
+    }
+}</code></pre>
+<h4 class="q">Q9. How do you return the correct HTTP status codes from a Spring REST controller?</h4>
+<p>Beyond the table in Q7: 405 Method Not Allowed (wrong verb), 415 Unsupported Media Type (bad <code>Content-Type</code>), 422 Unprocessable Entity (valid syntax, failed validation), 409 Conflict (duplicate or version clash). 502/504 usually indicate an upstream or gateway problem, not your own code. Use <code>ResponseEntity</code> or <code>@ResponseStatus</code> to set them explicitly.</p>
+<p><strong>Problem statement:</strong> Return 201 on create, 200/404 on lookup, and 204 on delete.</p>
+<pre><button class="copy">Copy</button><code>@RestController
+@RequestMapping("/orders")
+public class OrderController {
+
+    @PostMapping
+    public ResponseEntity&lt;Order&gt; createOrder(@RequestBody Order newOrder) {
+        Order savedOrder = orderService.save(newOrder);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);        // 201
+    }
+
+    @GetMapping("/{orderId}")
+    public ResponseEntity&lt;Order&gt; findOrder(@PathVariable long orderId) {
+        return orderService.findById(orderId)
+                .map(ResponseEntity::ok)                                          // 200
+                .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());     // 404
+    }
+
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity&lt;Void&gt; deleteOrder(@PathVariable long orderId) {
+        orderService.deleteById(orderId);
+        return ResponseEntity.noContent().build();                                // 204
     }
 }</code></pre>
 <h2 id="s5">Section 5: Microservices Architecture &amp; Distributed Systems</h2>

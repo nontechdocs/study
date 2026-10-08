@@ -209,10 +209,23 @@ public class SafeIterationDemo {
 <p>Iterator traverses a collection forward-only and supports remove(). ListIterator (available only for List types) additionally supports bidirectional traversal (hasPrevious()/previous()), set() to replace the last-returned element, add() to insert a new element at the current position, and nextIndex()/previousIndex() to report the iterator's current position.</p>
 <h4 class="q">Q5. What is the difference between Comparable and Comparator?</h4>
 <p>Comparable (via compareTo()) defines a class's own natural ordering, implemented inside the class itself — a class can only have one natural ordering. Comparator (via compare()) defines external, custom ordering logic that lives outside the class, so you can have as many different Comparator implementations as you need different sort orders, without modifying the class at all. Java 8 added fluent, lambda-friendly chaining via Comparator.comparing(...).thenComparing(...).</p>
+<div class="tw"><table><tr><th>Aspect</th><th>Comparable</th><th>Comparator</th></tr><tr><td>Method</td><td><code>compareTo(T other)</code></td><td><code>compare(T first, T second)</code></td></tr><tr><td>Defined</td><td>Inside the class</td><td>Outside the class or as a lambda</td></tr><tr><td>Orders</td><td>One natural order</td><td>Many custom orders</td></tr><tr><td>Class source needed</td><td>Yes</td><td>No</td></tr></table></div>
+<p>Worked examples of both are in Section 5, Q3 (natural order) and Q4 (external order).</p>
 <h4 class="q">Q6. How does TreeSet maintain sorted order, and what's its time complexity?</h4>
 <p>TreeSet is backed internally by a TreeMap (a red-black tree), maintaining its elements in sorted order based on their natural ordering (Comparable) or a supplied Comparator. add(), remove(), and contains() all run in O(log n). It disallows duplicates, and disallows null elements when relying on natural ordering (since comparing against null would throw). It supports navigation methods like higher() and lower() for finding the nearest element above/below a given value.</p>
 <h4 class="q">Q7. What is CopyOnWriteArrayList, and when should it be used?</h4>
 <p>CopyOnWriteArrayList (java.util.concurrent) is a thread-safe List variant where every mutating operation (add/remove/set) creates an entirely new copy of the underlying array, then swaps the reference atomically. Reads never block and never throw ConcurrentModificationException, since they always operate against a stable, immutable snapshot array. It's ideal for read-heavy, write-rare scenarios — the classic example is a list of event listeners that's read constantly but modified only occasionally — but is costly for frequent writes, since every single mutation copies the entire backing array.</p>
+<p><strong>Problem statement:</strong> Add an element while iterating without a ConcurrentModificationException.</p>
+<pre><button class="copy">Copy</button><code>List&lt;String&gt; listenerNames = new CopyOnWriteArrayList&lt;&gt;(List.of("audit", "metrics"));
+
+for (String currentListener : listenerNames) {      // iterates over a snapshot of the array
+    if (currentListener.equals("audit")) {
+        listenerNames.add("tracing");               // safe: the write goes to a new copy
+    }
+}
+System.out.println(listenerNames);                  // [audit, metrics, tracing]
+// A plain ArrayList would throw ConcurrentModificationException in the same loop.
+// Note: the snapshot iterator does not support remove().</code></pre>
 <h4 class="q">Q8. How do you get an immutable (read-only) collection view?</h4>
 <p>The Collections utility class provides wrapper methods — unmodifiableList(), unmodifiableSet(), unmodifiableMap(), etc. — implemented using the Decorator design pattern. Each wraps an existing mutable collection in a read-only view that throws UnsupportedOperationException on any attempted modification.</p>
 <pre><button class="copy">Copy</button><code>import java.util.Collections;
@@ -286,6 +299,70 @@ System.out.println(identityMap.size());         // 2</code></pre><h4 class="q">Q
         return studentsByCourse.getOrDefault(courseName, Set.of());
     }
 }</code></pre><h4 class="q">Q14. What is the most efficient data structure in Java? Compare the performance of common collections.</h4><p>There is no single best one; pick by access pattern.</p><div class="tw"><table><tr><th>Structure</th><th>Get / search</th><th>Insert / remove</th><th>Notes</th></tr><tr><td>ArrayList</td><td>O(1) by index</td><td>O(1) at end, O(n) middle</td><td>Best general-purpose list; cache-friendly</td></tr><tr><td>LinkedList</td><td>O(n)</td><td>O(1) at known node/ends</td><td>Rarely better in practice</td></tr><tr><td>HashMap / HashSet</td><td>O(1) average</td><td>O(1) average</td><td>No ordering; needs good hashCode</td></tr><tr><td>LinkedHashMap</td><td>O(1)</td><td>O(1)</td><td>Keeps insertion/access order (LRU)</td></tr><tr><td>TreeMap / TreeSet</td><td>O(log n)</td><td>O(log n)</td><td>Sorted; range queries</td></tr><tr><td>ArrayDeque</td><td>O(1) ends</td><td>O(1) ends</td><td>Fastest stack/queue</td></tr><tr><td>PriorityQueue</td><td>O(1) peek</td><td>O(log n)</td><td>Min/max retrieval</td></tr></table></div>
+<h4 class="q">Q15. How does ArrayList work internally?</h4>
+<p>ArrayList is backed by an <code>Object[]</code> (<code>elementData</code>), allocated lazily with default capacity 10 on the first add. When full it grows to about 1.5x (<code>oldCapacity + (oldCapacity &gt;&gt; 1)</code>) by copying into a new array with <code>Arrays.copyOf</code>.</p><ul><li><code>get(index)</code> is O(1); <code>add(element)</code> is amortized O(1).</li><li>Insert/remove in the middle is O(n) because later elements shift with <code>System.arraycopy</code>.</li><li>Not thread-safe; an internal <code>modCount</code> makes iterators fail-fast.</li></ul>
+<p><strong>Problem statement:</strong> Build a simplified dynamic array that grows automatically when full, mimicking ArrayList.</p>
+<pre><button class="copy">Copy</button><code>public class SimpleDynamicArray {
+
+    private Object[] storedElements = new Object[10]; // default capacity, like ArrayList
+    private int elementCount = 0;                     // number of slots actually used
+
+    public void addElement(Object newElement) {
+        ensureCapacity();                             // grow first if the array is full
+        storedElements[elementCount++] = newElement;
+    }
+
+    public Object getElement(int elementIndex) {
+        if (elementIndex &lt; 0 || elementIndex &gt;= elementCount) {
+            throw new IndexOutOfBoundsException("Index: " + elementIndex);
+        }
+        return storedElements[elementIndex];          // O(1) random access
+    }
+
+    private void ensureCapacity() {
+        if (elementCount == storedElements.length) {
+            int newCapacity = storedElements.length + (storedElements.length &gt;&gt; 1); // 1.5x growth
+            storedElements = java.util.Arrays.copyOf(storedElements, newCapacity);  // copy to bigger array
+        }
+    }
+}</code></pre>
+<h4 class="q">Q16. How does HashMap handle null keys and null values?</h4>
+<ul><li>HashMap allows <strong>one null key</strong> (hash treated as 0, bucket 0) and <strong>any number of null values</strong>.</li><li><code>get(key)</code> returning null is ambiguous (absent key or null value); use <code>containsKey()</code> to tell them apart.</li><li>Hashtable and ConcurrentHashMap reject null keys and values; TreeMap rejects null keys with natural ordering. ConcurrentHashMap bans nulls because "absent vs. null" cannot be resolved safely under concurrency.</li></ul>
+<p><strong>Problem statement:</strong> Store null keys/values in a HashMap and distinguish a missing key from a null value.</p>
+<pre><button class="copy">Copy</button><code>Map&lt;String, String&gt; userPreferences = new HashMap&lt;&gt;();
+userPreferences.put(null, "defaultValue");   // one null key is allowed
+userPreferences.put("theme", null);          // null value is allowed
+
+System.out.println(userPreferences.get("theme"));            // null (key exists, value is null)
+System.out.println(userPreferences.get("language"));         // null (key does not exist)
+System.out.println(userPreferences.containsKey("theme"));    // true  -&gt; disambiguates
+System.out.println(userPreferences.containsKey("language")); // false
+
+// new ConcurrentHashMap&lt;String, String&gt;().put("key", null); // throws NullPointerException</code></pre>
+<h4 class="q">Q17. What is the difference between TreeSet and HashSet?</h4>
+<div class="tw"><table><tr><th>Aspect</th><th>HashSet</th><th>TreeSet</th></tr><tr><td>Backed by</td><td>HashMap</td><td>TreeMap (red-black tree)</td></tr><tr><td>Ordering</td><td>None</td><td>Sorted (natural or Comparator)</td></tr><tr><td>add / remove / contains</td><td>O(1) average</td><td>O(log n)</td></tr><tr><td>Null element</td><td>One null allowed</td><td>Not allowed (natural ordering)</td></tr><tr><td>Duplicate check</td><td><code>equals()</code> + <code>hashCode()</code></td><td><code>compareTo()</code>/<code>compare()</code> returns 0</td></tr><tr><td>Extra methods</td><td>None</td><td><code>first()</code>, <code>last()</code>, <code>headSet()</code>, <code>ceiling()</code></td></tr></table></div>
+<p><strong>Problem statement:</strong> Store the same words in both sets and compare iteration order.</p>
+<pre><button class="copy">Copy</button><code>Set&lt;String&gt; hashedWords = new HashSet&lt;&gt;(List.of("pear", "apple", "mango"));
+Set&lt;String&gt; sortedWords = new TreeSet&lt;&gt;(List.of("pear", "apple", "mango"));
+
+System.out.println(hashedWords); // order not guaranteed, e.g. [apple, mango, pear]
+System.out.println(sortedWords); // always sorted: [apple, mango, pear]</code></pre>
+<h4 class="q">Q18. Why can't we use int or other primitives in the Java Collections Framework?</h4>
+<ul><li>Collections are generic and generics use type erasure: the type argument becomes <code>Object</code> at runtime. Primitives are not objects, so <code>List&lt;int&gt;</code> is a compile error.</li><li>Wrapper classes (<code>Integer</code>, <code>Double</code>...) bridge the gap; autoboxing/unboxing converts automatically.</li><li><strong>Costs:</strong> extra memory (object header), boxing overhead, <code>NullPointerException</code> on unboxing null, and <code>==</code> pitfalls (Integer cache covers only -128 to 127).</li><li><strong>Alternatives:</strong> <code>int[]</code>, <code>IntStream</code>, or primitive-specialised libraries (Eclipse Collections, fastutil).</li></ul>
+<p><strong>Problem statement:</strong> Show autoboxing, the Integer cache pitfall, and the NullPointerException on unboxing.</p>
+<pre><button class="copy">Copy</button><code>// List&lt;int&gt; invalid = new ArrayList&lt;&gt;();   // compile error: primitives not allowed
+List&lt;Integer&gt; scoreList = new ArrayList&lt;&gt;();
+scoreList.add(100);                          // autoboxing: int -&gt; Integer
+int firstScore = scoreList.get(0);           // unboxing: Integer -&gt; int
+
+Integer smallFirst = 127, smallSecond = 127;
+Integer largeFirst = 1000, largeSecond = 1000;
+System.out.println(smallFirst == smallSecond);       // true  (cached object)
+System.out.println(largeFirst == largeSecond);       // false (different objects) -&gt; use equals()
+System.out.println(largeFirst.equals(largeSecond));  // true
+
+Integer missingScore = null;
+int crashValue = missingScore;               // NullPointerException during unboxing</code></pre>
 <h2 id="s4">Section 4: Stack / Deque Deep Dive</h2>
 <p>The Java Collection library's LIFO mechanism has many practical real-world uses: evaluating expressions and parsing syntax, validating/parsing XML, implementing undo in a text editor, and tracking page-visit history in a web browser.</p>
 <h4 class="q">Q1. What LIFO implementation would you use in modern Java?</h4>

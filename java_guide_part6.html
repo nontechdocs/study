@@ -226,6 +226,30 @@ readinessProbe:
 <li>5. Cut over in a brief window: pause writes, drain remaining CDC changes, repoint connection strings/DNS to the new instance, and resume, typically a few minutes of downtime.</li>
 <li>6. For network transfer from on-premises, use Direct Connect or a Site-to-Site VPN; if transfer time is still prohibitive, seed the bulk data with AWS Snowball and let DMS CDC catch up the delta.</li>
 </ul>
+<h4 class="q">Q9. How does AWS Lambda behave in a multi-threaded environment?</h4>
+<ul><li><strong>Default model:</strong> each execution environment handles <em>one request at a time</em>. Parallel requests are served by additional environments, so handler instance state is not accessed concurrently.</li><li><strong>Warm reuse:</strong> static fields, SDK clients and <code>/tmp</code> persist across sequential invocations in the same environment. Initialize heavy objects once, but never keep per-request data in static fields (it leaks into the next request).</li><li><strong>Threads inside one invocation:</strong> allowed (parallel calls, <code>CompletableFuture</code>), but join them before the handler returns because the environment is frozen afterwards. Parallelism is limited by vCPUs, which scale with configured memory.</li><li><strong>Lambda Managed Instances (Java 21+):</strong> processes multiple requests concurrently in one environment using OS threads, so handler code and shared state must be thread-safe; <code>/tmp</code> needs care too.</li><li>Keep connection pools small: many environments each holding connections can exhaust a database.</li></ul>
+<p><strong>Problem statement:</strong> Fetch two downstream results in parallel inside one Lambda invocation and return only after both finish.</p>
+<pre><button class="copy">Copy</button><code>public class ParallelLambdaHandler implements RequestHandler&lt;Map&lt;String, String&gt;, String&gt; {
+
+    // Created once per execution environment and reused on warm invocations (must be thread-safe)
+    private static final ExecutorService WORKER_POOL = Executors.newFixedThreadPool(2);
+
+    @Override
+    public String handleRequest(Map&lt;String, String&gt; inputEvent, Context lambdaContext) {
+        String customerId = inputEvent.get("customerId");   // per-request data stays in local variables
+
+        CompletableFuture&lt;String&gt; profileFuture =
+                CompletableFuture.supplyAsync(() -&gt; fetchProfile(customerId), WORKER_POOL);
+        CompletableFuture&lt;String&gt; ordersFuture =
+                CompletableFuture.supplyAsync(() -&gt; fetchOrders(customerId), WORKER_POOL);
+
+        // join() blocks until both tasks finish, so no work is left running after the handler returns
+        return profileFuture.join() + " | " + ordersFuture.join();
+    }
+
+    private String fetchProfile(String customerId) { return "profile-" + customerId; }
+    private String fetchOrders(String customerId)  { return "orders-" + customerId; }
+}</code></pre>
 <h2 id="s4">Section 4: Frontend Integration — Angular &amp; React</h2>
 <h3 id="s5">AngularJS &amp; Angular</h3>
 <h4 class="q">Q1. What is scope in AngularJS, and what is two-way data binding?</h4>
