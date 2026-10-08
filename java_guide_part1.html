@@ -577,7 +577,46 @@ String eventDescription = switch (paymentEvent) {
             .sum();                                           // terminal: triggers execution
 }</code></pre>
 <h4 class="q">Q12. What are the major differences between Java 8, 11, 17 and 21?</h4>
-<div class="tw"><table><tr><th>Version</th><th>Key features</th></tr><tr><td><strong>Java 8</strong> (LTS, 2014)</td><td>Lambdas, Stream API, Optional, <code>java.time</code>, default/static interface methods, method references, CompletableFuture. Default GC: Parallel.</td></tr><tr><td><strong>Java 11</strong> (LTS, 2018)</td><td>Standard <code>HttpClient</code>, <code>var</code> in lambda parameters, String methods (<code>isBlank</code>, <code>strip</code>, <code>lines</code>, <code>repeat</code>), <code>Files.readString/writeString</code>, single-file source launch, Java EE/CORBA modules removed. Default GC: G1.</td></tr><tr><td><strong>Java 17</strong> (LTS, 2021)</td><td>Records, sealed classes, text blocks, pattern matching for <code>instanceof</code>, switch expressions, strong encapsulation of JDK internals, ZGC/Shenandoah production-ready, <code>RandomGenerator</code>.</td></tr><tr><td><strong>Java 21</strong> (LTS, 2023)</td><td>Virtual threads, pattern matching for <code>switch</code>, record patterns, sequenced collections (<code>getFirst</code>, <code>getLast</code>, <code>reversed</code>), generational ZGC.</td></tr></table></div>
+<p><strong>Java 8 (LTS, 2014)</strong></p>
+<ul>
+<li><strong>Lambdas:</strong> short anonymous functions, e.g. <code>(a, b) -&gt; a + b</code></li>
+<li><strong>Stream API:</strong> declarative filter/map/reduce pipelines over collections</li>
+<li><strong>Optional:</strong> a container that makes "value may be absent" explicit and reduces NullPointerExceptions</li>
+<li><strong><code>java.time</code>:</strong> immutable, thread-safe replacement for <code>Date</code> and <code>Calendar</code></li>
+<li><strong>Default/static interface methods:</strong> add behavior to interfaces without breaking existing implementers</li>
+<li><strong>Method references:</strong> shorthand lambdas such as <code>String::length</code></li>
+<li><strong>CompletableFuture:</strong> composable asynchronous tasks with chaining and combining</li>
+<li><strong>Parallel GC default:</strong> throughput-oriented collector</li>
+</ul>
+<p><strong>Java 11 (LTS, 2018)</strong></p>
+<ul>
+<li><strong><code>HttpClient</code>:</strong> standard modern HTTP client (HTTP/2, async) replacing <code>HttpURLConnection</code></li>
+<li><strong><code>var</code> in lambda parameters:</strong> allows annotations on lambda parameters while inferring their types</li>
+<li><strong>New String methods:</strong> <code>isBlank</code>, <code>strip</code>, <code>lines</code>, <code>repeat</code> for common text handling</li>
+<li><strong><code>Files.readString/writeString</code>:</strong> read or write a whole file in one call</li>
+<li><strong>Single-file source launch:</strong> run <code>java Hello.java</code> without compiling first</li>
+<li><strong>Java EE/CORBA removed:</strong> those modules were dropped from the JDK, so add them as libraries if needed</li>
+<li><strong>G1 GC default:</strong> low-pause collector replaces Parallel</li>
+</ul>
+<p><strong>Java 17 (LTS, 2021)</strong></p>
+<ul>
+<li><strong>Records:</strong> immutable data classes with auto-generated constructor, accessors, <code>equals</code>, <code>hashCode</code>, <code>toString</code></li>
+<li><strong>Sealed classes:</strong> restrict which classes may extend or implement a type</li>
+<li><strong>Text blocks:</strong> multi-line string literals with no escape clutter</li>
+<li><strong>Pattern matching for <code>instanceof</code>:</strong> test and cast in one step, e.g. <code>if (obj instanceof String text)</code></li>
+<li><strong>Switch expressions:</strong> <code>switch</code> that returns a value with <code>-&gt;</code> arms</li>
+<li><strong>Strong encapsulation of JDK internals:</strong> reflective access to internal APIs is blocked by default</li>
+<li><strong>ZGC/Shenandoah production-ready:</strong> ultra-low-pause collectors are officially supported</li>
+<li><strong><code>RandomGenerator</code>:</strong> one common interface for random-number algorithms</li>
+</ul>
+<p><strong>Java 21 (LTS, 2023)</strong></p>
+<ul>
+<li><strong>Virtual threads:</strong> lightweight threads that make blocking-style code scale to many thousands of tasks</li>
+<li><strong>Pattern matching for <code>switch</code>:</strong> switch on types and patterns, with compiler-checked exhaustiveness for sealed types</li>
+<li><strong>Record patterns:</strong> deconstruct a record's fields directly in a pattern</li>
+<li><strong>Sequenced collections:</strong> uniform <code>getFirst()</code>, <code>getLast()</code>, <code>reversed()</code> on ordered collections</li>
+<li><strong>Generational ZGC:</strong> ZGC separates young and old objects for better throughput and lower memory overhead</li>
+</ul>
 <p>Takeaway: 8 = functional style, 11 = modern APIs and cleanup, 17 = concise data modelling (records/sealed), 21 = lightweight concurrency and richer pattern matching.</p>
 <p><strong>Problem statement:</strong> Describe shapes with records and a pattern-matching switch, then run many blocking tasks on virtual threads.</p>
 <pre><button class="copy">Copy</button><code>// Java 17+: sealed hierarchy of records; Java 21: pattern matching in switch
