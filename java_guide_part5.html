@@ -249,6 +249,79 @@ public class WebConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(apiKeyInterceptor).addPathPatterns("/orders/**");
     }
 }</code></pre>
+<h4 class="q">Q12. How do you configure multiple data sources in Spring Boot?</h4>
+<p>Boot auto-configures exactly one <code>DataSource</code> from <code>spring.datasource.*</code>. For two databases, disable reliance on that: define your own properties prefix, and for each database declare a <code>DataSource</code>, an <code>EntityManagerFactory</code> and a <code>TransactionManager</code>, then bind each Spring Data repository package to its own set. Mark one set <code>@Primary</code> so auto-configured pieces (Actuator health, Flyway, plain <code>JdbcTemplate</code>) have a default.</p>
+<p><em>Problem statement: An application reads orders from an "orders" database and stock levels from an "inventory" database. Configure both with separate connection pools, entities, repositories and transaction managers.</em></p>
+<pre><button class="copy">Copy</button><code># application.yml: one block per database (custom prefix, not spring.datasource)
+app:
+  datasource:
+    orders:
+      url: jdbc:postgresql://orders-host:5432/orders
+      username: orders_user
+      password: ${ORDERS_DB_PASSWORD}
+      hikari.maximum-pool-size: 10
+    inventory:
+      url: jdbc:mysql://inventory-host:3306/inventory
+      username: inventory_user
+      password: ${INVENTORY_DB_PASSWORD}
+      hikari.maximum-pool-size: 5</code></pre>
+<pre><button class="copy">Copy</button><code>@Configuration
+@EnableJpaRepositories(
+        basePackages = "com.example.orders.repository",        // repositories that use THIS database
+        entityManagerFactoryRef = "ordersEntityManagerFactory",
+        transactionManagerRef = "ordersTransactionManager")
+public class OrdersDataSourceConfiguration {
+
+    @Primary
+    @Bean
+    @ConfigurationProperties("app.datasource.orders")          // binds url, username, password
+    public DataSourceProperties ordersDataSourceProperties() {
+        return new DataSourceProperties();
+    }
+
+    @Primary
+    @Bean
+    @ConfigurationProperties("app.datasource.orders.hikari")   // binds pool settings
+    public HikariDataSource ordersDataSource(
+            @Qualifier("ordersDataSourceProperties") DataSourceProperties dataSourceProperties) {
+        return dataSourceProperties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
+    }
+
+    @Primary
+    @Bean
+    public LocalContainerEntityManagerFactoryBean ordersEntityManagerFactory(
+            EntityManagerFactoryBuilder entityManagerBuilder,
+            @Qualifier("ordersDataSource") DataSource ordersDataSource) {
+        return entityManagerBuilder
+                .dataSource(ordersDataSource)
+                .packages("com.example.orders.entity")         // entities that belong to THIS database
+                .persistenceUnit("orders")
+                .build();
+    }
+
+    @Primary
+    @Bean
+    public PlatformTransactionManager ordersTransactionManager(
+            @Qualifier("ordersEntityManagerFactory") EntityManagerFactory ordersEntityManagerFactory) {
+        return new JpaTransactionManager(ordersEntityManagerFactory);
+    }
+}
+
+// InventoryDataSourceConfiguration: identical shape, but WITHOUT @Primary, using the
+// "app.datasource.inventory" prefix, the "com.example.inventory.*" packages and "inventory*" bean names.
+
+@Service
+public class StockReservationService {
+    // Pick the transaction manager explicitly; the default (@Primary) one would be used otherwise
+    @Transactional(transactionManager = "inventoryTransactionManager")
+    public void reserveStock(Long productIdentifier, int requestedQuantity) { /* ... */ }
+}</code></pre>
+<ul>
+<li><strong>Plain JDBC:</strong> skip JPA and declare a <code>JdbcTemplate</code> per <code>DataSource</code> with <code>@Qualifier</code>.</li>
+<li><strong>Runtime routing</strong> (read replicas, multi-tenant): one logical <code>DataSource</code> extending <code>AbstractRoutingDataSource</code> that picks the target from a thread-bound key in <code>determineCurrentLookupKey()</code>.</li>
+<li><strong>Pitfall:</strong> <code>@Transactional</code> covers one transaction manager only, so a write to both databases is not atomic. Use JTA/XA (Atomikos, Narayana), or preferably the saga/outbox patterns (Section 5, Q5).</li>
+<li><strong>Also configure per database:</strong> Flyway/Liquibase migrations, pool names, and health indicators.</li>
+</ul>
 <h2 id="s3">Section 3: Testing, Code Quality &amp; Production Readiness</h2>
 <h4 class="q">Q1. What is the difference between @Mock and @InjectMocks in Mockito?</h4>
 <p>@Mock creates a fake implementation of a dependency with stubbed behavior, isolating the class under test from real collaborators. @InjectMocks creates a real instance of the class under test and injects the @Mock fields into it (via constructor, setter, or field), enabling isolated unit tests with no Spring context.</p>

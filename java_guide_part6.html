@@ -382,6 +382,52 @@ export class EmployeeCardComponent {
 <p><em>Figure: JWT structure</em></p>
 <h4 class="q">Q3. What are XSS and CSRF, and how does Spring Security help prevent them?</h4>
 <p>XSS injects malicious scripts into pages viewed by other users; mitigate with output encoding/escaping and Content-Security-Policy headers. CSRF tricks an authenticated user's browser into submitting unintended requests; mitigate with anti-CSRF tokens tied to the user session. Spring Security enables CSRF protection by default for state-changing requests and provides header utilities to reduce XSS exposure.</p>
+<h4 class="q">Q4. How do you secure an API?</h4>
+<p>Think in layers; no single control is enough. The OWASP API Security Top 10 is the usual checklist.</p>
+<ul>
+<li><strong>Transport:</strong> HTTPS/TLS only, HSTS, and mutual TLS for service-to-service calls.</li>
+<li><strong>Authentication:</strong> OAuth2/OIDC with short-lived JWT access tokens for users (JWT details above and Part 5, Section 2, Q8); API keys or client credentials for machine clients; never in the URL.</li>
+<li><strong>Authorization:</strong> scopes/roles per endpoint <em>and</em> an ownership check per object. Missing object-level checks (BOLA/IDOR, OWASP API #1) let user A read <code>/orders/42</code> that belongs to user B.</li>
+<li><strong>Input handling:</strong> Bean Validation, parameterized queries (Q4 of Section 6), request-size limits, and DTOs rather than entities to prevent mass assignment.</li>
+<li><strong>Abuse protection:</strong> rate limiting and throttling at the API gateway, plus quotas per client.</li>
+<li><strong>Browser concerns:</strong> restrictive CORS allow-list; CSRF protection only if cookies carry authentication (stateless bearer-token APIs can disable it).</li>
+<li><strong>Errors and logging:</strong> generic error bodies without stack traces; audit log of auth failures; never log tokens or passwords.</li>
+<li><strong>Operations:</strong> secrets in a vault, dependency scanning, a WAF/gateway in front, and returning 401 (unauthenticated) vs 403 (forbidden) correctly.</li>
+</ul>
+<p><em>Problem statement: Secure the Orders API so it is HTTPS-only and stateless, requires a valid JWT, grants read/write by scope, denies unlisted endpoints, and lets a user fetch only their own orders.</em></p>
+<pre><button class="copy">Copy</button><code>@Configuration
+@EnableMethodSecurity                                        // enables @PreAuthorize / @PostAuthorize
+public class ApiSecurityConfiguration {
+
+    @Bean
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .requiresChannel(channel -&gt; channel.anyRequest().requiresSecure())   // force HTTPS
+                .sessionManagement(session -&gt;
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // no server session
+                .csrf(csrf -&gt; csrf.disable())              // safe: bearer tokens, no auth cookies
+                .authorizeHttpRequests(requests -&gt; requests
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/orders/**").hasAuthority("SCOPE_orders.read")
+                        .requestMatchers(HttpMethod.POST, "/api/orders/**").hasAuthority("SCOPE_orders.write")
+                        .anyRequest().denyAll())           // deny by default
+                .oauth2ResourceServer(resource -&gt; resource.jwt(Customizer.withDefaults())) // validate JWT signature/expiry
+                .headers(headers -&gt; headers.httpStrictTransportSecurity(
+                        hsts -&gt; hsts.includeSubDomains(true).maxAgeInSeconds(31536000)));
+        return httpSecurity.build();
+    }
+}
+
+@RestController
+public class OrderController {
+
+    // Object-level check: the order's owner must match the authenticated user (prevents IDOR/BOLA)
+    @GetMapping("/api/orders/{orderIdentifier}")
+    @PostAuthorize("returnObject.ownerUsername == authentication.name")
+    public OrderResponse findOrder(@PathVariable Long orderIdentifier) {
+        return orderService.findOrder(orderIdentifier);
+    }
+}</code></pre>
 <h3 id="s9">Secure Coding Guidelines (Condensed)</h3>
 <p><em>Adapted and condensed from Oracle's “Secure Coding Guidelines for Java SE”; captures the most interview-relevant points from each major topic area.</em></p>
 <p><strong>0. Fundamentals</strong></p>

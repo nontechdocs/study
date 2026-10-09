@@ -645,6 +645,52 @@ try (ExecutorService virtualExecutor = Executors.newVirtualThreadPerTaskExecutor
 List&lt;String&gt; orderedNames = new ArrayList&lt;&gt;(List.of("alpha", "beta", "gamma"));
 String firstName = orderedNames.getFirst();                       // "alpha"
 List&lt;String&gt; reversedNames = orderedNames.reversed();             // [gamma, beta, alpha]</code></pre>
+<h4 class="q">Q13. Which operations are intermediate and which are terminal in the Stream API?</h4>
+<p>"Tertiary" is usually asked as <strong>terminal</strong>. A pipeline is source → intermediate operations (lazy, return a new Stream) → one terminal operation (eager, returns a result or void and closes the stream).</p>
+<div class="tw"><table><tr><th>Type</th><th>Operations</th><th>Notes</th></tr>
+<tr><td>Intermediate, stateless</td><td>filter, map, mapToInt/Long/Double, flatMap, peek, takeWhile, dropWhile</td><td>Each element is processed independently; cheap and parallel-friendly.</td></tr>
+<tr><td>Intermediate, stateful</td><td>sorted, distinct, limit, skip</td><td>Need other elements (sorted buffers everything); can hurt parallel performance.</td></tr>
+<tr><td>Terminal</td><td>forEach, forEachOrdered, collect, toList, toArray, reduce, count, min, max, sum/average (primitive streams)</td><td>Triggers the whole pipeline.</td></tr>
+<tr><td>Terminal, short-circuiting</td><td>anyMatch, allMatch, noneMatch, findFirst, findAny</td><td>Can stop early, even on infinite streams.</td></tr></table></div>
+<ul><li><strong>Laziness:</strong> without a terminal operation nothing runs; elements flow through the pipeline one at a time, not stage by stage.</li><li><strong>Reuse:</strong> a consumed stream throws <code>IllegalStateException</code> if used again.</li><li><strong>peek()</strong> is for debugging only; it may be skipped if the terminal operation can compute the result without it (e.g. <code>count()</code> on a sized source).</li></ul>
+<p><em>Problem statement: From a list of employees (name, department, salary), return the names of the two highest-paid Engineering employees, highest first. Also print each step to prove the pipeline is lazy and short-circuits.</em></p>
+<pre><button class="copy">Copy</button><code>import java.util.*;
+import java.util.stream.*;
+
+public class StreamOperationsDemo {
+
+    record Employee(String employeeName, String departmentName, int monthlySalary) { }
+
+    public static void main(String[] arguments) {
+        List&lt;Employee&gt; employeeList = List.of(
+                new Employee("Alice", "Engineering", 9000),
+                new Employee("Bob", "Sales", 7000),
+                new Employee("Charlie", "Engineering", 8000),
+                new Employee("Diana", "Engineering", 9500));
+
+        // Nothing executes while the intermediate operations are being declared
+        Stream&lt;Employee&gt; engineeringStream = employeeList.stream()
+                .peek(currentEmployee -&gt; System.out.println("Visiting " + currentEmployee.employeeName()))
+                .filter(currentEmployee -&gt; currentEmployee.departmentName().equals("Engineering")) // intermediate, stateless
+                .sorted(Comparator.comparingInt(Employee::monthlySalary).reversed())               // intermediate, stateful
+                .limit(2);                                                                         // intermediate, short-circuiting
+
+        // The terminal operation triggers the whole pipeline
+        List&lt;String&gt; topEarnerNames = engineeringStream
+                .map(Employee::employeeName)       // intermediate: Employee -&gt; String
+                .collect(Collectors.toList());     // terminal: gather into a List
+
+        System.out.println(topEarnerNames);        // [Diana, Alice]
+
+        // Terminal and short-circuiting: stops at the first match
+        boolean hasSalesStaff = employeeList.stream()
+                .anyMatch(currentEmployee -&gt; currentEmployee.departmentName().equals("Sales")); // true
+
+        // Terminal reduction on a primitive stream
+        int totalSalaryBudget = employeeList.stream().mapToInt(Employee::monthlySalary).sum(); // 33500
+        System.out.println(hasSalesStaff + " " + totalSalaryBudget);
+    }
+}</code></pre>
 <h2 id="s6">Section 6: Core Java &amp; OO Design — Rapid-Fire</h2>
 <p>Already covered earlier and not repeated here: immutable objects and defensive copies (Section 1), the equals()/hashCode() contract and its failure modes (Section 1), int-to-byte casts (Section 1), volatile arrays (Section 1), String pool and intern() (Section 1), Singleton/Builder/Observer/Factory/DI/IoC (Section 9), and ThreadLocal (Part 2, Section 1).</p>
 <p><strong>Language basics</strong></p>
